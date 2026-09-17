@@ -451,6 +451,166 @@ def _crm_plot_filter_options(rows):
     return {'projects': projects_out, 'sectors': sectors_out}
 
 
+# A page-size/next-page click on the Plotted List should cost O(page size),
+# not O(every plot the user can see). _crm_load_all_plots above is the exact,
+# always-correct path (handles free-text search across joined panorama/
+# workspace names and the numeric-aware column sort in crm_sort_rows), but it
+# fetches everything before slicing, so every request pays for the whole
+# accessible dataset regardless of what page/size was asked for.
+#
+# _crm_load_plots_page is a narrower, DB-paginated path used only when it can
+# reproduce that exact behavior with a plain `.range()` query: no free-text
+# search, no status filter (its canonical/alias matching in
+# _crm_plot_status_canonical can't be replicated by a plain column filter
+# without risking the exact "Hold filter matches nothing" bug that function's
+# docstring describes), no active column sort (avoids case-sensitivity/
+# null-ordering differences from crm_sort_rows), and only when the caller's
+# accessible panorama set is small enough for a single unchunked `.in_()`
+# query. Outside those conditions, the caller falls back to
+# _crm_load_all_plots unchanged.
+_CRM_PLOTS_FAST_PATH_MAX_PANOS = 200
+
+
+def _crm_build_panorama_map(sb, pano_ids):
+    """Panorama/workspace/client-scope lookup for a bounded set of ids.
+
+    Mirrors the panorama+workspace+client-scope portion of
+    _crm_load_all_plots, kept separate (rather than shared) so that function
+    stays untouched as the exact fallback path.
+    """
+    pano_rows = []
+    pano_by_id = {}
+    for chunk in _chunks(pano_ids):
+        try:
+            panos_r = (
+                sb.table('panoramas')
+                .select('id, name, workspace_id, is_360')
+                .in_('id', chunk)
+                .execute()
+            )
+            for row in (panos_r.data or []):
+                pano_rows.append(row)
+                try:
+                    pano_by_id[int(row.get('id'))] = row
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    annotated_panos = annotate_resource_rows_with_client_scope(sb, pano_rows, 'panorama')
+    pano_scope = {}
+    ws_ids_needed = set()
+    for row in annotated_panos:
+        try:
+            pano_scope[int(row.get('id'))] = {
+                'client_ids': [str(cid) for cid in (row.get('client_ids') or []) if cid],
+                'client_names': [str(name) for name in (row.get('client_names') or []) if name],
+            }
+        except Exception:
+            continue
+        wsid = row.get('workspace_id')
+        if wsid:
+            ws_ids_needed.add(str(wsid))
+
+    ws_names = {}
+    if ws_ids_needed:
+        ws_list = list(ws_ids_needed)
+        for i in range(0, len(ws_list), 100):
+            chunk = ws_list[i:i + 100]
+            try:
+                wr = sb.table('workspaces').select('id, name').in_('id', chunk).execute()
+                for row in (wr.data or []):
+                    ws_names[str(row.get('id'))] = str(row.get('name') or '')
+            except Exception:
+                pass
+
+    pano_map = {}
+    for pid, pano in pano_by_id.items():
+        scope = pano_scope.get(pid) or {}
+        wsid = pano.get('workspace_id')
+        pano_map[pid] = {
+            'panorama_name': pano.get('name') or ('Project #' + str(pid)),
+            'is_360': bool(pano.get('is_360')),
+            'workspace_id': str(wsid) if wsid else None,
+            'workspace_name': ws_names.get(str(wsid), '') if wsid else '',
+            'client_ids': scope.get('client_ids') or [],
+            'client_names': scope.get('client_names') or [],
+        }
+    return pano_map
+
+
+def _crm_plot_filter_options_fast(sb, pano_ids, pano_map, *, crm_cache_get, crm_cache_set, crm_cache_version, user_id, role):
+    """Same dropdown options as _crm_plot_filter_options, from a lighter query.
+
+    Fetches only the `panorama_id` column across the accessible plots (still
+    bounded to what the plots table already scans for the row-count query
+    below, just without the other 5 columns), so the Project/Sector dropdowns
+    keep reflecting only panoramas that actually have plots.
+    """
+    cache_key = (
+        'crm_plots_filter_options',
+        crm_cache_version.get('v', 1),
+        str(user_id),
+        str(role or ''),
+        tuple(pano_ids),
+    )
+    # Unlike the plots-data cache, staleness here is cosmetic (a dropdown
+    # option appears a few seconds late) rather than a correctness/security
+    # concern, so this key can safely outlive the 5s plots-data TTL.
+    cached = crm_cache_get(cache_key, ttl_seconds=30)
+    if cached is not None:
+        return cached
+
+    pano_ids_with_plots = set()
+    for chunk in _chunks(pano_ids):
+        try:
+            r = sb.table('plots').select('panorama_id').in_('panorama_id', chunk).execute()
+            for row in (r.data or []):
+                try:
+                    pano_ids_with_plots.add(int(row.get('panorama_id')))
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    rows = []
+    for pid in pano_ids_with_plots:
+        info = pano_map.get(pid)
+        if info:
+            rows.append({'panorama_id': pid, 'panorama_name': info['panorama_name'], 'workspace_id': info['workspace_id'], 'workspace_name': info['workspace_name']})
+    options = _crm_plot_filter_options(rows)
+    crm_cache_set(cache_key, options)
+    return options
+
+
+def _crm_load_plots_page(sb, eligible_pano_ids, pano_map, *, limit, offset):
+    """DB-paginated plot fetch for the fast path. Returns (page_rows, total)."""
+    query = (
+        sb.table('plots')
+        .select('id, panorama_id, name, area, price, status, description', count='exact')
+        .in_('panorama_id', eligible_pano_ids)
+        .order('id')
+        .range(offset, offset + limit - 1)
+    )
+    resp = query.execute()
+    rows = list(resp.data or [])
+    total = int(getattr(resp, 'count', None) or 0)
+    for plot in rows:
+        try:
+            pid = int(plot.get('panorama_id'))
+        except Exception:
+            pid = None
+        info = pano_map.get(pid) or {}
+        plot['panorama_name'] = info.get('panorama_name') or ('Project #' + str(pid or ''))
+        plot['panorama_id'] = pid
+        plot['is_360'] = bool(info.get('is_360'))
+        plot['workspace_id'] = info.get('workspace_id')
+        plot['workspace_name'] = info.get('workspace_name') or ''
+        plot['client_ids'] = info.get('client_ids') or []
+        plot['client_names'] = info.get('client_names') or []
+    return rows, total
+
+
 def register_crm_plot_routes(app, *, crm_panorama_ids, crm_cache_get, crm_cache_set, crm_cache_version, crm_cache_bump=None):
     def _broker_share_workspace_ids(sb, user_id, role):
         """Workspace ids an external broker can share, or None when unrestricted."""
@@ -489,6 +649,50 @@ def register_crm_plot_routes(app, *, crm_panorama_ids, crm_cache_get, crm_cache_
         workspace_id = str(request.args.get('workspace_id') or '').strip()
         panorama_id = str(request.args.get('panorama_id') or '').strip()
         status = _crm_plot_status_canonical(request.args.get('status') or '')
+        plot_sort_field, plot_sort_desc = crm_parse_sort_args(CRM_PLOT_SORT_FIELDS)
+
+        fast_path_ok = (
+            not q and not status and not plot_sort_field
+            and len(pano_ids) <= _CRM_PLOTS_FAST_PATH_MAX_PANOS
+        )
+        if fast_path_ok:
+            pano_map = _crm_build_panorama_map(sb, pano_ids)
+            # _crm_load_all_plots still includes a plot even when its panorama
+            # lookup failed (transient error), just with a generic label. The
+            # fast path below drops any panorama_id missing from pano_map
+            # entirely, so a partial/failed lookup here would silently hide
+            # plots instead of degrading gracefully - fall back instead.
+            fast_path_ok = len(pano_map) == len(pano_ids)
+        if fast_path_ok:
+            share_ws_ids = _broker_share_workspace_ids(sb, user_id, role)
+            # Broker scope narrows the accessible set first, same order as the
+            # slow path (crm.py: rows filtered by share_ws_ids before
+            # _crm_plot_filter_options runs) - so a restricted broker's
+            # dropdowns never name a project/sector they can't select.
+            broker_scoped_pano_ids = [
+                pid for pid in pano_ids
+                if pid in pano_map
+                and (share_ws_ids is None or pano_map[pid]['workspace_id'] in share_ws_ids)
+            ]
+            eligible_pano_ids = [
+                pid for pid in broker_scoped_pano_ids
+                if (not client_id or client_id in pano_map[pid]['client_ids'])
+                and (not workspace_id or pano_map[pid]['workspace_id'] == workspace_id)
+                and (not panorama_id or str(pid) == panorama_id)
+            ]
+            filter_options = _crm_plot_filter_options_fast(
+                sb, broker_scoped_pano_ids, pano_map,
+                crm_cache_get=crm_cache_get, crm_cache_set=crm_cache_set,
+                crm_cache_version=crm_cache_version, user_id=user_id, role=role,
+            )
+            if not eligible_pano_ids:
+                payload = crm_page_payload([], 0, page, limit)
+                payload['filter_options'] = filter_options
+                return jsonify(payload)
+            page_rows, total = _crm_load_plots_page(sb, eligible_pano_ids, pano_map, limit=limit, offset=offset)
+            payload = crm_page_payload(page_rows, total, page, limit)
+            payload['filter_options'] = filter_options
+            return jsonify(payload)
 
         all_plots = _crm_load_all_plots(
             sb,
@@ -528,7 +732,6 @@ def register_crm_plot_routes(app, *, crm_panorama_ids, crm_cache_get, crm_cache_
             rows = [p for p in rows if str(p.get('panorama_id') or '') == panorama_id]
         if status:
             rows = [p for p in rows if _crm_plot_status_canonical(p.get('status')) == status]
-        plot_sort_field, plot_sort_desc = crm_parse_sort_args(CRM_PLOT_SORT_FIELDS)
         if plot_sort_field:
             rows = crm_sort_rows(rows, plot_sort_field, plot_sort_desc)
         total = len(rows)
