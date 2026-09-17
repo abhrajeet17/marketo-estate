@@ -1,0 +1,12 @@
+{# Usage: {% include 'components/search_bar.html' with search_id='plot-search', placeholder='Search plots...' %} #}
+<div class="search-shell" {% if search_wrapper_id %}id="{{ search_wrapper_id }}"{% endif %}>
+    <input type="search"
+           class="search-plot-input"
+           id="{{ search_id|default('search-input') }}"
+           name="{{ name|default('q') }}"
+           placeholder="{{ placeholder|default('Search…') }}"
+           autocomplete="off"
+           aria-label="{{ aria_label|default('Search') }}">
+    {% block search_dropdown %}
+    {% endblock %}
+</div>

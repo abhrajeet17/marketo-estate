@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage access – MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/components/layout.css">
+    <script src="/static/js/supabase.min.js"></script>
+    <style>
+        .header {
+            padding: 2rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .nav a {
+            color: var(--color-text-dim);
+            text-decoration: none;
+            margin-left: 1rem;
+        }
+
+        .nav a:hover {
+            color: var(--color-accent);
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h1 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: var(--color-text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--color-text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        select.form-input,
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text);
+            font-family: var(--font-body);
+        }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-danger);
+        }
+
+        .list {
+            list-style: none;
+        }
+
+        .list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .list li:last-child {
+            border-bottom: none;
+        }
+
+        .msg {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .msg.error {
+            color: var(--color-danger);
+        }
+
+        .msg.success {
+            color: #22c55e;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="/dashboard">Plotted Development</a>
+        </nav>
+    </header>
+    <main class="container">
+        <div class="card">
+            <h1>Manage access</h1>
+            <p>Grant client (edit plots), broker (CRM + customer sharing), or viewer (view only) access to users for this panorama.</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">User</label>
+                    <select id="user-select" class="form-input">
+                        <option value="">Select user…</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Access</label>
+                    <select id="access-type" class="form-input">
+                        <option value="client">Client (can edit plots)</option>
+                        <option value="broker">Broker (CRM + customer sharing)</option>
+                        <option value="viewer">Viewer (view only)</option>
+                    </select>
+                </div>
+                <button type="button" class="btn" id="btn-grant">Grant</button>
+            </div>
+            <div id="grant-error" class="msg error hidden"></div>
+            <div id="grant-success" class="msg success hidden"></div>
+        </div>
+        <div class="card">
+            <h2 style="font-size:1.1rem; margin-bottom:0.75rem;">Current access</h2>
+            <ul class="list" id="access-list">
+                <li class="text-dim">Loading…</li>
+            </ul>
+        </div>
+    </main>
+    <script>
+        (function () {
+            var panoramaId = {{ panorama_id| tojson
+        }};
+        var supabaseUrl = {{ (supabase_url or '')| tojson }};
+        var supabaseAnonKey = {{ (supabase_anon_key or '')| tojson }};
+        if (!supabaseUrl || !supabaseAnonKey || !window.supabase) {
+            document.getElementById('access-list').innerHTML = '<li>Auth not configured</li>';
+            return;
+        }
+        var supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+        window._supabase = supabase;
+        try { if (window.applyOrgTheme) window.applyOrgTheme(); } catch (e) { }
+
+        function getToken() {
+            return new Promise(function (resolve) {
+                supabase.auth.getSession().then(function (r) {
+                    resolve(r.data.session ? r.data.session.access_token : null);
+                });
+            });
+        }
+
+        function authHeaders() {
+            return getToken().then(function (t) {
+                var h = { 'Content-Type': 'application/json' };
+                if (t) h['Authorization'] = 'Bearer ' + t;
+                return h;
+            });
+        }
+
+        function loadProfiles() {
+            return authHeaders().then(function (h) {
+                return fetch('/api/profiles', { headers: h });
+            }).then(function (r) {
+                if (!r.ok) return [];
+                return r.json();
+            });
+        }
+
+        function loadAccess() {
+            return authHeaders().then(function (h) {
+                return fetch('/api/panoramas/' + panoramaId + '/access', { headers: h });
+            }).then(function (r) {
+                if (!r.ok) return [];
+                return r.json();
+            });
+        }
+
+        function grant(userId, accessType) {
+            return authHeaders().then(function (h) {
+                return fetch('/api/panoramas/' + panoramaId + '/access', {
+                    method: 'POST',
+                    headers: h,
+                    body: JSON.stringify({ user_id: userId, access_type: accessType })
+                });
+            });
+        }
+
+        function revoke(userId) {
+            return authHeaders().then(function (h) {
+                return fetch('/api/panoramas/' + panoramaId + '/access/' + encodeURIComponent(userId), {
+                    method: 'DELETE',
+                    headers: h
+                });
+            });
+        }
+
+        var userSelect = document.getElementById('user-select');
+        var accessType = document.getElementById('access-type');
+        var btnGrant = document.getElementById('btn-grant');
+        var grantError = document.getElementById('grant-error');
+        var grantSuccess = document.getElementById('grant-success');
+        var accessList = document.getElementById('access-list');
+
+        var profiles = [];
+        var access = [];
+
+        function escapeHtml(s) {
+            if (!s) return '';
+            var div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+        function profileLabel(p) {
+            if (!p) return '';
+            var name = (p.display_name || '').trim();
+            var email = (p.email || '').trim();
+            if (name && email) return name + ' (' + email + ')';
+            if (name) return name;
+            if (email) return email;
+            return p.user_id || '';
+        }
+
+        function renderUserSelect() {
+            var currentUserIds = access.map(function (a) { return a.user_id; });
+            userSelect.innerHTML = '<option value="">Select user…</option>';
+            profiles.forEach(function (p) {
+                if (currentUserIds.indexOf(p.user_id) !== -1) return;
+                var opt = document.createElement('option');
+                opt.value = p.user_id;
+                opt.textContent = profileLabel(p).substring(0, 60);
+                userSelect.appendChild(opt);
+            });
+        }
+
+        function renderAccessList() {
+            if (access.length === 0) {
+                accessList.innerHTML = '<li class="text-dim">No shared access yet. Grant access above.</li>';
+                return;
+            }
+            accessList.innerHTML = access.map(function (a) {
+                var p = profiles.find(function (x) { return x.user_id === a.user_id; });
+                var label = escapeHtml(profileLabel(p) || a.user_id);
+                var accessLabel = a.access_type === 'client' ? 'Client' : (a.access_type === 'broker' ? 'Broker' : 'Viewer');
+                return '<li><span>' + accessLabel + ' – ' + label + '</span><button type="button" class="btn btn-danger" data-user-id="' + escapeHtml(a.user_id) + '">Revoke</button></li>';
+            }).join('');
+            accessList.querySelectorAll('.btn-danger').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var uid = btn.getAttribute('data-user-id');
+                    revoke(uid).then(function (r) {
+                        if (r.ok) { loadAccess().then(function (a) { access = a; renderAccessList(); renderUserSelect(); }); }
+                    });
+                });
+            });
+        }
+
+        function showGrantError(msg) {
+            grantError.textContent = msg || '';
+            grantError.classList.toggle('hidden', !msg);
+            grantSuccess.classList.add('hidden');
+        }
+        function showGrantSuccess(msg) {
+            grantSuccess.textContent = msg || '';
+            grantSuccess.classList.toggle('hidden', !msg);
+            grantError.classList.add('hidden');
+        }
+
+        btnGrant.addEventListener('click', function () {
+            var userId = userSelect.value;
+            if (!userId) { showGrantError('Select a user'); return; }
+            showGrantError('');
+            btnGrant.disabled = true;
+            grant(userId, accessType.value).then(function (r) {
+                if (r.ok) {
+                    showGrantSuccess('Access granted.');
+                    loadAccess().then(function (a) { access = a; renderAccessList(); renderUserSelect(); });
+                    userSelect.value = '';
+                } else {
+                    return r.json().then(function (data) { showGrantError(data.error || 'Failed'); });
+                }
+            }).catch(function () { showGrantError('Request failed'); }).finally(function () {
+                btnGrant.disabled = false;
+            });
+        });
+
+        Promise.all([loadProfiles(), loadAccess()]).then(function (res) {
+            profiles = res[0] || [];
+            access = res[1] || [];
+            renderUserSelect();
+            renderAccessList();
+        });
+        }) ();
+    </script>
+</body>
+
+</html>

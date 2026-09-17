@@ -1,0 +1,882 @@
+{% extends 'base.html' %}
+{% block title %}Day Night Mode – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<link rel="stylesheet" href="/static/css/daynight.css">
+{% endblock %}
+{% block content %}
+{% set embedded = request.args.get('embedded') in ['1', 'true', 'yes'] %}
+<div class="daynight-page{% if embedded %} daynight-page--embedded{% endif %}" id="daynight-page">
+    {% set active_page = 'daynight' %}
+    {% if not embedded %}
+        {% include 'components/sidebar.html' %}
+    {% endif %}
+
+    <div class="daynight-main{% if embedded %} daynight-main--embedded{% endif %}">
+        <div class="daynight-header">
+            <h1 class="daynight-title">Day Night Projects</h1>
+            <button class="btn btn-primary" id="new-dn-btn">New Day Night Project</button>
+        </div>
+
+        <div id="dn-loading" style="text-align:center; padding:3rem; color:var(--color-muted);">Loading...</div>
+
+        <div class="daynight-grid" id="dn-grid" style="display:none;"></div>
+
+        <div class="dn-empty" id="dn-empty" style="display:none;">
+            <div class="dn-empty-icon">&#9788;</div>
+            <div>No Day Night projects yet.</div>
+            <div style="margin-top:0.5rem; font-size:0.85rem;">Click "New Day Night Project" to get started.</div>
+        </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal-backdrop" id="dn-create-modal">
+        <div class="modal" style="max-width:560px; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title" id="dn-modal-title">New Day Night Project</div>
+                <button type="button" class="modal-close" id="dn-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Project Name</label>
+                <input type="text" class="form-input" id="dn-name" maxlength="200" placeholder="e.g., Tower View Day to Night">
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Project</label>
+                <select class="form-input" id="dn-workspace">
+                    <option value="">Loading projects...</option>
+                </select>
+            </div>
+            <label class="form-label">Media Type</label>
+            <div class="dn-type-toggle">
+                <button type="button" class="dn-type-btn active" data-type="image">Images</button>
+                <button type="button" class="dn-type-btn" data-type="video">Video</button>
+            </div>
+
+            <!-- Image upload section -->
+            <div id="dn-image-section">
+                <div class="dn-upload-zone" id="dn-image-zone">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4; margin-bottom:0.4rem;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <div style="font-size:0.88rem; font-weight:500; color:#162338;">Drop images here or click to browse</div>
+                    <div class="dn-upload-hint">JPG, PNG, WebP &middot; at least 2 images required</div>
+                    <input type="file" id="dn-image-input" accept="image/*" multiple>
+                </div>
+                <div class="dn-image-list" id="dn-image-list"></div>
+            </div>
+
+            <!-- Video upload section -->
+            <div id="dn-video-section" style="display:none;">
+                <div class="dn-upload-zone" id="dn-video-zone">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4; margin-bottom:0.4rem;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                    <div style="font-size:0.88rem; font-weight:500; color:#162338;">Drop video here or click to browse</div>
+                    <div class="dn-upload-hint" id="dn-video-hint">MP4, WebM, MOV &middot; up to 200MB</div>
+                    <input type="file" id="dn-video-input" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov">
+                </div>
+                <div id="dn-video-name" style="font-size:0.85rem; color:var(--color-muted); margin-bottom:0.75rem;"></div>
+            </div>
+
+            <div class="dn-progress" id="dn-progress" style="display:none;">
+                <div class="dn-progress-bar"><div class="dn-progress-fill" id="dn-progress-fill"></div></div>
+                <div class="dn-progress-text" id="dn-progress-text">Uploading...</div>
+            </div>
+
+            <div id="dn-create-error" class="msg error" style="display:none; margin-bottom:1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="dn-cancel">Cancel</button>
+                <button class="btn btn-primary" id="dn-submit">Create & Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-backdrop" id="dn-delete-modal">
+        <div class="modal">
+            <div class="modal-title">Delete Day Night Project?</div>
+            <div class="modal-text">This will permanently delete this project and its media. This action cannot be undone.</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="dn-cancel-delete">Cancel</button>
+                <button class="btn btn-danger" id="dn-confirm-delete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dn-toast-container" id="dn-toast-container"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+    window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+    window.__DAYNIGHT_MAX_VIDEO_BYTES__ = {{ (max_daynight_video_bytes or 0)|tojson }};
+    window.__APP_MAX_UPLOAD_BYTES__ = {{ (max_upload_bytes or 0)|tojson }};
+</script>
+<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
+<script>
+(function() {
+    var DAYNIGHT_MAX_VIDEO_BYTES = Number(window.__DAYNIGHT_MAX_VIDEO_BYTES__ || 0);
+    var APP_MAX_UPLOAD_BYTES = Number(window.__APP_MAX_UPLOAD_BYTES__ || 0);
+    var VIDEO_EXT_TO_MIME = {
+        mp4: 'video/mp4',
+        webm: 'video/webm',
+        mov: 'video/quicktime'
+    };
+    var VIDEO_MIME_TO_EXT = {
+        'video/mp4': 'mp4',
+        'video/webm': 'webm',
+        'video/quicktime': 'mov',
+        'video/x-m4v': 'mp4'
+    };
+
+    var projects = [];
+    var workspaces = [];
+    var selectedMediaType = 'image';
+    var imageFiles = [];
+    var videoFile = null;
+    var deleteTargetId = null;
+    var uploadTargetProjectId = null;
+    var activeProjectFilter = '';
+    var activeSearchText = '';
+
+    (function readEmbeddedFilters() {
+        var qs = new URLSearchParams(window.location.search || '');
+        activeProjectFilter = (qs.get('workspace_id') || '').trim();
+        activeSearchText = (qs.get('q') || '').trim().toLowerCase();
+    })();
+
+    function authHeaders() {
+        return { 'Authorization': 'Bearer ' + window._accessToken };
+    }
+
+    async function apiJson(url, opts, retryOpts) {
+        if (window.pmApi && typeof window.pmApi.fetchJsonWithRetry === 'function') {
+            return window.pmApi.fetchJsonWithRetry(url, opts, Object.assign({
+                retries: 2,
+                baseDelayMs: 220,
+                waitAttempts: 8,
+                waitDelayMs: 140
+            }, retryOpts || {}));
+        }
+        var response = await fetch(url, opts || {});
+        return parseResponse(response, 'Request failed');
+    }
+
+    function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    function escAttr(s) {
+        return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function safeJsonParse(text) {
+        if (!text) return null;
+        try { return JSON.parse(text); } catch (e) { return null; }
+    }
+
+    function formatBytes(bytes) {
+        var n = Number(bytes || 0);
+        if (!n) return '0 B';
+        var units = ['B', 'KB', 'MB', 'GB'];
+        var idx = 0;
+        while (n >= 1024 && idx < units.length - 1) {
+            n /= 1024;
+            idx += 1;
+        }
+        return (idx === 0 ? String(Math.round(n)) : n.toFixed(n >= 10 ? 0 : 1)) + ' ' + units[idx];
+    }
+
+    function toast(msg) {
+        var c = document.getElementById('dn-toast-container');
+        var el = document.createElement('div');
+        el.className = 'dn-toast';
+        el.textContent = msg;
+        c.appendChild(el);
+        setTimeout(function() { el.remove(); }, 3000);
+    }
+
+    function showError(msg) {
+        var el = document.getElementById('dn-create-error');
+        el.textContent = msg || '';
+        el.style.display = msg ? 'block' : 'none';
+    }
+
+    function setProgress(percent, text) {
+        var progress = document.getElementById('dn-progress');
+        var fill = document.getElementById('dn-progress-fill');
+        var label = document.getElementById('dn-progress-text');
+        progress.style.display = '';
+        fill.style.width = Math.max(0, Math.min(100, percent || 0)) + '%';
+        if (text) label.textContent = text;
+    }
+
+    function hideProgress() {
+        document.getElementById('dn-progress').style.display = 'none';
+        document.getElementById('dn-progress-fill').style.width = '0%';
+        document.getElementById('dn-progress-text').textContent = 'Uploading...';
+    }
+
+    function setVideoHint() {
+        var hint = document.getElementById('dn-video-hint');
+        if (!hint) return;
+        var text = 'MP4, WebM, MOV';
+        if (DAYNIGHT_MAX_VIDEO_BYTES > 0) {
+            text += ' - up to ' + formatBytes(DAYNIGHT_MAX_VIDEO_BYTES);
+        }
+        if (APP_MAX_UPLOAD_BYTES > 0 && APP_MAX_UPLOAD_BYTES < DAYNIGHT_MAX_VIDEO_BYTES) {
+            text += ' (server limit ' + formatBytes(APP_MAX_UPLOAD_BYTES) + ')';
+        }
+        hint.textContent = text;
+    }
+
+    function parseResponse(response, fallbackMessage) {
+        return response.text().then(function(text) {
+            var payload = safeJsonParse(text) || {};
+            if (!response.ok) {
+                throw new Error(payload.error || fallbackMessage || ('Request failed (' + response.status + ')'));
+            }
+            return payload;
+        });
+    }
+
+    function buildXhrError(status, responseText, fallbackMessage) {
+        var payload = safeJsonParse(responseText) || {};
+        var message = payload.error || fallbackMessage || ('Upload failed (' + status + ')');
+        var err = new Error(message);
+        err.status = status;
+        return err;
+    }
+
+    function xhrFormUpload(url, formData, baseProgress, rangeProgress, progressLabel, timeoutMs) {
+        return new Promise(function(resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', url);
+            xhr.timeout = timeoutMs || (15 * 60 * 1000);
+            var hdrs = authHeaders();
+            for (var h in hdrs) xhr.setRequestHeader(h, hdrs[h]);
+            xhr.upload.addEventListener('progress', function(e) {
+                if (!e.lengthComputable) return;
+                var ratio = e.total ? (e.loaded / e.total) : 0;
+                var pct = baseProgress + (ratio * rangeProgress);
+                var text = progressLabel || 'Uploading...';
+                if (ratio > 0) text += ' ' + Math.round(ratio * 100) + '%';
+                setProgress(pct, text);
+            });
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(safeJsonParse(xhr.responseText) || {});
+                    return;
+                }
+                reject(buildXhrError(xhr.status, xhr.responseText, 'Upload failed'));
+            };
+            xhr.onerror = function() {
+                reject(new Error('Network error while uploading. Please try again.'));
+            };
+            xhr.ontimeout = function() {
+                reject(new Error('Upload timed out. Please try again.'));
+            };
+            xhr.send(formData);
+        });
+    }
+
+    function putFileToSignedUrl(uploadUrl, file, contentType, baseProgress, rangeProgress) {
+        return new Promise(function(resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('PUT', uploadUrl);
+            xhr.timeout = 15 * 60 * 1000;
+            if (contentType) xhr.setRequestHeader('Content-Type', contentType);
+            xhr.upload.addEventListener('progress', function(e) {
+                if (!e.lengthComputable) return;
+                var ratio = e.total ? (e.loaded / e.total) : 0;
+                var pct = baseProgress + (ratio * rangeProgress);
+                setProgress(pct, 'Uploading video... ' + Math.round(ratio * 100) + '%');
+            });
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve();
+                    return;
+                }
+                reject(new Error('Direct upload failed (' + xhr.status + ')'));
+            };
+            xhr.onerror = function() {
+                reject(new Error('Direct upload failed (network error).'));
+            };
+            xhr.ontimeout = function() {
+                reject(new Error('Direct upload timed out. Please try again.'));
+            };
+            xhr.send(file);
+        });
+    }
+
+    function getProjectById(projectId) {
+        var target = String(projectId || '');
+        for (var i = 0; i < projects.length; i++) {
+            if (String(projects[i].id || '') === target) return projects[i];
+        }
+        return null;
+    }
+
+    function workspaceName(workspaceId) {
+        if (!workspaceId) return '';
+        for (var i = 0; i < workspaces.length; i++) {
+            if (String(workspaces[i].id || '') === String(workspaceId)) return String(workspaces[i].name || '');
+        }
+        return '';
+    }
+
+    function projectChipHtml(workspaceId) {
+        var name = workspaceName(workspaceId);
+        if (!workspaceId || !name) return '<span class="dn-project-chip dn-project-chip--muted">Unlinked</span>';
+        return '<span class="dn-project-chip">' + escHtml(name) + '</span>';
+    }
+
+    function detectVideoExt(file) {
+        var name = String((file && file.name) || '').trim().toLowerCase();
+        var ext = name.indexOf('.') >= 0 ? name.split('.').pop() : '';
+        if (VIDEO_EXT_TO_MIME[ext]) return ext;
+        var mime = String((file && file.type) || '').split(';', 1)[0].toLowerCase().trim();
+        return VIDEO_MIME_TO_EXT[mime] || '';
+    }
+
+    function setSelectedMediaType(type, locked) {
+        selectedMediaType = type === 'video' ? 'video' : 'image';
+        document.querySelectorAll('.dn-type-btn').forEach(function(btn) {
+            var isActive = btn.dataset.type === selectedMediaType;
+            btn.classList.toggle('active', isActive);
+            btn.disabled = !!locked;
+        });
+        document.getElementById('dn-image-section').style.display = selectedMediaType === 'image' ? '' : 'none';
+        document.getElementById('dn-video-section').style.display = selectedMediaType === 'video' ? '' : 'none';
+    }
+
+    function setVideoFile(file) {
+        videoFile = file || null;
+        var label = document.getElementById('dn-video-name');
+        label.textContent = videoFile ? (videoFile.name + ' (' + formatBytes(videoFile.size) + ')') : '';
+    }
+
+    function resetMediaSelection() {
+        imageFiles = [];
+        renderImageList();
+        setVideoFile(null);
+        document.getElementById('dn-image-input').value = '';
+        document.getElementById('dn-video-input').value = '';
+    }
+
+    function resetModalState() {
+        showError('');
+        resetMediaSelection();
+        hideProgress();
+        document.getElementById('dn-submit').disabled = false;
+    }
+
+    function openCreateModal() {
+        uploadTargetProjectId = null;
+        resetModalState();
+        document.getElementById('dn-modal-title').textContent = 'New Day Night Project';
+        document.getElementById('dn-submit').textContent = 'Create & Upload';
+        document.getElementById('dn-name').value = '';
+        document.getElementById('dn-name').disabled = false;
+        document.getElementById('dn-workspace').disabled = false;
+        if (activeProjectFilter) document.getElementById('dn-workspace').value = activeProjectFilter;
+        setSelectedMediaType('image', false);
+        document.getElementById('dn-create-modal').classList.add('visible');
+    }
+
+    function openUploadModal(projectId) {
+        var project = getProjectById(projectId);
+        if (!project) return;
+        uploadTargetProjectId = String(project.id || '');
+        resetModalState();
+        document.getElementById('dn-modal-title').textContent = (project.video_filename || project.stitched_filename) ? 'Replace Media' : 'Upload Media';
+        document.getElementById('dn-submit').textContent = (project.video_filename || project.stitched_filename) ? 'Replace Media' : 'Upload Media';
+        document.getElementById('dn-name').value = String(project.name || '');
+        document.getElementById('dn-name').disabled = true;
+        document.getElementById('dn-workspace').value = String(project.workspace_id || '');
+        document.getElementById('dn-workspace').disabled = true;
+        setSelectedMediaType(project.media_type === 'video' ? 'video' : 'image', true);
+        document.getElementById('dn-create-modal').classList.add('visible');
+    }
+
+    function closeCreateModal() {
+        uploadTargetProjectId = null;
+        document.getElementById('dn-name').disabled = false;
+        document.getElementById('dn-workspace').disabled = false;
+        setSelectedMediaType(selectedMediaType, false);
+        document.getElementById('dn-create-modal').classList.remove('visible');
+    }
+
+    function validateVideoSelection(file) {
+        if (!file) return 'Select a video file';
+        var ext = detectVideoExt(file);
+        if (!ext) return 'Invalid video type. Allowed: mov, mp4, webm';
+        if (DAYNIGHT_MAX_VIDEO_BYTES > 0 && file.size > DAYNIGHT_MAX_VIDEO_BYTES) {
+            return 'Video too large (max ' + formatBytes(DAYNIGHT_MAX_VIDEO_BYTES) + ')';
+        }
+        return '';
+    }
+
+    function addImageFiles(fileList) {
+        for (var i = 0; i < fileList.length; i++) {
+            var file = fileList[i];
+            if (file && file.type && file.type.indexOf('image/') === 0) {
+                imageFiles.push(file);
+            }
+        }
+        renderImageList();
+    }
+
+    function renderImageList() {
+        var list = document.getElementById('dn-image-list');
+        list.innerHTML = '';
+        imageFiles.forEach(function(file, idx) {
+            var thumb = document.createElement('div');
+            thumb.className = 'dn-image-thumb';
+            thumb.draggable = true;
+            thumb.dataset.idx = idx;
+
+            var img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.onload = function() {
+                try { URL.revokeObjectURL(img.src); } catch (e) {}
+            };
+
+            var num = document.createElement('span');
+            num.className = 'dn-thumb-num';
+            num.textContent = idx + 1;
+
+            var removeBtn = document.createElement('button');
+            removeBtn.className = 'dn-thumb-remove';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                imageFiles.splice(idx, 1);
+                renderImageList();
+            });
+
+            thumb.appendChild(img);
+            thumb.appendChild(num);
+            thumb.appendChild(removeBtn);
+
+            thumb.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text/plain', String(idx));
+                thumb.classList.add('dragging');
+            });
+            thumb.addEventListener('dragend', function() { thumb.classList.remove('dragging'); });
+            thumb.addEventListener('dragover', function(e) { e.preventDefault(); thumb.classList.add('drag-over'); });
+            thumb.addEventListener('dragleave', function() { thumb.classList.remove('drag-over'); });
+            thumb.addEventListener('drop', function(e) {
+                e.preventDefault();
+                thumb.classList.remove('drag-over');
+                var fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                var toIdx = idx;
+                if (fromIdx === toIdx || isNaN(fromIdx)) return;
+                var moved = imageFiles.splice(fromIdx, 1)[0];
+                imageFiles.splice(toIdx, 0, moved);
+                renderImageList();
+            });
+
+            list.appendChild(thumb);
+        });
+    }
+
+    async function loadProjects() {
+        try {
+            var data = await apiJson('/api/workspaces', { headers: authHeaders() });
+            workspaces = Array.isArray(data) ? data : [];
+            var sel = document.getElementById('dn-workspace');
+            if (!sel) return;
+            if (!workspaces.length) {
+                sel.innerHTML = '<option value="">No projects found</option>';
+                if (projects.length) renderProjects();
+                return;
+            }
+            sel.innerHTML = workspaces.map(function(w) {
+                return '<option value="' + escAttr(String(w.id || '')) + '">' + escHtml(w.name || 'Project') + '</option>';
+            }).join('');
+            if (activeProjectFilter) {
+                sel.value = activeProjectFilter;
+            }
+            if (projects.length) renderProjects();
+        } catch (err) {
+            var sel = document.getElementById('dn-workspace');
+            if (sel) sel.innerHTML = '<option value="">Failed to load projects</option>';
+            if (projects.length) renderProjects();
+        }
+    }
+
+    async function loadProjects() {
+        var loading = document.getElementById('dn-loading');
+        if (loading) {
+            loading.style.display = '';
+            loading.textContent = 'Loading...';
+        }
+        try {
+            var query = activeProjectFilter ? ('?workspace_id=' + encodeURIComponent(activeProjectFilter)) : '';
+            var data = await apiJson('/api/daynight' + query, { headers: authHeaders() });
+            projects = Array.isArray(data) ? data : [];
+            if (activeSearchText) {
+                projects = projects.filter(function(p) {
+                    return String(p && p.name ? p.name : '').toLowerCase().indexOf(activeSearchText) >= 0;
+                });
+            }
+            renderProjects();
+        } catch (err) {
+            projects = [];
+            renderProjects();
+            if (loading) {
+                loading.style.display = '';
+                loading.textContent = (err && err.message) ? ('Failed to load projects: ' + err.message) : 'Failed to load projects. Please retry.';
+            }
+        }
+    }
+
+    function renderProjects() {
+        var grid = document.getElementById('dn-grid');
+        var empty = document.getElementById('dn-empty');
+        var loading = document.getElementById('dn-loading');
+        loading.style.display = 'none';
+        if (!projects.length) {
+            grid.style.display = 'none';
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+        grid.style.display = '';
+        grid.innerHTML = '';
+
+        projects.forEach(function(p) {
+            var card = document.createElement('div');
+            card.className = 'dn-card';
+            var isVideo = p.media_type === 'video';
+            var hasMedia = isVideo ? !!p.video_filename : !!p.stitched_filename;
+            var previewHtml = '<div class="dn-placeholder">' + (hasMedia ? (isVideo ? '&#127909;' : '&#127749;') : '&#8987;') + '</div>';
+            if (hasMedia && p.media_url) {
+                previewHtml = isVideo
+                    ? '<video class="dn-card-video" src="' + escAttr(p.media_url) + '" muted preload="metadata"></video>'
+                    : '<img src="' + escAttr(p.media_url) + '" alt="' + escAttr(p.name) + '">';
+            }
+            var date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
+            var projectChip = projectChipHtml(p.workspace_id);
+            var uploadLabel = hasMedia ? 'Replace Media' : 'Upload Media';
+            var uploadBtnClass = hasMedia ? 'btn btn-secondary' : 'btn btn-primary';
+            card.innerHTML =
+                '<div class="dn-card-preview">' + previewHtml + '</div>' +
+                '<div class="dn-card-body">' +
+                    '<div class="dn-card-name">' + escHtml(p.name) + '</div>' +
+                    '<div class="dn-card-meta">' +
+                        '<span class="dn-badge' + (isVideo ? ' dn-badge-video' : '') + '">' + (isVideo ? 'Video' : 'Images') + '</span>' +
+                        '<span class="dn-card-date">' + date + '</span>' +
+                    '</div>' +
+                    '<div class="dn-project-row"><span class="dn-project-label">Project</span>' + projectChip + '</div>' +
+                    (hasMedia
+                        ? '<div class="dn-share-row"><input type="text" readonly value="' + escAttr(p.share_url || '') + '"><button class="btn btn-secondary dn-copy-btn" data-url="' + escAttr(p.share_url || '') + '">Copy</button></div>'
+                        : '<div style="font-size:0.8rem;color:var(--color-muted);margin-bottom:0.5rem;">Media not uploaded yet. You can upload or retry anytime.</div>') +
+                    '<div class="dn-card-actions" style="margin-top:0.75rem;">' +
+                        (hasMedia ? '<a class="btn btn-secondary" href="' + escAttr(p.preview_url || p.share_url || '') + '" target="_blank">Preview</a>' : '') +
+                        '<button class="' + uploadBtnClass + ' dn-upload-btn" data-id="' + escAttr(String(p.id || '')) + '">' + uploadLabel + '</button>' +
+                        '<button class="btn btn-secondary dn-rename-btn" data-id="' + escAttr(String(p.id || '')) + '" data-name="' + escAttr(String(p.name || '')) + '">Rename</button>' +
+                        '<button class="btn btn-danger dn-delete-btn" data-id="' + escAttr(String(p.id || '')) + '">Delete</button>' +
+                    '</div>' +
+                '</div>';
+            grid.appendChild(card);
+        });
+
+        grid.querySelectorAll('.dn-copy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                navigator.clipboard.writeText(btn.dataset.url).then(function() {
+                    toast('Link copied!');
+                });
+            });
+        });
+
+        grid.querySelectorAll('.dn-upload-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                openUploadModal(btn.dataset.id);
+            });
+        });
+
+        grid.querySelectorAll('.dn-rename-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var id = String(btn.dataset.id || '').trim();
+                var current = String(btn.dataset.name || '').trim();
+                if (!id) return;
+                var nextName = window.prompt('Enter new project name', current);
+                if (nextName === null) return;
+                nextName = nextName.trim();
+                if (!nextName || nextName === current) return;
+                fetch('/api/daynight/' + id, {
+                    method: 'PATCH',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                    body: JSON.stringify({ name: nextName })
+                })
+                .then(function(r) { return parseResponse(r, 'Failed to rename project'); })
+                .then(function() {
+                    toast('Project renamed');
+                    loadProjects();
+                })
+                .catch(function(err) {
+                    toast(err && err.message ? err.message : 'Rename failed');
+                });
+            });
+        });
+
+        grid.querySelectorAll('.dn-delete-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                deleteTargetId = btn.dataset.id;
+                document.getElementById('dn-delete-modal').classList.add('visible');
+            });
+        });
+    }
+
+    function uploadImages(projectId, baseProgress) {
+        var formData = new FormData();
+        imageFiles.forEach(function(file) { formData.append('images', file); });
+        return xhrFormUpload('/api/daynight/' + projectId + '/upload-images', formData, baseProgress, 60, 'Uploading images...', 15 * 60 * 1000);
+    }
+
+    function requestVideoUploadUrl(projectId) {
+        return fetch('/api/daynight/' + projectId + '/upload-video-url', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({
+                original_filename: videoFile ? videoFile.name : '',
+                size_bytes: videoFile ? videoFile.size : 0,
+                content_type: videoFile ? videoFile.type : ''
+            })
+        }).then(function(response) {
+            return response.text().then(function(text) {
+                var payload = safeJsonParse(text) || {};
+                if (!response.ok) {
+                    var err = new Error(payload.error || ('Upload setup failed (' + response.status + ')'));
+                    err.status = response.status;
+                    throw err;
+                }
+                return payload;
+            });
+        });
+    }
+
+    function uploadVideoViaApp(projectId, baseProgress) {
+        var formData = new FormData();
+        formData.append('video', videoFile);
+        return xhrFormUpload('/api/daynight/' + projectId + '/upload-video', formData, baseProgress, 60, 'Uploading video...', 15 * 60 * 1000);
+    }
+
+    function uploadVideo(projectId, baseProgress) {
+        return requestVideoUploadUrl(projectId)
+            .then(function(info) {
+                if (!info || !info.upload_url || !info.upload_token || !info.filename) {
+                    throw new Error('Direct upload unavailable.');
+                }
+                var maxBytes = Number(info.max_bytes || 0);
+                if (maxBytes > 0 && videoFile && videoFile.size > maxBytes) {
+                    throw new Error('Video too large (max ' + formatBytes(maxBytes) + ')');
+                }
+                return putFileToSignedUrl(info.upload_url, videoFile, info.content_type || videoFile.type || 'video/mp4', baseProgress, 55)
+                    .then(function() {
+                        setProgress(baseProgress + 58, 'Finalizing upload...');
+                        var finalizeData = new FormData();
+                        finalizeData.append('filename', info.filename);
+                        finalizeData.append('upload_token', info.upload_token);
+                        finalizeData.append('original_filename', videoFile ? videoFile.name : '');
+                        return xhrFormUpload('/api/daynight/' + projectId + '/upload-video', finalizeData, baseProgress + 60, 25, 'Saving project...', 5 * 60 * 1000);
+                    });
+            })
+            .catch(function(err) {
+                if (err && (err.status === 400 || err.status === 403 || err.status === 413 || err.status === 503)) {
+                    throw err;
+                }
+                return uploadVideoViaApp(projectId, baseProgress);
+            });
+    }
+
+    function uploadProjectMedia(projectId, baseProgress) {
+        if (selectedMediaType === 'image') {
+            return uploadImages(projectId, baseProgress);
+        }
+        return uploadVideo(projectId, baseProgress);
+    }
+
+    function createProject(name, workspaceId) {
+        return fetch('/api/daynight', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({ name: name, media_type: selectedMediaType, workspace_id: workspaceId })
+        }).then(function(response) {
+            return parseResponse(response, 'Create failed');
+        });
+    }
+
+    function validateBeforeSubmit() {
+        var name = document.getElementById('dn-name').value.trim();
+        var workspaceId = (document.getElementById('dn-workspace').value || '').trim();
+        var isExistingUpload = !!uploadTargetProjectId;
+
+        if (!isExistingUpload) {
+            if (!name) return 'Enter a project name';
+            if (!workspaceId) return 'Please select a project';
+        }
+        if (selectedMediaType === 'image' && imageFiles.length < 2) return 'Select at least 2 images';
+        if (selectedMediaType === 'video') {
+            return validateVideoSelection(videoFile);
+        }
+        return '';
+    }
+
+    var imageZone = document.getElementById('dn-image-zone');
+    var imageInput = document.getElementById('dn-image-input');
+    imageZone.addEventListener('click', function() { imageInput.click(); });
+    imageZone.addEventListener('dragover', function(e) { e.preventDefault(); imageZone.classList.add('dragover'); });
+    imageZone.addEventListener('dragleave', function() { imageZone.classList.remove('dragover'); });
+    imageZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        imageZone.classList.remove('dragover');
+        addImageFiles(e.dataTransfer.files || []);
+    });
+    imageInput.addEventListener('change', function() {
+        addImageFiles(imageInput.files || []);
+        imageInput.value = '';
+    });
+
+    var videoZone = document.getElementById('dn-video-zone');
+    var videoInput = document.getElementById('dn-video-input');
+    videoZone.addEventListener('click', function() { videoInput.click(); });
+    videoZone.addEventListener('dragover', function(e) { e.preventDefault(); videoZone.classList.add('dragover'); });
+    videoZone.addEventListener('dragleave', function() { videoZone.classList.remove('dragover'); });
+    videoZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        videoZone.classList.remove('dragover');
+        var file = (e.dataTransfer.files && e.dataTransfer.files.length) ? e.dataTransfer.files[0] : null;
+        var err = validateVideoSelection(file);
+        if (err) {
+            setVideoFile(null);
+            showError(err);
+            return;
+        }
+        showError('');
+        setVideoFile(file);
+    });
+    videoInput.addEventListener('change', function() {
+        var file = (videoInput.files && videoInput.files.length) ? videoInput.files[0] : null;
+        var err = validateVideoSelection(file);
+        if (err) {
+            setVideoFile(null);
+            showError(err);
+            videoInput.value = '';
+            return;
+        }
+        showError('');
+        setVideoFile(file);
+    });
+
+    document.querySelectorAll('.dn-type-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setSelectedMediaType(btn.dataset.type, false);
+        });
+    });
+
+    document.getElementById('new-dn-btn').addEventListener('click', openCreateModal);
+    document.getElementById('dn-modal-close').addEventListener('click', closeCreateModal);
+    document.getElementById('dn-cancel').addEventListener('click', closeCreateModal);
+    document.getElementById('dn-create-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeCreateModal();
+    });
+
+    document.getElementById('dn-submit').addEventListener('click', function() {
+        var validationError = validateBeforeSubmit();
+        if (validationError) {
+            showError(validationError);
+            return;
+        }
+
+        showError('');
+        var submitBtn = document.getElementById('dn-submit');
+        var isExistingUpload = !!uploadTargetProjectId;
+        var name = document.getElementById('dn-name').value.trim();
+        var workspaceId = (document.getElementById('dn-workspace').value || '').trim();
+        submitBtn.disabled = true;
+
+        if (isExistingUpload) {
+            setProgress(10, 'Preparing upload...');
+            Promise.resolve(uploadTargetProjectId)
+                .then(function(projectId) {
+                    return uploadProjectMedia(projectId, 20).then(function() { return projectId; });
+                })
+                .then(function() {
+                    setProgress(100, 'Done!');
+                    toast('Media uploaded!');
+                    setTimeout(function() {
+                        closeCreateModal();
+                        loadProjects();
+                    }, 500);
+                })
+                .catch(function(err) {
+                    showError(err && err.message ? err.message : 'Upload failed');
+                    hideProgress();
+                    submitBtn.disabled = false;
+                });
+            return;
+        }
+
+        setProgress(10, 'Creating project...');
+        createProject(name, workspaceId)
+            .then(function(project) {
+                var projectId = project && project.id ? String(project.id) : '';
+                if (!projectId) throw new Error('Project creation did not return an id');
+                setProgress(25, 'Uploading media...');
+                return uploadProjectMedia(projectId, 30);
+            })
+            .then(function() {
+                setProgress(100, 'Done!');
+                toast('Day Night Project created!');
+                setTimeout(function() {
+                    closeCreateModal();
+                    loadProjects();
+                }, 500);
+            })
+            .catch(function(err) {
+                showError(err && err.message ? err.message : 'Something went wrong');
+                hideProgress();
+                submitBtn.disabled = false;
+            });
+    });
+
+    document.getElementById('dn-cancel-delete').addEventListener('click', function() {
+        document.getElementById('dn-delete-modal').classList.remove('visible');
+    });
+    document.getElementById('dn-delete-modal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('visible');
+    });
+    document.getElementById('dn-confirm-delete').addEventListener('click', function() {
+        if (!deleteTargetId) return;
+        var btn = this;
+        btn.disabled = true;
+        fetch('/api/daynight/' + deleteTargetId, {
+            method: 'DELETE',
+            headers: authHeaders()
+        })
+        .then(function(r) { return parseResponse(r, 'Delete failed'); })
+        .then(function() {
+            document.getElementById('dn-delete-modal').classList.remove('visible');
+            toast('Project deleted');
+            loadProjects();
+        })
+        .catch(function(err) {
+            toast(err && err.message ? err.message : 'Delete failed');
+        })
+        .finally(function() {
+            btn.disabled = false;
+        });
+    });
+
+    setVideoHint();
+
+    window.sidebarReady.then(function(ctx) {
+        window._accessToken = ctx.accessToken;
+        loadProjects();
+        loadProjects();
+    });
+})();
+</script>
+{% endblock %}

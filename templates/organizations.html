@@ -1,0 +1,707 @@
+{% extends 'base.html' %}
+{% block title %}Organizations – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/organizations.css">
+{% endblock %}
+{% block content %}
+<div class="organizations-page">
+    <header class="header">
+        <div class="header-left">
+            <a href="/dashboard" class="brand-pill" aria-label="MarketoState">
+                <img src="/static/Marketostate/Marketostate%20logo.png" alt="MarketoState">
+            </a>
+            <nav class="nav">
+            <a href="/dashboard">Plotted Development</a>
+            <a href="/user-management?open=invite">Add user</a>
+            <a href="/login" id="nav-logout">Sign out</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="banner" id="banner"></div>
+
+        <div class="page-title">Organizations</div>
+        <div class="page-subtitle">SuperAdmin workspace to create organizations and assign users to organizations.</div>
+
+        <div class="shell">
+            <section class="card" aria-label="Organization list">
+                <div class="card-header">
+                    <div class="card-title">Organizations</div>
+                    <button class="btn btn-primary" id="btn-new-org" type="button">New</button>
+                </div>
+                <div class="card-body">
+                    <div class="search-row">
+                        <input class="input" id="org-search" placeholder="Search organizations…" autocomplete="off">
+                    </div>
+                    <div class="org-list" id="org-list"></div>
+                    <div class="empty" id="org-empty" style="display:none;">No organizations found.</div>
+                </div>
+            </section>
+
+            <section class="split">
+                <section class="card" aria-label="Organization settings">
+                    <div class="card-header">
+                        <div class="card-title">Settings</div>
+                        <div style="display:flex; gap:0.6rem; align-items:center;">
+                            <button class="btn btn-secondary" id="btn-refresh" type="button">Refresh</button>
+                            <button class="btn btn-primary" id="btn-save-org" type="button" disabled>Save</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="org-placeholder" class="empty">Select an organization on the left.</div>
+                        <div id="org-settings" style="display:none;">
+                            <div class="details-grid">
+                                <div>
+                                    <label class="label" for="org-name">Organization name</label>
+                                    <input class="input" id="org-name" placeholder="e.g., Alpha Realty">
+                                    <div class="msg" id="org-id"></div>
+                                </div>
+                            </div>
+                            <div class="msg error" id="org-save-error" style="display:none;"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card" aria-label="Organization users">
+                    <div class="card-header">
+                        <div class="card-title">Users</div>
+                        <div style="display:flex; gap:0.6rem; align-items:center;">
+                            <button class="btn btn-secondary" id="btn-move-user" type="button" disabled>Move User</button>
+                            <button class="btn btn-primary" id="btn-new-user" type="button" disabled>New User</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="users-placeholder" class="empty">Select an organization to manage users.</div>
+                        <div id="users-shell" style="display:none;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 34%;">Name</th>
+                                        <th style="width: 40%;">Email</th>
+                                        <th style="width: 16%;">Role</th>
+                                        <th style="width: 10%;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-body"></tbody>
+                            </table>
+                            <div class="empty" id="users-empty" style="display:none;">No users in this organization.</div>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </div>
+    </main>
+
+    <!-- New Org Modal -->
+    <div class="modal-backdrop" id="modal-org">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="New organization">
+            <div class="modal-head">
+                <div class="modal-title">New organization</div>
+                <button class="btn btn-secondary" id="close-org-modal" type="button">Close</button>
+            </div>
+            <div class="modal-body">
+                <label class="label" for="new-org-name">Organization name</label>
+                <input class="input" id="new-org-name" placeholder="e.g., Alpha Realty">
+                <div class="msg error" id="new-org-error" style="display:none;"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-org" type="button">Cancel</button>
+                <button class="btn btn-primary" id="create-org" type="button">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New User Modal -->
+    <div class="modal-backdrop" id="modal-user">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="New user">
+            <div class="modal-head">
+                <div class="modal-title">Add user to organization</div>
+                <button class="btn btn-secondary" id="close-user-modal" type="button">Close</button>
+            </div>
+            <div class="modal-body">
+                <label class="label" for="new-user-name">Name</label>
+                <input class="input" id="new-user-name" placeholder="Display name" autocomplete="name">
+                <div style="height: 0.85rem;"></div>
+                <label class="label" for="new-user-email">Email</label>
+                <input class="input" id="new-user-email" type="email" placeholder="user@company.com" autocomplete="email">
+                <div style="height: 0.85rem;"></div>
+                <label class="label" for="new-user-password">Password</label>
+                <input class="input" id="new-user-password" type="password" minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+                <div style="height: 0.85rem;"></div>
+                <label class="label" for="new-user-role">Role</label>
+                <select class="input" id="new-user-role">
+                    <option value="user">User</option>
+                    <option value="broker">Broker</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <div class="msg error" id="new-user-error" style="display:none;"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-user" type="button">Cancel</button>
+                <button class="btn btn-primary" id="create-user" type="button">Create user</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move User Modal -->
+    <div class="modal-backdrop" id="modal-move">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Move user">
+            <div class="modal-head">
+                <div class="modal-title">Move existing user</div>
+                <button class="btn btn-secondary" id="close-move-modal" type="button">Close</button>
+            </div>
+            <div class="modal-body">
+                <label class="label" for="move-search">Search user by email</label>
+                <input class="input" id="move-search" placeholder="Type to search…" autocomplete="off">
+                <div style="height: 0.85rem;"></div>
+                <label class="label" for="move-select">Select user</label>
+                <select class="input" id="move-select">
+                    <option value="">Select user…</option>
+                </select>
+                <div class="msg" id="move-hint">Only users outside this org are shown.</div>
+                <div class="msg error" id="move-error" style="display:none;"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-move" type="button">Cancel</button>
+                <button class="btn btn-primary" id="confirm-move" type="button">Move user</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        (function () {
+            var supabaseUrl = {{ (supabase_url or '')|tojson }};
+            var supabaseAnonKey = {{ (supabase_anon_key or '')|tojson }};
+            if (!supabaseUrl || !supabaseAnonKey || !window.supabase) return;
+            var supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+            window._supabase = supabase;
+
+            var banner = document.getElementById('banner');
+            function showBanner(msg) {
+                if (!banner) return;
+                banner.textContent = msg || '';
+                banner.style.display = msg ? 'block' : 'none';
+            }
+
+            function setError(el, msg) {
+                if (!el) return;
+                el.textContent = msg || '';
+                el.style.display = msg ? 'block' : 'none';
+            }
+
+            function waitForSession(maxAttempts, delayMs) {
+                var remaining = Math.max(0, Number(maxAttempts) || 0);
+                var waitMs = Math.max(60, Number(delayMs) || 180);
+                function readSession() {
+                    return supabase.auth.getSession()
+                        .then(function (r) { return (r && r.data && r.data.session) ? r.data.session : null; })
+                        .catch(function () { return null; });
+                }
+                function step() {
+                    return readSession().then(function (session) {
+                        if (session || remaining <= 0) return session;
+                        remaining -= 1;
+                        return new Promise(function (resolve) {
+                            setTimeout(function () { resolve(step()); }, waitMs);
+                        });
+                    });
+                }
+                return step();
+            }
+
+            function getAuthHeaders() {
+                return waitForSession(20, 180).then(function (session) {
+                    var h = { 'Content-Type': 'application/json' };
+                    if (session && session.access_token) h['Authorization'] = 'Bearer ' + session.access_token;
+                    return h;
+                });
+            }
+
+            function ensureAuthHeadersOrRedirect() {
+                return getAuthHeaders().then(function (h) {
+                    if (h.Authorization) return h;
+                    return waitForSession(30, 200).then(function (session) {
+                        if (session && session.access_token) {
+                            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token };
+                        }
+                        window.location.replace('/login');
+                        return null;
+                    });
+                });
+            }
+
+            function fetchJson(url, opts) {
+                return fetch(url, opts || {}).then(async function (r) {
+                    var data = null;
+                    try { data = await r.json(); } catch (e) { data = null; }
+                    return { ok: r.ok, status: r.status, data: data };
+                });
+            }
+
+            var state = {
+                orgs: [],
+                selectedOrgId: null,
+                users: [],
+                allProfiles: [],
+                isSuperadmin: false
+            };
+
+            var elOrgList = document.getElementById('org-list');
+            var elOrgEmpty = document.getElementById('org-empty');
+            var elOrgSearch = document.getElementById('org-search');
+            var btnNewOrg = document.getElementById('btn-new-org');
+            var btnRefresh = document.getElementById('btn-refresh');
+            var btnSaveOrg = document.getElementById('btn-save-org');
+            var btnNewUser = document.getElementById('btn-new-user');
+            var btnMoveUser = document.getElementById('btn-move-user');
+
+            var orgPlaceholder = document.getElementById('org-placeholder');
+            var orgSettings = document.getElementById('org-settings');
+            var orgName = document.getElementById('org-name');
+            var orgIdText = document.getElementById('org-id');
+            var orgSaveError = document.getElementById('org-save-error');
+
+            var usersPlaceholder = document.getElementById('users-placeholder');
+            var usersShell = document.getElementById('users-shell');
+            var usersBody = document.getElementById('users-body');
+            var usersEmpty = document.getElementById('users-empty');
+
+            var modalOrg = document.getElementById('modal-org');
+            var newOrgName = document.getElementById('new-org-name');
+            var newOrgError = document.getElementById('new-org-error');
+
+            var modalUser = document.getElementById('modal-user');
+            var newUserName = document.getElementById('new-user-name');
+            var newUserEmail = document.getElementById('new-user-email');
+            var newUserPassword = document.getElementById('new-user-password');
+            var newUserRole = document.getElementById('new-user-role');
+            var newUserError = document.getElementById('new-user-error');
+
+            var modalMove = document.getElementById('modal-move');
+            var moveSearch = document.getElementById('move-search');
+            var moveSelect = document.getElementById('move-select');
+            var moveError = document.getElementById('move-error');
+
+            function openModal(el) { if (el) el.classList.add('visible'); }
+            function closeModal(el) { if (el) el.classList.remove('visible'); }
+
+            function normalizeHex(hex) {
+                var v = String(hex || '').trim();
+                if (!v) return '#c9a962';
+                if (v[0] !== '#') v = '#' + v;
+                if (v.length === 4) {
+                    // #rgb -> #rrggbb
+                    v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+                }
+                return v.toLowerCase();
+            }
+
+            function escapeHtml(str) {
+                return String(str || '').replace(/[&<>"']/g, function (c) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c;
+                });
+            }
+
+            function pillClass(role) {
+                var r = String(role || '').toLowerCase();
+                if (r === 'superadmin') return 'pill superadmin';
+                if (r === 'admin') return 'pill admin';
+                return 'pill user';
+            }
+
+            function renderOrgs() {
+                if (!elOrgList) return;
+                var q = String(elOrgSearch ? elOrgSearch.value : '').trim().toLowerCase();
+                var items = (state.orgs || []).filter(function (o) {
+                    if (!q) return true;
+                    return String(o.name || '').toLowerCase().includes(q);
+                });
+                elOrgList.innerHTML = items.map(function (o) {
+                    var active = String(o.id) === String(state.selectedOrgId) ? ' is-active' : '';
+                    return (
+                        '<button class="org-item' + active + '" type="button" data-org-id="' + escapeHtml(o.id) + '">' +
+                        '<div class="org-name">' + escapeHtml(o.name || 'Organization') + '</div>' +
+                        '<div class="org-meta">' + escapeHtml(String(o.id || '').slice(0, 8)) + '…</div>' +
+                        '</button>'
+                    );
+                }).join('');
+                if (elOrgEmpty) elOrgEmpty.style.display = items.length ? 'none' : 'block';
+                Array.from(elOrgList.querySelectorAll('button[data-org-id]')).forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var id = btn.getAttribute('data-org-id');
+                        selectOrg(id);
+                    });
+                });
+            }
+
+            function setSelectedOrgUi(org) {
+                var has = Boolean(org && org.id);
+                if (orgPlaceholder) orgPlaceholder.style.display = has ? 'none' : 'block';
+                if (orgSettings) orgSettings.style.display = has ? 'block' : 'none';
+                if (btnSaveOrg) btnSaveOrg.disabled = !has;
+                if (btnNewUser) btnNewUser.disabled = !has;
+                if (btnMoveUser) btnMoveUser.disabled = !has;
+                if (usersPlaceholder) usersPlaceholder.style.display = has ? 'none' : 'block';
+                if (usersShell) usersShell.style.display = has ? 'block' : 'none';
+
+                if (!has) return;
+                if (orgName) orgName.value = String(org.name || '');
+                if (orgIdText) orgIdText.textContent = 'Org ID: ' + String(org.id);
+                setError(orgSaveError, '');
+            }
+
+            function renderUsers() {
+                if (!usersBody) return;
+                var items = Array.isArray(state.users) ? state.users : [];
+                if (!items.length) {
+                    usersBody.innerHTML = '';
+                    if (usersEmpty) usersEmpty.style.display = 'block';
+                    return;
+                }
+                if (usersEmpty) usersEmpty.style.display = 'none';
+                usersBody.innerHTML = items.map(function (u) {
+                    var name = u.display_name || '—';
+                    var email = u.email || '—';
+                    var role = String(u.role || 'user');
+                    var id = String(u.user_id || '');
+                    var roleHtml = '<span class="' + pillClass(role) + '">' + escapeHtml(role) + '</span>';
+                    var selectHtml = (
+                        '<select class="input" data-role-select="' + escapeHtml(id) + '" style="padding:0.55rem 0.65rem;">' +
+                        '<option value="user"' + (role === 'user' ? ' selected' : '') + '>user</option>' +
+                        '<option value="broker"' + (role === 'broker' ? ' selected' : '') + '>broker</option>' +
+                        '<option value="admin"' + (role === 'admin' ? ' selected' : '') + '>admin</option>' +
+                        '</select>'
+                    );
+                    var actionHtml = (
+                        role === 'superadmin'
+                            ? '<span class="pill superadmin" title="Superadmin role cannot be changed here">locked</span>'
+                            : '<button class="btn btn-secondary" type="button" data-save-role="' + escapeHtml(id) + '">Save</button>'
+                    );
+                    return (
+                        '<tr>' +
+                        '<td>' + escapeHtml(name) + '</td>' +
+                        '<td>' + escapeHtml(email) + '</td>' +
+                        '<td>' + (role === 'superadmin' ? roleHtml : selectHtml) + '</td>' +
+                        '<td>' + actionHtml + '</td>' +
+                        '</tr>'
+                    );
+                }).join('');
+
+                Array.from(usersBody.querySelectorAll('button[data-save-role]')).forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var uid = btn.getAttribute('data-save-role');
+                        var sel = usersBody.querySelector('select[data-role-select="' + uid.replace(/"/g, '\\"') + '"]');
+                        var nextRole = sel ? sel.value : 'user';
+                        saveRole(uid, nextRole);
+                    });
+                });
+            }
+
+            function selectOrg(orgId) {
+                state.selectedOrgId = String(orgId || '');
+                renderOrgs();
+                var org = (state.orgs || []).find(function (o) { return String(o.id) === String(state.selectedOrgId); });
+                setSelectedOrgUi(org || null);
+                if (org && org.id) {
+                    loadUsersForOrg(org.id).catch(function () { });
+                    refreshMoveUserOptions();
+                }
+            }
+
+            function loadOrgs() {
+                return ensureAuthHeadersOrRedirect().then(function (h) {
+                    if (!h) return { ok: false, status: 401, data: { error: 'Unauthorized' } };
+                    return fetchJson('/api/orgs', { headers: h });
+                }).then(function (res) {
+                    if (!res.ok) {
+                        if (res.status === 401) {
+                            return waitForSession(30, 200).then(function (session) {
+                                if (!session || !session.access_token) {
+                                    window.location.replace('/login');
+                                }
+                                return;
+                            });
+                        }
+                        var msg = (res.data && res.data.error) ? res.data.error : 'Forbidden';
+                        showBanner(msg);
+                        throw new Error(msg);
+                    }
+                    showBanner('');
+                    state.orgs = Array.isArray(res.data) ? res.data : [];
+                    renderOrgs();
+                    if (!state.selectedOrgId && state.orgs.length) {
+                        selectOrg(state.orgs[0].id);
+                    }
+                });
+            }
+
+            function loadAllProfiles() {
+                return getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/profiles', { headers: h });
+                }).then(function (res) {
+                    if (!res.ok) return;
+                    state.allProfiles = Array.isArray(res.data) ? res.data : [];
+                });
+            }
+
+            function loadUsersForOrg(orgId) {
+                return getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/profiles?org_id=' + encodeURIComponent(String(orgId)), { headers: h });
+                }).then(function (res) {
+                    if (!res.ok) {
+                        state.users = [];
+                        renderUsers();
+                        return;
+                    }
+                    state.users = Array.isArray(res.data) ? res.data : [];
+                    renderUsers();
+                });
+            }
+
+            function saveOrg() {
+                var orgId = state.selectedOrgId;
+                var org = (state.orgs || []).find(function (o) { return String(o.id) === String(orgId); });
+                if (!org) return;
+                var payload = {
+                    name: String(orgName ? orgName.value : '').trim()
+                };
+                setError(orgSaveError, '');
+                if (!payload.name) { setError(orgSaveError, 'Organization name is required.'); return; }
+                btnSaveOrg.disabled = true;
+                getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/orgs/' + encodeURIComponent(String(orgId)), {
+                        method: 'PATCH',
+                        headers: h,
+                        body: JSON.stringify(payload)
+                    });
+                }).then(function (res) {
+                    if (!res.ok) {
+                        var msg = (res.data && res.data.error) ? res.data.error : 'Failed to save';
+                        setError(orgSaveError, msg);
+                        return;
+                    }
+                    // Update local copy and rerender
+                    state.orgs = (state.orgs || []).map(function (o) {
+                        if (String(o.id) !== String(orgId)) return o;
+                        return Object.assign({}, o, payload);
+                    });
+                    renderOrgs();
+                    setSelectedOrgUi(Object.assign({}, org, payload));
+                }).finally(function () {
+                    btnSaveOrg.disabled = false;
+                });
+            }
+
+            function createOrg() {
+                setError(newOrgError, '');
+                var name = String(newOrgName ? newOrgName.value : '').trim();
+                if (!name) { setError(newOrgError, 'Organization name is required.'); return; }
+                var payload = { name: name };
+                var btn = document.getElementById('create-org');
+                if (btn) btn.disabled = true;
+                getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/orgs', { method: 'POST', headers: h, body: JSON.stringify(payload) });
+                }).then(function (res) {
+                    if (!res.ok) {
+                        var msg = (res.data && res.data.error) ? res.data.error : 'Failed to create org';
+                        setError(newOrgError, msg);
+                        return;
+                    }
+                    closeModal(modalOrg);
+                    if (newOrgName) newOrgName.value = '';
+                    loadOrgs().catch(function () { });
+                }).finally(function () {
+                    if (btn) btn.disabled = false;
+                });
+            }
+
+            function createUserInOrg() {
+                setError(newUserError, '');
+                var orgId = state.selectedOrgId;
+                if (!orgId) return;
+                var name = String(newUserName ? newUserName.value : '').trim();
+                var email = String(newUserEmail ? newUserEmail.value : '').trim();
+                var password = String(newUserPassword ? newUserPassword.value : '');
+                var roleValue = String(newUserRole ? newUserRole.value : 'user').trim();
+                if (!email || email.indexOf('@') === -1) { setError(newUserError, 'Valid email is required.'); return; }
+                if (!password || password.length < 6) { setError(newUserError, 'Password must be at least 6 characters.'); return; }
+                if (roleValue !== 'admin' && roleValue !== 'broker') roleValue = 'user';
+                var payload = {
+                    email: email,
+                    password: password,
+                    display_name: name || undefined,
+                    role: roleValue,
+                    org_id: orgId
+                };
+                var btn = document.getElementById('create-user');
+                if (btn) btn.disabled = true;
+                getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/admin/users', { method: 'POST', headers: h, body: JSON.stringify(payload) });
+                }).then(function (res) {
+                    if (!res.ok) {
+                        var msg = (res.data && res.data.error) ? res.data.error : 'Failed to create user';
+                        setError(newUserError, msg);
+                        return;
+                    }
+                    closeModal(modalUser);
+                    if (newUserName) newUserName.value = '';
+                    if (newUserEmail) newUserEmail.value = '';
+                    if (newUserPassword) newUserPassword.value = '';
+                    loadUsersForOrg(orgId).catch(function () { });
+                    loadAllProfiles().catch(function () { });
+                }).finally(function () {
+                    if (btn) btn.disabled = false;
+                });
+            }
+
+            function saveRole(targetUserId, roleValue) {
+                var nextRole = String(roleValue || 'user').toLowerCase();
+                if (nextRole !== 'admin' && nextRole !== 'broker') nextRole = 'user';
+                getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/profiles/' + encodeURIComponent(String(targetUserId)) + '/role', {
+                        method: 'PUT',
+                        headers: h,
+                        body: JSON.stringify({ role: nextRole })
+                    });
+                }).then(function (res) {
+                    if (!res.ok) {
+                        var msg = (res.data && res.data.error) ? res.data.error : 'Failed to update role';
+                        showBanner(msg);
+                        return;
+                    }
+                    showBanner('');
+                    loadUsersForOrg(state.selectedOrgId).catch(function () { });
+                    loadAllProfiles().catch(function () { });
+                });
+            }
+
+            function refreshMoveUserOptions() {
+                var orgId = state.selectedOrgId;
+                if (!moveSelect || !orgId) return;
+                var q = String(moveSearch ? moveSearch.value : '').trim().toLowerCase();
+                var options = (state.allProfiles || [])
+                    .filter(function (p) {
+                        if (!p || !p.user_id) return false;
+                        if (String(p.org_id || '') === String(orgId)) return false;
+                        var email = String(p.email || '').toLowerCase();
+                        return !q || email.includes(q);
+                    })
+                    .slice(0, 60);
+
+                var html = '<option value="">Select user…</option>' + options.map(function (p) {
+                    var label = (p.email || p.user_id) + (p.org_id ? (' • org ' + String(p.org_id).slice(0, 8) + '…') : '');
+                    return '<option value="' + escapeHtml(p.user_id) + '">' + escapeHtml(label) + '</option>';
+                }).join('');
+                moveSelect.innerHTML = html;
+            }
+
+            function moveUserToOrg() {
+                setError(moveError, '');
+                var orgId = state.selectedOrgId;
+                var uid = moveSelect ? moveSelect.value : '';
+                uid = String(uid || '').trim();
+                if (!orgId) { setError(moveError, 'Select an org first.'); return; }
+                if (!uid) { setError(moveError, 'Select a user.'); return; }
+                var btn = document.getElementById('confirm-move');
+                if (btn) btn.disabled = true;
+                getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/profiles/' + encodeURIComponent(uid), {
+                        method: 'PATCH',
+                        headers: h,
+                        body: JSON.stringify({ org_id: orgId })
+                    });
+                }).then(function (res) {
+                    if (!res.ok) {
+                        var msg = (res.data && res.data.error) ? res.data.error : 'Failed to move user';
+                        setError(moveError, msg);
+                        return;
+                    }
+                    closeModal(modalMove);
+                    if (moveSearch) moveSearch.value = '';
+                    refreshMoveUserOptions();
+                    loadUsersForOrg(orgId).catch(function () { });
+                    loadAllProfiles().catch(function () { });
+                }).finally(function () {
+                    if (btn) btn.disabled = false;
+                });
+            }
+
+            // Wire UI
+            if (btnNewOrg) btnNewOrg.addEventListener('click', function () {
+                setError(newOrgError, '');
+                if (newOrgName) newOrgName.value = '';
+                if (newOrgAccent) newOrgAccent.value = '#c9a962';
+                openModal(modalOrg);
+                setTimeout(function () { if (newOrgName) newOrgName.focus(); }, 20);
+            });
+            if (btnRefresh) btnRefresh.addEventListener('click', function () { loadOrgs().catch(function () { }); });
+            if (btnSaveOrg) btnSaveOrg.addEventListener('click', saveOrg);
+            if (elOrgSearch) elOrgSearch.addEventListener('input', renderOrgs);
+
+            if (document.getElementById('close-org-modal')) document.getElementById('close-org-modal').addEventListener('click', function () { closeModal(modalOrg); });
+            if (document.getElementById('cancel-org')) document.getElementById('cancel-org').addEventListener('click', function () { closeModal(modalOrg); });
+            if (document.getElementById('create-org')) document.getElementById('create-org').addEventListener('click', createOrg);
+            if (modalOrg) modalOrg.addEventListener('click', function (e) { if (e.target === modalOrg) closeModal(modalOrg); });
+
+            if (btnNewUser) btnNewUser.addEventListener('click', function () {
+                setError(newUserError, '');
+                if (newUserName) newUserName.value = '';
+                if (newUserEmail) newUserEmail.value = '';
+                if (newUserPassword) newUserPassword.value = '';
+                if (newUserRole) newUserRole.value = 'user';
+                openModal(modalUser);
+                setTimeout(function () { if (newUserEmail) newUserEmail.focus(); }, 20);
+            });
+            if (document.getElementById('close-user-modal')) document.getElementById('close-user-modal').addEventListener('click', function () { closeModal(modalUser); });
+            if (document.getElementById('cancel-user')) document.getElementById('cancel-user').addEventListener('click', function () { closeModal(modalUser); });
+            if (document.getElementById('create-user')) document.getElementById('create-user').addEventListener('click', createUserInOrg);
+            if (modalUser) modalUser.addEventListener('click', function (e) { if (e.target === modalUser) closeModal(modalUser); });
+
+            if (btnMoveUser) btnMoveUser.addEventListener('click', function () {
+                setError(moveError, '');
+                if (moveSearch) moveSearch.value = '';
+                refreshMoveUserOptions();
+                openModal(modalMove);
+                setTimeout(function () { if (moveSearch) moveSearch.focus(); }, 20);
+            });
+            if (document.getElementById('close-move-modal')) document.getElementById('close-move-modal').addEventListener('click', function () { closeModal(modalMove); });
+            if (document.getElementById('cancel-move')) document.getElementById('cancel-move').addEventListener('click', function () { closeModal(modalMove); });
+            if (document.getElementById('confirm-move')) document.getElementById('confirm-move').addEventListener('click', moveUserToOrg);
+            if (modalMove) modalMove.addEventListener('click', function (e) { if (e.target === modalMove) closeModal(modalMove); });
+            if (moveSearch) moveSearch.addEventListener('input', refreshMoveUserOptions);
+
+            var logoutEl = document.getElementById('nav-logout');
+            if (logoutEl) {
+                logoutEl.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    supabase.auth.signOut()
+                        .catch(function () { /* ignore transient signOut aborts */ })
+                        .finally(function () { window.location.href = '/login'; });
+                });
+            }
+
+            // Auth guard + boot
+            waitForSession(30, 200).then(function (session) {
+                if (!session) { window.location.replace('/login'); return; }
+                // Ensure we are superadmin
+                ensureAuthHeadersOrRedirect().then(function (h) {
+                    if (!h) return null;
+                    return fetchJson('/api/org/me', { headers: h });
+                }).then(function (res) {
+                    if (!res) return;
+                    var role = res && res.data && res.data.profile ? String(res.data.profile.role || '').toLowerCase() : '';
+                    if (role !== 'superadmin') {
+                        showBanner('Forbidden: SuperAdmin access required.');
+                        return;
+                    }
+                    // Apply theme for the current user's org (optional)
+                    return Promise.all([loadOrgs(), loadAllProfiles()]);
+                });
+            });
+        })();
+    </script>
+{% endblock %}
+

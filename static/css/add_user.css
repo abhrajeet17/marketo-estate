@@ -1,0 +1,104 @@
+/**
+ * Add user page – minimal presentation style.
+ */
+.add-user-page {
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.add-user-page .header {
+    padding: 1.5rem 2.5rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+}
+
+.add-user-page .nav a {
+    color: var(--color-muted);
+    text-decoration: none;
+    margin-left: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.add-user-page .nav a:hover {
+    color: var(--color-text);
+}
+
+.add-user-page .container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+}
+
+.add-user-page .card {
+    background: var(--color-surface-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.add-user-page .card h1 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: var(--color-text);
+}
+
+.add-user-page .card p {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.add-user-page .form-group {
+    margin-bottom: 1.1rem;
+}
+
+.add-user-page .form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.4rem;
+}
+
+.add-user-page .form-input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+}
+
+.add-user-page .form-input:focus {
+    outline: none;
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px rgba(22, 35, 56, 0.06);
+}
+
+.add-user-page .btn {
+    padding: 0.7rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.add-user-page .btn:hover {
+    background: var(--color-accent-hover);
+}
+
+.add-user-page .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

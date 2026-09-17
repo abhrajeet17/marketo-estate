@@ -1,0 +1,423 @@
+/**
+ * CRM layout alignment for Preline portal shell.
+ * Mirrors sneat_sidebar_layout CRM merged-nav behavior.
+ */
+
+@import url("./portal_tab_loader.css");
+
+:root {
+  --ms-sidebar-content-gap: 1.25rem;
+  --ms-content-pad-x-expanded: 1.5rem;
+  --ms-content-pad-y-expanded: 1.75rem;
+  --ms-content-pad-x-collapsed: 0.75rem;
+  --crm-sidebar-offset: var(--portal-sidebar-collapsed, 5.25rem);
+  --crm-unified-header-height: 3.5rem;
+  --crm-unified-header-bg: var(--ms-brand-dark, #333333);
+  --crm-unified-header-border: rgba(255, 163, 0, 0.35);
+  --crm-tabs-top-left-width: 10.75rem;
+}
+
+html.portal-sidebar-expanded {
+  --crm-sidebar-offset: calc(var(--portal-sidebar-width, 16.25rem) + var(--ms-sidebar-content-gap));
+}
+
+html.portal-sidebar-expanded.portal-crm-merged,
+html.portal-sidebar-expanded:has(#portal-main.portal-main--crm-merged) {
+  --crm-sidebar-offset: var(--portal-sidebar-width, 16.25rem);
+}
+
+html.portal-sidebar-collapsed {
+  --crm-sidebar-offset: var(--portal-sidebar-collapsed, 5.25rem);
+}
+
+@media (max-width: 1023px) {
+  html {
+    --crm-sidebar-offset: 0px;
+  }
+}
+
+/* Fixed sidebar on desktop */
+@media (min-width: 1024px) {
+  #portal-sidebar {
+    position: fixed !important;
+    inset-block-end: 0;
+    inset-block-start: var(--portal-unified-header-height, 3.5rem);
+    inset-inline-start: 0;
+    display: block !important;
+    visibility: visible !important;
+    transform: none !important;
+    translate: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 60;
+  }
+}
+
+/* CRM merged: single offset on portal-main (not crm-page) */
+#portal-main.portal-main--crm-merged {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  padding-inline-start: 0;
+  padding-inline-end: 0;
+  overflow-x: clip;
+  transition: padding-inline-start 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+  html.portal-sidebar-expanded #portal-main.portal-main--crm-merged,
+  html.portal-sidebar-collapsed #portal-main.portal-main--crm-merged {
+    padding-inline-start: var(--crm-sidebar-offset) !important;
+  }
+}
+
+#portal-main.portal-main--crm-merged > main {
+  padding: 0 !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* CRM fills the content column edge-to-edge */
+#portal-main.portal-main--crm-merged .crm-page,
+#portal-main.portal-main--crm-merged .crm-page-content,
+#portal-main.portal-main--crm-merged .crm-tabs,
+#portal-main.portal-main--crm-merged .crm-content {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-inline: 0 !important;
+}
+
+/* Tab panels: only the active section is visible */
+#portal-main.portal-main--crm-merged .crm-section {
+  display: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-inline: 0 !important;
+}
+
+#portal-main.portal-main--crm-merged .crm-section.active {
+  display: block;
+}
+
+#portal-main.portal-main--crm-merged .crm-page {
+  position: relative;
+  min-height: 100vh;
+}
+
+#portal-main.portal-main--crm-merged .crm-page-content {
+  overflow: visible;
+}
+
+/* CRM tabs live in unified header slot (mounted by portal_shell.js) */
+html.portal-crm-merged #portal-page-header .crm-tabs,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  top: auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  background: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tabs-top,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-top {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: var(--crm-unified-header-height);
+  min-height: var(--crm-unified-header-height);
+  max-height: var(--crm-unified-header-height);
+  padding-block: 0 !important;
+  padding-inline: 1rem;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  background: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tabs-top-left,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-top-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tabs-top-center,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-top-center {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  border-inline-start: none;
+  padding-inline-start: 0.75rem;
+  margin-inline-start: 0;
+  scrollbar-width: none;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tabs-top-center::-webkit-scrollbar,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-top-center::-webkit-scrollbar {
+  display: none;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tabs-top-right,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-top-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tab-strip,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tab-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: min-content;
+  flex-wrap: nowrap;
+}
+
+html.portal-crm-merged .portal-unified-header__brand .portal-brand-img-full,
+html:has(#portal-main.portal-main--crm-merged) .portal-unified-header__brand .portal-brand-img-full {
+  height: 1.75rem !important;
+  max-height: 1.75rem;
+  width: auto;
+}
+
+html.portal-crm-merged .portal-unified-header__brand .portal-brand-img-collapsed,
+html:has(#portal-main.portal-main--crm-merged) .portal-unified-header__brand .portal-brand-img-collapsed {
+  height: 1.75rem !important;
+  width: 1.75rem !important;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tab-action,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tab-action {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--ms-brand-on-dark-muted, rgba(248, 244, 236, 0.72));
+}
+
+html.portal-crm-merged #portal-page-header .crm-tab-action:hover,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tab-action:hover {
+  background: rgba(var(--ms-brand-primary-rgb, 255, 163, 0), 0.16);
+  color: var(--ms-brand-primary, #ffa300);
+}
+
+html.portal-crm-merged #portal-page-header .crm-tabs-account,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-account {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+html.portal-crm-merged #portal-page-header .portal-user-dropdown-menu,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .portal-user-dropdown-menu {
+  width: max-content;
+  max-width: none;
+}
+
+html.portal-crm-merged #portal-page-header .portal-user-dropdown-item,
+html.portal-crm-merged #portal-page-header .portal-user-dropdown-label,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .portal-user-dropdown-item,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .portal-user-dropdown-label {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tab,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tab {
+  height: 2rem;
+  padding: 0 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ms-brand-on-dark-muted, rgba(248, 244, 236, 0.72));
+  background: transparent;
+  box-shadow: none;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tab.active,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tab.active {
+  color: var(--ms-brand-dark, #333333) !important;
+  border-color: var(--ms-brand-primary, #ffa300) !important;
+  background: var(--ms-brand-primary, #ffa300) !important;
+  box-shadow: none !important;
+}
+
+html.portal-crm-merged #portal-page-header .crm-tab:hover,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tab:hover {
+  color: var(--ms-brand-primary, #ffa300);
+  background: rgba(var(--ms-brand-primary-rgb, 255, 163, 0), 0.14);
+}
+
+html.portal-crm-merged #portal-page-header .crm-tabs-menu-toggle,
+html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-menu-toggle {
+  flex-shrink: 0;
+  margin-inline-end: 0.25rem;
+}
+
+/* Tab bar — full width with consistent horizontal padding */
+.crm-page--sneat .crm-tabs {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  inset-inline-start: 0;
+}
+
+.crm-page--sneat .crm-tabs-top {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  html.portal-crm-merged #portal-page-header .crm-tabs-top,
+  html:has(#portal-main.portal-main--crm-merged) #portal-page-header .crm-tabs-top {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  html.portal-sidebar-expanded #portal-main.portal-main--crm-merged .crm-content {
+    padding: var(--ms-content-pad-y-expanded) var(--ms-content-pad-x-expanded)
+      calc(var(--ms-content-pad-y-expanded) + 0.25rem) !important;
+  }
+
+  html.portal-sidebar-collapsed #portal-main.portal-main--crm-merged .crm-content {
+    padding: var(--ms-content-pad-x-collapsed) var(--ms-content-pad-x-collapsed)
+      calc(var(--ms-content-pad-x-collapsed) + 0.5rem) !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  #portal-page-header .crm-tabs-top {
+    padding-inline: 1rem;
+    gap: 0.5rem;
+  }
+
+  #portal-main.portal-main--crm-merged .crm-content {
+    padding: 1rem !important;
+  }
+}
+
+.crm-page--sneat .crm-tab-strip {
+  flex-wrap: nowrap;
+}
+
+#portal-main.portal-main--crm-merged .interest-list-shell,
+#portal-main.portal-main--crm-merged .section-header,
+#portal-main.portal-main--crm-merged .card,
+#portal-main.portal-main--crm-merged .crm-data-table,
+#portal-main.portal-main--crm-merged .interest-table-wrap,
+#portal-main.portal-main--crm-merged .master-grid,
+#portal-main.portal-main--crm-merged .report-card,
+#portal-main.portal-main--crm-merged #lock-access-card,
+#portal-main.portal-main--crm-merged .kpi-strip {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#portal-main.portal-main--crm-merged .table-responsive,
+#portal-main.portal-main--crm-merged .crm-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Leads filter rail is inline in the content grid (see crm.css .crm-filter-rail) */
+
+/* Legacy broker header mode — never hide portal sidebar on merged CRM shell */
+html.crm-broker-header-active.portal-crm-merged #portal-sidebar,
+html.crm-broker-header-active:has(#portal-main.portal-main--crm-merged) #portal-sidebar {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+html.crm-broker-header-active.portal-crm-merged #portal-main.portal-main--crm-merged,
+html.crm-broker-header-active:has(#portal-main.portal-main--crm-merged) #portal-main.portal-main--crm-merged {
+  padding-inline-start: var(--crm-sidebar-offset) !important;
+}
+
+html.crm-broker-header-active.portal-crm-merged,
+html.crm-broker-header-active:has(#portal-main.portal-main--crm-merged) {
+  --crm-sidebar-offset: var(--portal-sidebar-collapsed, 5.25rem);
+}
+
+html.portal-sidebar-expanded.crm-broker-header-active.portal-crm-merged,
+html.portal-sidebar-expanded.crm-broker-header-active:has(#portal-main.portal-main--crm-merged) {
+  --crm-sidebar-offset: var(--portal-sidebar-width, 16.25rem);
+}
+
+/* ── Interest lead drawer (no Bootstrap offcanvas) ── */
+.crm-page .drawer-backdrop#interest-drawer-backdrop {
+  z-index: 1045;
+}
+
+.crm-page #drawer.crm-interest-offcanvas {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  z-index: 1050 !important;
+  width: min(640px, 96vw) !important;
+  max-width: 96vw !important;
+  height: 100vh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-left: 1px solid var(--crm-line, #dfe6f0);
+  box-shadow: -0.25rem 0 1rem rgba(67, 89, 113, 0.12);
+  background: #fff;
+  display: flex !important;
+  flex-direction: column !important;
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  visibility: visible !important;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.crm-page #drawer.crm-interest-offcanvas.show {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.crm-page #drawer.crm-interest-offcanvas .offcanvas-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}

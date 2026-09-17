@@ -1,0 +1,113 @@
+/**
+ * Buttons – minimal: rectangular, slightly rounded, dark text on soft beige.
+ */
+
+.btn {
+    appearance: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 1.1rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease, opacity 0.2s ease;
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.btn:active {
+    opacity: 0.92;
+}
+
+.btn-primary {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.btn-primary:hover {
+    background: var(--color-accent-hover);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.btn-secondary:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--border-strong);
+}
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-danger);
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.16);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.btn-lg {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* Viewer/3D action button – align to minimal style */
+.viewer-action-btn {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-strong);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.5rem 0.75rem;
+    min-height: 36px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.viewer-action-btn:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--border-strong);
+}
+
+.viewer-action-btn.cart {
+    background: var(--color-surface);
+    border-color: var(--border-strong);
+    color: var(--color-text);
+}
+
+.viewer-action-btn.cart:hover {
+    background: var(--color-accent-hover);
+}
+
+.cart-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 0.3rem;
+    margin-left: 0.35rem;
+    border-radius: 4px;
+    background: var(--color-brand-pill-bg);
+    color: var(--color-brand-pill-text);
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}

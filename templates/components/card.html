@@ -1,0 +1,13 @@
+{# Usage: {% include 'components/card.html' with card_title='Title' %} ... content ... {% endinclude %}
+   Or: {% include 'components/card.html' %} and use block card_body. #}
+<div class="card {% if card_class %}{{ card_class }}{% endif %}" {% if card_id %}id="{{ card_id }}"{% endif %}>
+    {% if card_title %}
+    <div class="card-header">
+        <h3 class="card-title">{{ card_title }}</h3>
+        {% block card_header_extra %}{% endblock %}
+    </div>
+    {% endif %}
+    <div class="card-body">
+        {% block card_body %}{% endblock %}
+    </div>
+</div>

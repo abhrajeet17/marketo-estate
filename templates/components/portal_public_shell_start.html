@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" class="h-full portal-public-page ms-brand-theme">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title|default('MarketoState') }}</title>
+    <meta name="description" content="" />
+    <link rel="icon" href="/static/Marketostate/Marketostate%20Favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/portal.bundle.css?v=20260623-1" />
+    <link rel="stylesheet" href="/static/css/portal_layout.css?v=20260626-dropdown-nowrap" />
+    <link rel="stylesheet" href="/static/css/marketostate_brand_theme.css?v=20260623-7" />
+    <link rel="stylesheet" href="/static/css/customer_dashboard_portal.css?v=20260623-11" />
+    {% if portal_extra_css %}<link rel="stylesheet" href="{{ portal_extra_css }}" />{% endif %}
+    <script src="/static/js/marketostate_brand_theme_config.js?v=20260619-3"></script>
+    <script src="/static/js/marketostate_brand_theme.js?v=20260623-1"></script>
+  </head>
+  <body class="bg-gray-50 font-sans text-gray-800 antialiased">
+    <header id="portal-unified-header" class="portal-unified-header">
+      <div class="portal-unified-header__brand">
+        {% set home_link_id = 'portal-home-link' %}
+        {% include 'components/portal_app_brand.html' %}
+      </div>
+      <div class="portal-unified-header__page" id="portal-page-header">
+        <div class="portal-navbar portal-navbar--public">
+          <div class="portal-navbar__start lg:hidden">
+            <button type="button" id="portal-public-menu-toggle" class="inline-flex items-center justify-center size-9 rounded-lg border border-white/20 bg-white/10 text-white" aria-label="Open menu" aria-expanded="false" aria-controls="portal-public-mobile-nav">
+              <svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+          </div>
+          <nav class="portal-navbar__center portal-public-nav-links hidden lg:flex" aria-label="Primary">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="/explore">Explore</a>
+          </nav>
+          <div class="portal-navbar__end portal-public-nav-actions">
+            <a href="/login" class="dashboard-open-crm-btn dashboard-open-crm-btn--outline py-2 px-3 inline-flex items-center text-sm font-medium rounded-lg">Log in</a>
+            <a href="/login?mode=signup" class="dashboard-open-crm-btn dashboard-open-crm-btn--solid py-2 px-3 inline-flex items-center text-sm font-semibold rounded-lg">Get started</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="portal-public-mobile-nav" class="portal-public-mobile-nav hidden" hidden>
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="/explore">Explore</a>
+      <a href="/login">Log in</a>
+      <a href="/login?mode=signup">Get started</a>
+    </div>
+
+    <div id="portal-main" class="w-full min-h-screen">
+      <main class="p-4 lg:p-6">

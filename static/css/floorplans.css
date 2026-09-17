@@ -1,0 +1,672 @@
+/* Floor Plans Catalogue – management page */
+
+.floorplans-page {
+    display: flex;
+    height: 100vh;
+    background: var(--color-bg);
+    color: var(--color-text);
+    overflow: hidden;
+}
+
+.floorplans-main {
+    flex: 1;
+    padding: 2rem 2.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.floorplans-main::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+/* Hide all visible scrollbars inside Sales Tool while keeping scroll behavior */
+.floorplans-page * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.floorplans-page *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+/* -- Subtabs -- */
+.fp-subtabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.75rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.fp-subtab {
+    display: inline-block;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    color: var(--color-muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.fp-subtab:hover {
+    color: var(--color-text);
+}
+
+.fp-subtab.active {
+    color: var(--color-text);
+    border-bottom-color: var(--color-text);
+}
+
+.fp-global-toolbar {
+    display: grid;
+    grid-template-columns: minmax(170px, 240px);
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+}
+
+.fp-global-filter,
+.fp-global-search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.fp-global-filter .srm-select {
+    max-width: 220px;
+    min-height: 34px;
+    padding: 0.42rem 0.55rem;
+    font-size: 0.82rem;
+    line-height: 1.2;
+}
+
+.fp-global-filter label,
+.fp-global-search-wrap label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.fp-daynight-embed-shell {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg-elevated);
+    overflow: hidden;
+}
+
+.fp-daynight-embed-frame {
+    width: 100%;
+    height: calc(100vh - 210px);
+    min-height: 620px;
+    border: 0;
+    display: block;
+    background: var(--color-bg-elevated);
+}
+
+.floorplans-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.floorplans-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* -- Catalogue grid -- */
+.fp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+}
+
+.fp-card {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fp-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow);
+}
+
+.fp-card-preview {
+    height: 160px;
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.fp-card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 0.5rem;
+}
+
+.fp-card-preview .fp-placeholder {
+    font-size: 2.5rem;
+    opacity: 0.3;
+}
+
+/* ── Informative card header (replaces thumbnail) ── */
+.fp-card-header {
+    padding: 1rem 1.25rem 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+.fp-card-icon {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 0.95rem;
+}
+.fp-card-icon.icon-building { background: linear-gradient(135deg, #4a6185, #1a2e4d); }
+.fp-card-icon.icon-project  { background: linear-gradient(135deg, #6366f1, #4338ca); }
+.fp-card-icon.icon-catalogue { background: linear-gradient(135deg, #059669, #047857); }
+
+.fp-card-title-group { flex: 1; min-width: 0; }
+.fp-card-title-group .fp-card-name { margin-bottom: 0.15rem; }
+.fp-card-title-group .fp-card-meta { margin-bottom: 0; }
+
+/* Stats row */
+.fp-card-stats {
+    display: flex; gap: 0; padding: 0 1.25rem;
+    margin-bottom: 0.5rem;
+}
+.fp-card-stat {
+    flex: 1; text-align: center;
+    padding: 0.5rem 0.25rem;
+    border-right: 1px solid var(--color-border);
+}
+.fp-card-stat:last-child { border-right: none; }
+.fp-card-stat-value {
+    font-size: 1.1rem; font-weight: 700; color: var(--color-text);
+    line-height: 1.2;
+}
+.fp-card-stat-label {
+    font-size: 0.65rem; color: var(--color-muted);
+    text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;
+}
+
+/* Tags / detail chips */
+.fp-card-details {
+    padding: 0 1.25rem 0.5rem;
+}
+.fp-card-detail-label {
+    font-size: 0.68rem; font-weight: 600; color: var(--color-muted);
+    text-transform: uppercase; letter-spacing: 0.03em;
+    margin-bottom: 0.3rem;
+}
+.fp-card-chips {
+    display: flex; flex-wrap: wrap; gap: 0.3rem;
+}
+.fp-card-chip {
+    font-size: 0.7rem; padding: 0.2rem 0.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 999px; color: var(--color-text);
+    white-space: nowrap; max-width: 140px;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.fp-card-chip.muted { color: var(--color-muted); font-style: italic; border-style: dashed; }
+
+.fp-card-divider {
+    border: none; border-top: 1px solid var(--color-border);
+    margin: 0;
+}
+
+.fp-card-body {
+    padding: 1rem 1.25rem;
+}
+
+.fp-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.fp-card-meta {
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    margin-bottom: 0.75rem;
+}
+
+.fp-share-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+}
+
+.fp-share-row input {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-body);
+}
+
+.fp-share-row .btn {
+    font-size: 0.72rem;
+    padding: 0.45rem 0.65rem;
+}
+
+.fp-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.fp-card-actions .btn {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 0.5rem;
+    text-align: center;
+}
+
+/* -- Empty state -- */
+.fp-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-muted);
+}
+
+.fp-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+/* -- Catalogue detail panel -- */
+.fp-detail {
+    display: none;
+}
+
+.fp-detail.visible {
+    display: block;
+}
+
+.fp-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.fp-detail-back {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-weight: 600;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s, color 0.2s;
+}
+
+.fp-detail-back:hover {
+    background: var(--bg-elev-1);
+    color: var(--color-text);
+}
+
+.fp-detail-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    flex: 1;
+}
+
+/* -- Upload zone -- */
+.fp-upload-zone {
+    border: 2px dashed rgba(22,35,56,0.12);
+    border-radius: 14px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+    margin-bottom: 1.5rem;
+    background: rgba(255,255,255,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.fp-upload-zone:hover {
+    border-color: rgba(22,35,56,0.2);
+    background: rgba(255,255,255,0.7);
+    box-shadow: 0 2px 12px rgba(22,35,56,0.04);
+}
+
+.fp-upload-zone.dragover {
+    border-color: #22c55e;
+    background: rgba(34,197,94,0.06);
+    box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
+}
+
+.fp-upload-zone-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.fp-upload-zone-text {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #162338;
+    margin-bottom: 0.3rem;
+}
+
+.fp-upload-zone-hint {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+}
+
+/* -- Dropzone (used in modals: Building Map, etc.) -- */
+.fp-dropzone {
+    border: 2px dashed rgba(22,35,56,0.12);
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+    background: rgba(255,255,255,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.fp-dropzone:hover {
+    border-color: rgba(22,35,56,0.2);
+    background: rgba(255,255,255,0.7);
+}
+
+.fp-dropzone.dragover {
+    border-color: #22c55e;
+    background: rgba(34,197,94,0.06);
+    box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
+}
+
+.fp-dropzone-idle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.fp-dropzone-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #162338;
+    margin-bottom: 0.25rem;
+}
+
+.fp-dropzone-hint {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+}
+
+.fp-dropzone-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    text-align: left;
+}
+
+.fp-dropzone-preview img {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(22,35,56,0.08);
+    flex-shrink: 0;
+}
+
+.fp-dropzone-preview-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.fp-dropzone-preview-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #162338;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fp-dropzone-preview-size {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+}
+
+.fp-dropzone-remove {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid rgba(22,35,56,0.08);
+    background: rgba(255,255,255,0.8);
+    color: #6b7280;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.18s;
+}
+
+.fp-dropzone-remove:hover {
+    background: rgba(239,68,68,0.08);
+    border-color: rgba(239,68,68,0.2);
+    color: #ef4444;
+}
+
+/* -- Items list (sortable) -- */
+.fp-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.fp-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fp-item:hover {
+    border-color: var(--border-strong);
+}
+
+.fp-item.dragging {
+    opacity: 0.5;
+    box-shadow: var(--shadow);
+}
+
+.fp-item.drag-over {
+    border-color: var(--color-success);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.fp-item-drag {
+    cursor: grab;
+    color: var(--color-muted);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0.25rem;
+}
+
+.fp-item-drag:active {
+    cursor: grabbing;
+}
+
+.fp-item-thumb {
+    width: 72px;
+    height: 54px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    flex-shrink: 0;
+}
+
+.fp-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.fp-item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fp-item-size {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+}
+
+.fp-item-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.fp-item-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.fp-item-btn.flag360 {
+    width: 40px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+.fp-item-btn.flag360.active {
+    color: #0f5132;
+    border-color: rgba(16, 185, 129, 0.55);
+    background: rgba(16, 185, 129, 0.18);
+}
+
+.fp-item-btn:hover {
+    background: var(--color-accent-hover);
+    color: var(--color-text);
+    border-color: var(--border-strong);
+}
+
+.fp-item-btn.delete:hover {
+    color: var(--color-danger);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Upload progress */
+.fp-upload-progress {
+    display: none;
+    margin-bottom: 1rem;
+}
+
+.fp-upload-progress.visible {
+    display: block;
+}
+
+.fp-upload-progress .progress-bar {
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.fp-upload-progress .progress-fill {
+    height: 100%;
+    background: var(--color-text);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.fp-upload-progress .progress-text {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    margin-top: 0.3rem;
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .floorplans-main {
+        padding: 1rem;
+    }
+
+    .fp-global-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .fp-global-filter .srm-select {
+        max-width: 100%;
+    }
+
+    .fp-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .fp-detail-header {
+        flex-wrap: wrap;
+    }
+
+    .fp-item {
+        flex-wrap: wrap;
+    }
+}

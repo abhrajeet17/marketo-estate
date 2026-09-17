@@ -1,0 +1,20 @@
+{# Usage: {% include 'components/form_group.html' with label='Email', name='email', type='email', id='input-email', required=true %}
+   Or use block form_group_content for custom content (e.g. select). #}
+<div class="form-group">
+    {% if label %}
+    <label for="{{ id|default(name) }}">{{ label }}{% if required %} *{% endif %}</label>
+    {% endif %}
+    {% block form_group_content %}
+    <input type="{{ input_type|default('text') }}"
+           name="{{ name }}"
+           id="{{ id|default(name) }}"
+           class="input {% if input_class %}{{ input_class }}{% endif %}"
+           {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+           {% if value is defined %}value="{{ value }}"{% endif %}
+           {% if required %}required{% endif %}
+           {% if disabled %}disabled{% endif %}>
+    {% endblock %}
+    {% if error %}
+    <p class="form-error">{{ error }}</p>
+    {% endif %}
+</div>

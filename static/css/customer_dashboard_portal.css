@@ -1,0 +1,119 @@
+@import url("./portal_tab_loader.css");
+
+/* ── Open CRM buttons ── */
+.dashboard-page .dashboard-open-crm-btn {
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.dashboard-page .dashboard-open-crm-btn--outline {
+  border: 1px solid var(--ms-brand-primary, #ffa300);
+  color: var(--ms-brand-primary, #ffa300);
+  background: transparent;
+}
+
+.dashboard-page .dashboard-open-crm-btn--outline:hover {
+  background: rgba(var(--ms-brand-primary-rgb, 255, 163, 0), 0.1);
+  color: var(--ms-brand-primary, #ffa300);
+}
+
+.dashboard-page .dashboard-open-crm-btn--solid {
+  border: 1px solid var(--ms-brand-primary, #ffa300);
+  background: var(--ms-brand-primary, #ffa300);
+  color: var(--ms-brand-dark, #333333);
+}
+
+.dashboard-page .dashboard-open-crm-btn--solid:hover {
+  background: var(--ms-brand-primary-hover, #e69200);
+  border-color: var(--ms-brand-primary-hover, #e69200);
+  color: var(--ms-brand-dark, #333333);
+}
+
+/* ── Dashboard content ── */
+.dashboard-page .dash-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-page .dash-kpi-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: rgba(255, 163, 0, 0.12);
+  color: var(--ms-brand-primary, #ffa300);
+}
+
+.dashboard-page .dash-kpi-icon.warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.dashboard-page .dash-kpi-icon.secondary {
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+}
+
+.dashboard-page .dash-badge {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+}
+
+.dashboard-page .dash-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  padding: 0.65rem 0.75rem;
+}
+
+.dashboard-page .dash-table td {
+  padding: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+}
+
+.dashboard-page .dash-avatar {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 163, 0, 0.15);
+  color: var(--ms-brand-primary-dark, #e69200);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dashboard-plot-search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+}
+
+.dashboard-plot-search-item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dashboard-plot-search-item-sub {
+  font-size: 0.75rem;
+  color: #6b7280;
+}

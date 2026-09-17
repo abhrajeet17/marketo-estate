@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% block title %}Route Map Editor - MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<link rel="stylesheet" href="/static/css/sales_route_map_editor.css">
+{% endblock %}
+{% block content %}
+<div class="sre-page">
+    {% set active_page = 'floorplans' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="sre-main">
+        <div class="sre-header">
+            <a href="/salestools?tab=route-maps" class="sre-back-link">Back to Route Maps</a>
+            <div>
+                <h1 class="sre-title" id="sre-map-title">Route Map Editor</h1>
+                <p class="sre-subtitle">Flow: upload image -> add one main pointer -> add normal pointers -> draw routes -> add independent hover routes like highways.</p>
+            </div>
+            <a class="btn btn-secondary" id="sre-preview-link" href="#" target="_blank" rel="noopener">Preview</a>
+        </div>
+
+        <div class="sre-status" id="sre-status">Loading map...</div>
+
+        <div class="sre-layout">
+            <section class="sre-canvas-shell">
+                <div class="sre-map-stage" id="sre-map-stage">
+                    <img id="sre-map-image" class="sre-map-image" alt="Route map">
+                    <svg id="sre-routes-svg" class="sre-routes-svg" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
+                    <div id="sre-markers-layer" class="sre-markers-layer"></div>
+                </div>
+            </section>
+
+            <aside class="sre-panel">
+                <div class="sre-panel-section">
+                    <div class="sre-panel-title">Tools</div>
+                    <div class="sre-tool-grid">
+                        <button class="btn btn-secondary btn-sm" id="sre-mode-select">Select</button>
+                        <button class="btn btn-secondary btn-sm" id="sre-mode-main">Add Main</button>
+                        <button class="btn btn-secondary btn-sm" id="sre-mode-normal">Add Pointer</button>
+                        <button class="btn btn-secondary btn-sm" id="sre-mode-route">Draw Route</button>
+                        <button class="btn btn-secondary btn-sm" id="sre-mode-hover-route">Draw Hover Route</button>
+                    </div>
+                    <div class="sre-tool-grid">
+                        <button class="btn btn-secondary btn-sm" id="sre-route-undo">Undo Last Point</button>
+                        <button class="btn btn-secondary btn-sm" id="sre-route-cancel">Cancel Draft</button>
+                    </div>
+                    <div class="sre-mode-label" id="sre-mode-label">Mode: Select</div>
+                </div>
+
+                <div class="sre-panel-section sre-selected-panel" id="sre-selected-panel">
+                    <div class="sre-panel-head sre-panel-head-draggable" id="sre-marker-modal-handle">
+                        <div>
+                            <div class="sre-panel-title">Selected Pointer</div>
+                            <div class="sre-panel-drag-hint" id="sre-marker-modal-hint">Drag this window while editing.</div>
+                        </div>
+                        <button type="button" class="sre-panel-close" id="sre-marker-modal-close" aria-label="Close marker editor" hidden>Close</button>
+                    </div>
+                    <div id="sre-selected-empty" class="sre-note">Select a pointer to edit it in a movable floating window.</div>
+                    <div id="sre-selected-form" style="display:none;">
+                        <div class="sre-field">
+                            <label for="sre-marker-label">Marker Name</label>
+                            <input id="sre-marker-label" class="sre-input" type="text" maxlength="120">
+                        </div>
+                        <div class="sre-field-grid sre-field-grid-two">
+                            <div class="sre-field">
+                                <label for="sre-marker-type">Type</label>
+                                <select id="sre-marker-type" class="sre-input">
+                                    <option value="normal">Normal Pointer</option>
+                                    <option value="main">Main Pointer</option>
+                                </select>
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-marker-pointer-type">Pointer Type</label>
+                                <select id="sre-marker-pointer-type" class="sre-input"></select>
+                            </div>
+                        </div>
+                        <div class="sre-field">
+                            <label>Icon Library</label>
+                            <input id="sre-marker-icon" type="hidden" value="">
+                            <div class="sre-icon-library">
+                                <div class="sre-icon-group-title">Main Pointer Icons</div>
+                                <div id="sre-main-icon-grid" class="sre-icon-grid"></div>
+                                <div class="sre-icon-group-title">Other Pointer Icons</div>
+                                <div id="sre-normal-icon-grid" class="sre-icon-grid"></div>
+                            </div>
+                            <div class="sre-note sre-note-tight">Pointer type helps full view icons and type filters work automatically.</div>
+                        </div>
+                        <div class="sre-field-grid sre-field-grid-two">
+                            <div class="sre-field">
+                                <label for="sre-marker-color">Icon Color</label>
+                                <input id="sre-marker-color" class="sre-route-color-input sre-marker-color-input" type="color" value="#22d3ee">
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-marker-look">Icon Look</label>
+                                <select id="sre-marker-look" class="sre-input"></select>
+                            </div>
+                        </div>
+                        <div class="sre-field">
+                            <label for="sre-marker-size-range">Pointer Size</label>
+                            <div class="sre-size-controls">
+                                <input id="sre-marker-size-range" class="sre-range-input" type="range" min="0.6" max="2.4" step="0.05" value="1">
+                                <input id="sre-marker-size" class="sre-input sre-size-number-input" type="number" min="0.6" max="2.4" step="0.05" value="1">
+                            </div>
+                            <div class="sre-note sre-note-tight">1 is the default size for that pointer type.</div>
+                        </div>
+                        <div class="sre-marker-preview" id="sre-marker-preview">
+                            <div class="sre-marker-preview-pin" id="sre-marker-preview-pin">
+                                <span class="sre-marker-icon" id="sre-marker-preview-icon"></span>
+                            </div>
+                            <div class="sre-note">Preview updates as you change icon, color, look, or size.</div>
+                        </div>
+                        <div class="sre-actions">
+                            <button class="btn btn-secondary btn-sm" id="sre-save-marker">Save</button>
+                            <button class="btn btn-secondary btn-sm" id="sre-move-marker">Move</button>
+                            <button class="btn btn-danger btn-sm" id="sre-delete-marker">Delete</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sre-panel-section sre-selected-panel" id="sre-selected-route-panel" hidden>
+                    <div class="sre-panel-head sre-panel-head-draggable" id="sre-route-modal-handle">
+                        <div>
+                            <div class="sre-panel-title">Selected Route</div>
+                            <div class="sre-panel-drag-hint">Drag this window while editing.</div>
+                        </div>
+                        <button type="button" class="sre-panel-close" id="sre-route-modal-close" aria-label="Close route editor">Close</button>
+                    </div>
+                    <div id="sre-selected-route-form">
+                        <div class="sre-route-editor-summary" id="sre-selected-route-name"></div>
+                        <div class="sre-note sre-note-tight" id="sre-selected-route-meta"></div>
+                        <div class="sre-field-grid">
+                            <div class="sre-field">
+                                <label for="sre-selected-route-color">Route Color</label>
+                                <input id="sre-selected-route-color" class="sre-route-color-input" type="color" value="#162338">
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-selected-route-width">Route Width</label>
+                                <input id="sre-selected-route-width" class="sre-input sre-route-width-input" type="number" min="1" max="12" step="1" value="3">
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-selected-route-distance">Distance (km)</label>
+                                <input id="sre-selected-route-distance" class="sre-input sre-route-distance-input" type="number" min="0" step="0.01" placeholder="e.g. 8.5">
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-selected-route-style">Line Type</label>
+                                <select id="sre-selected-route-style" class="sre-input">
+                                    <option value="dashed">Dashed</option>
+                                    <option value="dotted">Dotted</option>
+                                    <option value="continuous">Continuous</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="sre-note sre-note-tight">Preview updates live before saving. Redraw the route if you need to change its path.</div>
+                        <div class="sre-actions">
+                            <button class="btn btn-secondary btn-sm" id="sre-save-route">Save</button>
+                            <button class="btn btn-danger btn-sm" id="sre-delete-route">Delete</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sre-panel-section sre-selected-panel" id="sre-selected-hover-route-panel" hidden>
+                    <div class="sre-panel-head sre-panel-head-draggable" id="sre-hover-route-modal-handle">
+                        <div>
+                            <div class="sre-panel-title">Selected Independent Route</div>
+                            <div class="sre-panel-drag-hint">Drag this window while editing.</div>
+                        </div>
+                        <button type="button" class="sre-panel-close" id="sre-hover-route-modal-close" aria-label="Close independent route editor">Close</button>
+                    </div>
+                    <div id="sre-selected-hover-route-form">
+                        <div class="sre-route-editor-summary" id="sre-selected-hover-route-name"></div>
+                        <div class="sre-note sre-note-tight" id="sre-selected-hover-route-meta"></div>
+                        <div class="sre-field-grid">
+                            <div class="sre-field">
+                                <label for="sre-selected-hover-route-label">Label</label>
+                                <input id="sre-selected-hover-route-label" class="sre-input" type="text" maxlength="120" placeholder="Independent route label">
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-selected-hover-route-color">Route Color</label>
+                                <input id="sre-selected-hover-route-color" class="sre-route-color-input" type="color" value="#facc15">
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-selected-hover-route-width">Route Width</label>
+                                <input id="sre-selected-hover-route-width" class="sre-input sre-route-width-input" type="number" min="1" max="12" step="1" value="4">
+                            </div>
+                            <div class="sre-field">
+                                <label for="sre-selected-hover-route-style">Line Type</label>
+                                <select id="sre-selected-hover-route-style" class="sre-input">
+                                    <option value="dashed">Dashed</option>
+                                    <option value="dotted">Dotted</option>
+                                    <option value="continuous">Continuous</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="sre-note sre-note-tight">Preview updates live before saving. Delete and redraw the route if you need to change its path.</div>
+                        <div class="sre-actions">
+                            <button class="btn btn-secondary btn-sm" id="sre-save-selected-hover-route">Save</button>
+                            <button class="btn btn-danger btn-sm" id="sre-delete-selected-hover-route">Delete</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sre-panel-section">
+                    <div class="sre-panel-title">Pointers</div>
+                    <div id="sre-markers-list" class="sre-list"></div>
+                </div>
+
+                <div class="sre-panel-section">
+                    <div class="sre-panel-title">Routes</div>
+                    <div class="sre-field-grid">
+                        <div class="sre-field">
+                            <label for="sre-route-color">New Route Color</label>
+                            <input id="sre-route-color" class="sre-route-color-input" type="color" value="#162338">
+                        </div>
+                        <div class="sre-field">
+                            <label for="sre-route-width">New Route Width</label>
+                            <input id="sre-route-width" class="sre-input sre-route-width-input" type="number" min="1" max="12" step="1" value="3">
+                        </div>
+                        <div class="sre-field">
+                            <label for="sre-route-distance">New Route Distance (km)</label>
+                            <input id="sre-route-distance" class="sre-input sre-route-distance-input" type="number" min="0" step="0.01" placeholder="e.g. 8.5">
+                        </div>
+                        <div class="sre-field">
+                            <label for="sre-route-style">New Route Line Type</label>
+                            <select id="sre-route-style" class="sre-input">
+                                <option value="dashed">Dashed</option>
+                                <option value="dotted">Dotted</option>
+                                <option value="continuous">Continuous</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="sre-routes-list" class="sre-list"></div>
+                </div>
+
+                <div class="sre-panel-section">
+                    <div class="sre-panel-title">Independent Hover Routes</div>
+                    <div class="sre-field-grid">
+                        <div class="sre-field">
+                            <label for="sre-hover-route-label">Label</label>
+                            <input id="sre-hover-route-label" class="sre-input" type="text" maxlength="120" placeholder="e.g. Western Express Highway">
+                        </div>
+                        <div class="sre-field">
+                            <label for="sre-hover-route-color">Route Color</label>
+                            <input id="sre-hover-route-color" class="sre-route-color-input" type="color" value="#facc15">
+                        </div>
+                        <div class="sre-field">
+                            <label for="sre-hover-route-width">Route Width</label>
+                            <input id="sre-hover-route-width" class="sre-input sre-route-width-input" type="number" min="1" max="12" step="1" value="4">
+                        </div>
+                        <div class="sre-field">
+                            <label for="sre-hover-route-style">Line Type</label>
+                            <select id="sre-hover-route-style" class="sre-input">
+                                <option value="dashed">Dashed</option>
+                                <option value="dotted">Dotted</option>
+                                <option value="continuous">Continuous</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="sre-actions">
+                        <button class="btn btn-secondary btn-sm" id="sre-hover-route-save">Save Hover Route</button>
+                    </div>
+                    <div class="sre-note sre-note-tight">Draw points on the map, then save. Use the list below to rename or restyle them, including dashed, dotted, or continuous line types; delete and redraw to change the path. These routes only appear on hover or tap in the public view.</div>
+                    <div id="sre-hover-routes-list" class="sre-list"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+window.__SRE_BOOTSTRAP__ = {
+    mapId: {{ map_id|tojson }},
+    supabaseUrl: {{ (supabase_url or '')|tojson }},
+    supabaseAnonKey: {{ (supabase_anon_key or '')|tojson }}
+};
+</script>
+<script src="/static/js/sales_route_map_icons.js"></script>
+<script src="/static/js/sales_route_map_editor.js"></script>
+<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
+<script>
+window.sidebarReady.then(function () {
+    if (window.salesRouteMapEditor && typeof window.salesRouteMapEditor.init === 'function') {
+        window.salesRouteMapEditor.init();
+    }
+});
+</script>
+{% endblock %}

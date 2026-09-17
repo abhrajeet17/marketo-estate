@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Invite – MarketoState</title>
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <script src="/static/js/supabase.min.js"></script>
+    <style>
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--color-bg, #0f1115); color: var(--color-text, #fff); font-family: var(--font-body, sans-serif); }
+        .card { width: min(92vw, 520px); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; background: rgba(10,12,16,0.86); padding: 1.2rem 1.15rem; }
+        .title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.35rem; }
+        .sub { font-size: 0.86rem; color: rgba(255,255,255,0.72); margin-bottom: 0.9rem; line-height: 1.5; }
+        .meta { display: grid; gap: 0.35rem; margin-bottom: 0.95rem; font-size: 0.84rem; color: rgba(255,255,255,0.9); }
+        .actions { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+        .btn { border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: #fff; border-radius: 10px; padding: 0.55rem 0.8rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; }
+        .btn.primary { background: #fff; color: #111; border-color: #fff; }
+        .status { margin-top: 0.85rem; font-size: 0.82rem; color: rgba(255,255,255,0.84); min-height: 1.2rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="title">Team Invite</div>
+        <div class="sub" id="invite-desc">Loading invitation…</div>
+        <div class="meta" id="invite-meta"></div>
+        <div class="actions">
+            <button class="btn primary" id="accept-btn" type="button">Accept Invite</button>
+            <a class="btn" id="signin-btn" href="/login">Sign in / Sign up</a>
+        </div>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        (function () {
+            var TOKEN = {{ (invite_token or '')|tojson }};
+            var PENDING_INVITE_KEY = 'pending_client_team_invite_token_v1';
+            var inviteDetails = null;
+            var statusEl = document.getElementById('status');
+            var descEl = document.getElementById('invite-desc');
+            var metaEl = document.getElementById('invite-meta');
+            var acceptBtn = document.getElementById('accept-btn');
+            var signinBtn = document.getElementById('signin-btn');
+
+            function setStatus(msg) { statusEl.textContent = msg || ''; }
+            function roleLabel(role) {
+                var key = String(role || '').trim().toLowerCase();
+                if (key === 'client_admin') return 'Client Admin';
+                if (key === 'client_user') return 'Sales Agent';
+                if (key === 'broker') return 'Broker';
+                return role || 'Sales Agent';
+            }
+
+            function savePendingToken() {
+                try { window.localStorage.setItem(PENDING_INVITE_KEY, TOKEN); } catch (e) {}
+            }
+
+            function clearPendingToken() {
+                try { window.localStorage.removeItem(PENDING_INVITE_KEY); } catch (e) {}
+            }
+
+            function inviteAuthHref() {
+                var mode = (inviteDetails && inviteDetails.invited_user_exists) ? 'signin' : 'signup';
+                var email = (inviteDetails && inviteDetails.email) ? String(inviteDetails.email).trim() : '';
+                var href = '/login?client_invite=' + encodeURIComponent(TOKEN) + '&mode=' + encodeURIComponent(mode);
+                if (email) href += '&email=' + encodeURIComponent(email);
+                return href;
+            }
+
+            function getAuthHeaders(client) {
+                return client.auth.getSession().then(function (r) {
+                    var h = { 'Content-Type': 'application/json' };
+                    if (r.data.session && r.data.session.access_token) h['Authorization'] = 'Bearer ' + r.data.session.access_token;
+                    return h;
+                });
+            }
+
+            function fetchInviteDetails() {
+                return fetch('/api/public/client-invite/' + encodeURIComponent(TOKEN))
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d || {} }; }); })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error((res.data && res.data.error) || 'Invite not found');
+                        var d = res.data || {};
+                        inviteDetails = d;
+                        var clientName = d.client_name || 'Team';
+                        var inviter = d.inviter_name || 'A client';
+                        descEl.textContent = inviter + ' has invited you to join his team ' + clientName + '.';
+                        metaEl.innerHTML =
+                            '<div><strong>Team:</strong> ' + (clientName || '-') + '</div>' +
+                            '<div><strong>Email:</strong> ' + (d.email || '-') + '</div>' +
+                            '<div><strong>Role:</strong> ' + roleLabel(d.member_role || 'client_user') + '</div>';
+                        signinBtn.textContent = d.invited_user_exists ? 'Sign in to continue' : 'Sign up to continue';
+                        signinBtn.href = inviteAuthHref();
+                    })
+                    .catch(function (e) {
+                        descEl.textContent = 'Invitation is invalid or unavailable.';
+                        setStatus(e.message || 'Invite not found');
+                    });
+            }
+
+            function ensureAuthAndAccept() {
+                var supabaseUrl = {{ (supabase_url or '')|tojson }};
+                var supabaseAnonKey = {{ (supabase_anon_key or '')|tojson }};
+                if (!supabaseUrl || !supabaseAnonKey || !window.supabase) {
+                    setStatus('Auth not configured.');
+                    return;
+                }
+                var sb = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                savePendingToken();
+                acceptBtn.disabled = true;
+                setStatus('Checking account...');
+                getAuthHeaders(sb).then(function (h) {
+                    if (!h.Authorization) {
+                        window.location.href = inviteAuthHref();
+                        return;
+                    }
+                    setStatus('Applying invite...');
+                    return fetch('/api/client-team-invites/accept', {
+                        method: 'POST',
+                        headers: h,
+                        body: JSON.stringify({ invite_token: TOKEN }),
+                    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d || {} }; }); })
+                      .then(function (res) {
+                          if (!res.ok) throw new Error((res.data && res.data.error) || 'Failed to accept invite');
+                          clearPendingToken();
+                          setStatus('Invite accepted. Redirecting...');
+                          setTimeout(function () { window.location.href = '/user-management'; }, 800);
+                      });
+                }).catch(function (e) {
+                    setStatus(e.message || 'Could not accept invite');
+                    acceptBtn.disabled = false;
+                });
+            }
+
+            acceptBtn.addEventListener('click', ensureAuthAndAccept);
+            signinBtn.href = '/login?client_invite=' + encodeURIComponent(TOKEN);
+            fetchInviteDetails();
+        })();
+    </script>
+</body>
+</html>
+
+

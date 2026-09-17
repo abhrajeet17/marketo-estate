@@ -1,0 +1,14 @@
+{% macro crm_data_table(tbody_id, pagination_id, empty_id='') %}
+<div class="card crm-data-table">
+    <div class="table-wrap">
+        <table class="crm-data-table__table">
+            {{ caller() }}
+            <tbody id="{{ tbody_id }}"></tbody>
+        </table>
+        {% if empty_id %}
+        <div class="empty" id="{{ empty_id }}" style="display:none;"></div>
+        {% endif %}
+        <div class="crm-pagination" id="{{ pagination_id }}"></div>
+    </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirming… – MarketoState</title>
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <script src="/static/js/supabase.min.js"></script>
+    <style>
+        body { display: flex; align-items: center; justify-content: center; margin: 0; }
+        .msg { text-align: center; }
+    </style>
+</head>
+
+<body>
+    <p class="msg" id="msg">Confirming…</p>
+    <script>
+        (function () {
+            var msg = document.getElementById('msg');
+            var PENDING_SIGNUP_PROFILE_KEY = 'pending_signup_profile_v1';
+            var PENDING_CLIENT_INVITE_KEY = 'pending_client_team_invite_token_v1';
+
+            function loadPendingSignupProfile() {
+                try {
+                    var raw = window.localStorage.getItem(PENDING_SIGNUP_PROFILE_KEY);
+                    if (!raw) return null;
+                    var parsed = JSON.parse(raw);
+                    if (!parsed || typeof parsed !== 'object') return null;
+                    return parsed;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function clearPendingSignupProfile() {
+                try { window.localStorage.removeItem(PENDING_SIGNUP_PROFILE_KEY); } catch (e) { }
+            }
+
+            function loadPendingClientInviteToken() {
+                try { return String(window.localStorage.getItem(PENDING_CLIENT_INVITE_KEY) || '').trim(); } catch (e) { return ''; }
+            }
+
+            function clearPendingClientInviteToken() {
+                try { window.localStorage.removeItem(PENDING_CLIENT_INVITE_KEY); } catch (e) { }
+            }
+
+            function applyPendingSignupProfile(session) {
+                if (!session || !session.access_token || !session.user) return Promise.resolve();
+                var pending = loadPendingSignupProfile();
+                var displayName = (pending && pending.display_name) ? String(pending.display_name).trim() : '';
+                if (!displayName && session.user.user_metadata && session.user.user_metadata.display_name)
+                    displayName = String(session.user.user_metadata.display_name || '').trim();
+                if (!displayName) return Promise.resolve();
+                var pendingEmail = (pending && pending.email) ? String(pending.email).trim().toLowerCase() : '';
+                var sessionEmail = String(session.user.email || '').trim().toLowerCase();
+                if (pendingEmail && sessionEmail && pendingEmail !== sessionEmail) return Promise.resolve();
+                var body = { display_name: displayName };
+                if (session.user.email) body.email = session.user.email; else if (pending && pending.email) body.email = pending.email;
+                return fetch('/api/profile/me', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: JSON.stringify(body)
+                }).then(function (r) {
+                    if (r.ok) clearPendingSignupProfile();
+                }).catch(function () { });
+            }
+
+            function applyPendingClientInvite(session) {
+                if (!session || !session.access_token) return Promise.resolve({ attempted: false, applied: false });
+                var token = loadPendingClientInviteToken();
+                if (!token) return Promise.resolve({ attempted: false, applied: false });
+                return fetch('/api/client-team-invites/accept', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: JSON.stringify({ invite_token: token })
+                }).then(function (r) {
+                    return r.json().catch(function () { return {}; }).then(function (data) {
+                        if (r.ok) {
+                            clearPendingClientInviteToken();
+                            return { attempted: true, applied: true, status: r.status, data: data || {} };
+                        }
+                        // Graceful handling: if user is already a member, don't block login
+                        if (data && data.result && data.result.already_member) {
+                            clearPendingClientInviteToken();
+                            return { attempted: true, applied: true, status: r.status, data: data || {}, alreadyMember: true };
+                        }
+                        return {
+                            attempted: true,
+                            applied: false,
+                            status: r.status,
+                            error: (data && data.error) ? String(data.error) : 'Could not accept client invite'
+                        };
+                    });
+                }).catch(function () {
+                    return { attempted: true, applied: false, status: 0, error: 'Network issue while accepting invite. Please try again.' };
+                });
+            }
+
+            // Handle Supabase redirect errors (e.g. otp_expired, access_denied) in hash
+            var hash = window.location.hash.slice(1) || '';
+            var params = {};
+            hash.split('&').forEach(function (p) {
+                var kv = p.split('=');
+                if (kv[0]) params[decodeURIComponent(kv[0])] = kv[1] ? decodeURIComponent(kv[1].replace(/\+/g, ' ')) : '';
+            });
+            if (params.error || params.error_code) {
+                var friendly = params.error_code === 'otp_expired' || (params.error_description || '').indexOf('expired') !== -1
+                    ? 'This link has expired. Please request a new sign-in or password reset link.'
+                    : (params.error_description || params.error || 'Something went wrong.');
+                msg.textContent = friendly + ' Redirecting to sign in…';
+                setTimeout(function () { window.location.replace('/login'); }, 2500);
+                return;
+            }
+            var supabaseUrl = {{ (supabase_url or '')| tojson
+        }};
+        var supabaseAnonKey = {{ (supabase_anon_key or '')| tojson }};
+        if (!supabaseUrl || !supabaseAnonKey) {
+            msg.textContent = 'Supabase not configured.';
+            return;
+        }
+        var supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+        function normalizeHex(hex) {
+            var v = String(hex || '').trim();
+            if (!v) return '';
+            if (v.indexOf('#') !== 0) v = '#' + v;
+            if (v.length === 4) v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+            return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : '';
+        }
+
+        function setOrgThemeCookieThenRedirect(session) {
+            var uid = session && session.user && session.user.id;
+            var defaultTarget = uid ? '/dashboard/' + encodeURIComponent(uid) : '/dashboard';
+            var token = session && session.access_token;
+            if (!token) {
+                msg.textContent = 'Done. Redirecting…';
+                window.location.replace(defaultTarget);
+                return;
+            }
+            msg.textContent = 'Loading…';
+            fetch('/api/org/me', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    var accent = (data && data.org && data.org.accent_color) ? normalizeHex(data.org.accent_color) : '';
+                    if (accent) {
+                        try {
+                            document.cookie = 'org_accent=' + encodeURIComponent(accent) + '; path=/; max-age=86400; SameSite=Lax';
+                        } catch (e) { }
+                    }
+                    var target = defaultTarget;
+                    if (data && data.post_login_path) target = data.post_login_path;
+                    else if (data && data.profile && (data.profile.is_broker || data.profile.is_client_admin || data.profile.role === 'broker')) {
+                        target = '/customer-dashboard';
+                    }
+                    msg.textContent = 'Done. Redirecting…';
+                    window.location.replace(target);
+                })
+                .catch(function () {
+                    msg.textContent = 'Done. Redirecting…';
+                    window.location.replace(defaultTarget);
+                });
+        }
+
+        supabase.auth.getSession().then(function (r) {
+            var session = r.data.session || null;
+            return applyPendingSignupProfile(session).then(function () {
+                return applyPendingClientInvite(session).then(function (inv) {
+                    if (inv && inv.attempted && !inv.applied && !inv.alreadyMember) {
+                        msg.textContent = (inv.error || 'Invite acceptance failed.') + ' Redirecting to sign in...';
+                        setTimeout(function () { window.location.replace('/login'); }, 2200);
+                        return;
+                    }
+                    setOrgThemeCookieThenRedirect(session);
+                });
+            });
+        }).catch(function () {
+            msg.textContent = 'Done. Redirecting…';
+            window.location.replace('/dashboard');
+        });
+        }) ();
+    </script>
+</body>
+
+</html>

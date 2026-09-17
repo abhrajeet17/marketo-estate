@@ -1,0 +1,134 @@
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+}
+
+#dn-viewport {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: grab;
+}
+
+body.preview-mobile #dn-viewport,
+body.preview-mobile #dn-loader,
+body.preview-mobile #dn-vignette,
+body.preview-mobile #dn-indicator {
+    height: 100dvh;
+}
+
+#dn-viewport.grabbing {
+    cursor: grabbing;
+}
+
+#dn-viewport img {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: auto;
+    will-change: transform;
+    pointer-events: none;
+    image-rendering: auto;
+}
+
+#dn-viewport canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Subtle vignette overlay for cinematic feel */
+#dn-vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.35) 100%);
+    z-index: 2;
+}
+
+/* Loading state */
+#dn-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    z-index: 10;
+    transition: opacity 0.5s;
+}
+
+#dn-loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dn-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255,255,255,0.15);
+    border-top-color: #c9a962;
+    border-radius: 50%;
+    animation: dn-spin 0.8s linear infinite;
+}
+
+@keyframes dn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Scroll indicator - subtle dots showing position */
+#dn-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+#dn-indicator.visible {
+    opacity: 1;
+}
+
+.dn-indicator-track {
+    width: 120px;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.dn-indicator-thumb {
+    height: 100%;
+    background: rgba(201,169,98,0.7);
+    border-radius: 2px;
+    transition: width 0.1s, margin-left 0.1s;
+}

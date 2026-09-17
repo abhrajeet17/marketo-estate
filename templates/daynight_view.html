@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ project.name }}</title>
+    <link rel="stylesheet" href="/static/css/daynight_view.css">
+</head>
+<body class="{{ 'preview-mobile' if preview_mode == 'mobile' else '' }}">
+    <div id="dn-loader"><div class="dn-spinner"></div></div>
+    <div id="dn-viewport"></div>
+    <div id="dn-vignette"></div>
+    <div id="dn-indicator">
+        <div class="dn-indicator-track">
+            <div class="dn-indicator-thumb" id="dn-indicator-thumb"></div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var mediaType = {{ media_type|tojson }};
+        var mediaUrl = {{ media_url|tojson }};
+        var stitchedWidth = {{ stitched_width|tojson }};
+        var stitchedHeight = {{ stitched_height|tojson }};
+        var PIXELS_PER_SECOND = {{ drag_speed|tojson }};
+
+        var viewport = document.getElementById('dn-viewport');
+        var loader = document.getElementById('dn-loader');
+        var indicator = document.getElementById('dn-indicator');
+        var indicatorThumb = document.getElementById('dn-indicator-thumb');
+        var loaderHidden = false;
+
+        // Shared drag state
+        var isDragging = false;
+        var startX = 0;
+        var startOffset = 0;
+        var velocityX = 0;
+        var lastX = 0;
+        var lastTime = 0;
+        var momentumRaf = null;
+        var indicatorTimeout = null;
+
+        function showIndicator() {
+            indicator.classList.add('visible');
+            clearTimeout(indicatorTimeout);
+            indicatorTimeout = setTimeout(function() {
+                indicator.classList.remove('visible');
+            }, 1200);
+        }
+
+        function hideLoader() {
+            if (loaderHidden || !loader) return;
+            loaderHidden = true;
+            loader.classList.add('hidden');
+        }
+
+        // =====================================================================
+        // IMAGE MODE
+        // =====================================================================
+        if (mediaType === 'image') {
+            var img = new Image();
+            var offsetX = 0;
+            var imgDisplayWidth = 0;
+            var vw = window.innerWidth;
+            var vh = window.innerHeight;
+
+            img.onload = function() {
+                var scale = vh / img.naturalHeight;
+                imgDisplayWidth = img.naturalWidth * scale;
+                img.style.height = '100%';
+                img.style.width = imgDisplayWidth + 'px';
+                viewport.appendChild(img);
+                offsetX = -(imgDisplayWidth / 2 - vw / 2);
+                applyOffset();
+                hideLoader();
+                showIndicator();
+            };
+            img.onerror = function() {
+                hideLoader();
+            };
+            img.decoding = 'async';
+            img.loading = 'eager';
+            img.src = mediaUrl;
+
+            function clampOffset(x) {
+                var minX = -(imgDisplayWidth - vw);
+                if (minX > 0) minX = 0;
+                if (x > 0) x = 0;
+                if (x < minX) x = minX;
+                return x;
+            }
+
+            function applyOffset() {
+                img.style.transform = 'translateX(' + offsetX + 'px)';
+                updateIndicator(offsetX, imgDisplayWidth, vw);
+            }
+
+            function updateIndicator(off, totalW, viewW) {
+                if (totalW <= viewW) return;
+                var range = totalW - viewW;
+                var pos = -off / range;
+                var thumbW = viewW / totalW;
+                indicatorThumb.style.width = (thumbW * 100) + '%';
+                indicatorThumb.style.marginLeft = (pos * (1 - thumbW) * 100) + '%';
+            }
+
+            function beginImageDrag(clientX, pointerId, preventDefault) {
+                isDragging = true;
+                startX = clientX;
+                startOffset = offsetX;
+                velocityX = 0;
+                lastX = clientX;
+                lastTime = Date.now();
+                viewport.classList.add('grabbing');
+                if (pointerId != null && viewport.setPointerCapture) {
+                    try { viewport.setPointerCapture(pointerId); } catch (err) {}
+                }
+                if (momentumRaf) { cancelAnimationFrame(momentumRaf); momentumRaf = null; }
+                if (preventDefault) preventDefault();
+            }
+
+            function moveImageDrag(clientX, preventDefault) {
+                if (!isDragging) return;
+                var dx = clientX - startX;
+                offsetX = clampOffset(startOffset + dx);
+                applyOffset();
+                showIndicator();
+                var now = Date.now();
+                var dt = now - lastTime;
+                if (dt > 0) {
+                    velocityX = (clientX - lastX) / dt * 16;
+                }
+                lastX = clientX;
+                lastTime = now;
+                if (preventDefault) preventDefault();
+            }
+
+            function endImageDrag(preventDefault) {
+                if (!isDragging) return;
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+                startMomentum();
+                if (preventDefault) preventDefault();
+            }
+
+            function cancelImageDrag() {
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+            }
+
+            viewport.addEventListener('pointerdown', function(e) {
+                beginImageDrag(e.clientX, e.pointerId, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointermove', function(e) {
+                moveImageDrag(e.clientX, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointerup', function(e) {
+                endImageDrag(function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointercancel', cancelImageDrag);
+            if (!window.PointerEvent) {
+                viewport.addEventListener('touchstart', function(e) {
+                    if (e.touches.length !== 1) return;
+                    beginImageDrag(e.touches[0].clientX, null, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchmove', function(e) {
+                    if (!isDragging || e.touches.length !== 1) return;
+                    moveImageDrag(e.touches[0].clientX, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchend', function(e) {
+                    endImageDrag(function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchcancel', cancelImageDrag);
+            }
+
+            function startMomentum() {
+                if (Math.abs(velocityX) < 0.5) return;
+                var friction = 0.95;
+                function step() {
+                    velocityX *= friction;
+                    if (Math.abs(velocityX) < 0.3) { velocityX = 0; return; }
+                    offsetX = clampOffset(offsetX + velocityX);
+                    applyOffset();
+                    showIndicator();
+                    momentumRaf = requestAnimationFrame(step);
+                }
+                momentumRaf = requestAnimationFrame(step);
+            }
+
+            window.addEventListener('resize', function() {
+                vw = window.innerWidth;
+                vh = window.innerHeight;
+                var scale = vh / img.naturalHeight;
+                imgDisplayWidth = img.naturalWidth * scale;
+                img.style.width = imgDisplayWidth + 'px';
+                offsetX = clampOffset(offsetX);
+                applyOffset();
+            });
+        }
+
+        // =====================================================================
+        // VIDEO MODE - Smooth seeking with queued seeks
+        // =====================================================================
+        if (mediaType === 'video') {
+            var video = document.createElement('video');
+            video.src = mediaUrl;
+            video.preload = 'auto';
+            video.muted = true;
+            video.defaultMuted = true;
+            video.playsInline = true;
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', '');
+            video.style.position = 'fixed';
+            video.style.left = '-9999px';
+            video.style.top = '0';
+            video.style.width = '1px';
+            video.style.height = '1px';
+            video.style.opacity = '0';
+            video.style.pointerEvents = 'none';
+            document.body.appendChild(video);
+
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            viewport.appendChild(canvas);
+
+            var duration = 0;
+            var currentTime = 0;
+            var canvasReady = false;
+            var seekPending = false;
+            var targetTime = 0;
+            var videoFirstFrameTimer = null;
+
+            function finishVideoLoading() {
+                canvasReady = true;
+                hideLoader();
+                showIndicator();
+                if (videoFirstFrameTimer) {
+                    clearTimeout(videoFirstFrameTimer);
+                    videoFirstFrameTimer = null;
+                }
+            }
+
+            function ensureCanvasSize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+            }
+
+            video.addEventListener('loadedmetadata', function() {
+                duration = isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+                currentTime = duration / 2;
+                targetTime = currentTime;
+                video.currentTime = currentTime;
+                ensureCanvasSize();
+            });
+
+            video.addEventListener('loadeddata', function() {
+                if (!canvasReady) {
+                    drawCanvasFrameNow();
+                    finishVideoLoading();
+                }
+            });
+
+            video.addEventListener('canplay', function() {
+                if (!canvasReady) {
+                    drawCanvasFrameNow();
+                    finishVideoLoading();
+                }
+            });
+
+            video.addEventListener('error', function() {
+                hideLoader();
+            });
+
+            video.load();
+
+            videoFirstFrameTimer = setTimeout(function() {
+                if (!canvasReady && video && video.readyState >= 2) {
+                    drawCanvasFrameNow();
+                    finishVideoLoading();
+                } else if (!canvasReady) {
+                    hideLoader();
+                }
+            }, 8000);
+
+            function drawCanvasFrameNow() {
+                if (!video.videoWidth || !video.videoHeight || !canvas.width || !canvas.height) return;
+                drawVideoFrame();
+            }
+
+            video.addEventListener('seeked', function() {
+                if (!canvasReady) finishVideoLoading();
+                drawCanvasFrameNow();
+                // If user moved while we were seeking, jump to the latest target
+                if (seekPending) {
+                    seekPending = false;
+                    currentTime = targetTime;
+                    video.currentTime = currentTime;
+                }
+            });
+
+            function drawVideoFrame() {
+                if (!video.videoWidth || !video.videoHeight || !canvas.width || !canvas.height) return;
+                var vw = canvas.width;
+                var vh = canvas.height;
+                var vRatio = video.videoWidth / video.videoHeight;
+                var cRatio = vw / vh;
+                var dw, dh, dx, dy;
+                if (vRatio > cRatio) {
+                    dh = vh; dw = vh * vRatio; dx = (vw - dw) / 2; dy = 0;
+                } else {
+                    dw = vw; dh = vw / vRatio; dx = 0; dy = (vh - dh) / 2;
+                }
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, vw, vh);
+                ctx.drawImage(video, dx, dy, dw, dh);
+                updateVideoIndicator();
+            }
+
+            function updateVideoIndicator() {
+                if (duration <= 0) return;
+                var pos = currentTime / duration;
+                var thumbW = 0.08;
+                indicatorThumb.style.width = (thumbW * 100) + '%';
+                indicatorThumb.style.marginLeft = (pos * (1 - thumbW) * 100) + '%';
+            }
+
+            function seekTo(t) {
+                t = Math.max(0, Math.min(duration, t));
+                targetTime = t;
+                if (!video.seeking) {
+                    currentTime = t;
+                    video.currentTime = t;
+                } else {
+                    seekPending = true;
+                }
+            }
+
+            function beginVideoDrag(clientX, pointerId, preventDefault) {
+                isDragging = true;
+                startX = clientX;
+                startOffset = currentTime;
+                velocityX = 0;
+                lastX = clientX;
+                lastTime = Date.now();
+                viewport.classList.add('grabbing');
+                if (pointerId != null && viewport.setPointerCapture) {
+                    try { viewport.setPointerCapture(pointerId); } catch (err) {}
+                }
+                if (momentumRaf) { cancelAnimationFrame(momentumRaf); momentumRaf = null; }
+                if (preventDefault) preventDefault();
+            }
+
+            function moveVideoDrag(clientX, preventDefault) {
+                if (!isDragging) return;
+                var dx = clientX - startX;
+                var timeDelta = -dx / PIXELS_PER_SECOND;
+                var newTime = Math.max(0, Math.min(duration, startOffset + timeDelta));
+                seekTo(newTime);
+                showIndicator();
+                var now = Date.now();
+                var dt = now - lastTime;
+                if (dt > 0) {
+                    velocityX = (clientX - lastX) / dt * 16;
+                }
+                lastX = clientX;
+                lastTime = now;
+                if (preventDefault) preventDefault();
+            }
+
+            function endVideoDrag(preventDefault) {
+                if (!isDragging) return;
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+                startVideoMomentum();
+                if (preventDefault) preventDefault();
+            }
+
+            function cancelVideoDrag() {
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+            }
+
+            viewport.addEventListener('pointerdown', function(e) {
+                beginVideoDrag(e.clientX, e.pointerId, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointermove', function(e) {
+                moveVideoDrag(e.clientX, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointerup', function(e) {
+                endVideoDrag(function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointercancel', cancelVideoDrag);
+            if (!window.PointerEvent) {
+                viewport.addEventListener('touchstart', function(e) {
+                    if (e.touches.length !== 1) return;
+                    beginVideoDrag(e.touches[0].clientX, null, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchmove', function(e) {
+                    if (!isDragging || e.touches.length !== 1) return;
+                    moveVideoDrag(e.touches[0].clientX, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchend', function(e) {
+                    endVideoDrag(function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchcancel', cancelVideoDrag);
+            }
+
+            function startVideoMomentum() {
+                if (Math.abs(velocityX) < 0.5) return;
+                var friction = 0.93;
+                function step() {
+                    velocityX *= friction;
+                    if (Math.abs(velocityX) < 0.3) { velocityX = 0; return; }
+                    var timeDelta = -velocityX / PIXELS_PER_SECOND;
+                    currentTime = Math.max(0, Math.min(duration, currentTime + timeDelta));
+                    seekTo(currentTime);
+                    showIndicator();
+                    momentumRaf = requestAnimationFrame(step);
+                }
+                momentumRaf = requestAnimationFrame(step);
+            }
+
+            window.addEventListener('resize', function() {
+                ensureCanvasSize();
+                if (canvasReady) drawVideoFrame();
+            });
+        }
+
+        // Prevent default scrolling/zooming
+        document.addEventListener('wheel', function(e) { e.preventDefault(); }, { passive: false });
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+    })();
+    </script>
+</body>
+</html>

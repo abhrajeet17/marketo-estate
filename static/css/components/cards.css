@@ -1,0 +1,87 @@
+/**
+ * Cards – soft beige background, minimal border, rounded corners.
+ */
+
+.card {
+    background: var(--color-surface-strong);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.card-header {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.card-title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--color-text);
+}
+
+.card-body {
+    padding: 1.25rem 1.5rem;
+}
+
+/* Project info block (header card) */
+.project-info {
+    min-width: 220px;
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-strong);
+    box-shadow: var(--shadow);
+}
+
+.project-kicker {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.project-name {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-text);
+    letter-spacing: 0.01em;
+}
+
+.project-subtitle {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    margin-top: 0.2rem;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+}
+
+.compass-card {
+    width: 72px;
+    height: 72px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-strong);
+    border-radius: var(--radius-sm);
+    display: grid;
+    place-items: center;
+    color: var(--color-text);
+    font-size: 1.75rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+}
+
+.compass-card::before {
+    content: '✧';
+    opacity: 0.9;
+}

@@ -1,0 +1,31 @@
+{# Usage: {% include 'components/table.html' with columns=['Name', 'Email', 'Role'], rows=user_rows %}
+   rows: list of dicts; key for each column = column label lowercased, spaces to underscores (e.g. 'Name' -> row.name or row['name']). Use block table_body for custom tbody. #}
+<table class="data-table" {% if table_id %}id="{{ table_id }}"{% endif %}>
+    <thead>
+        <tr>
+            {% for col in columns %}
+            <th>{{ col }}</th>
+            {% endfor %}
+            {% if actions_column %}
+            <th>Actions</th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% block table_body %}
+        {% if rows %}
+        {% for row in rows %}
+        <tr>
+            {% for col in columns %}
+            {% set key = col|lower|replace(' ', '_') %}
+            <td>{{ row[key]|default('') }}</td>
+            {% endfor %}
+            {% if actions_column %}
+            <td class="actions">{% block row_actions %}{% endblock %}</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+        {% endif %}
+        {% endblock %}
+    </tbody>
+</table>

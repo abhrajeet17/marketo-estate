@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en" class="ms-landing-root">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarketoState — Walk The Land Before The First Brick Is Laid</title>
+  <meta name="description" content="MarketoState turns land, layouts and unbuilt towers into immersive 360° worlds — mapped plot by plot, shared in one link, and sold from anywhere on Earth." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="MarketoState — Walk The Land Before The First Brick Is Laid" />
+  <meta property="og:description" content="Immersive 360° sales for plotted development: draw plots on drone panoramas, share one branded link, and turn every walkthrough into a CRM lead." />
+  <meta property="og:image" content="{{ request.url_root.rstrip('/') }}/static/img/landing/hero-aerial.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="/static/Marketostate/Marketostate%20Favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="/static/img/landing/hero-aerial.jpg" media="(min-width: 761px)" />
+  <link rel="preload" as="image" href="/static/img/landing/hero-aerial-md.jpg" media="(max-width: 760px)" />
+  <link rel="stylesheet" href="/static/css/landing.css?v=20260822-1" />
+</head>
+<body class="ms-landing">
+
+  <!-- ======================= HEADER ======================= -->
+  <header class="msl-header" id="mslHeader">
+    <a class="msl-logo" href="/" aria-label="MarketoState home">
+      <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <circle cx="20" cy="20" r="17" stroke="#FBD784" stroke-width="2.4"/>
+        <path d="M13 27V17.5l3.5 2v7.5M18.5 27V14l4 2.3V27M24.5 27v-8.5l3 1.7V27" stroke="#FFA300" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      MARKETOSTATE
+    </a>
+
+    <nav class="msl-nav" aria-label="Primary">
+      <a href="#chapter-1">The Experience</a>
+      <a href="#chapter-2">Live Mapping</a>
+      <a href="#chapter-3">Pipeline</a>
+      <a href="/explore">Explore</a>
+    </nav>
+
+    <div class="msl-header-actions">
+      <a href="/login" class="msl-btn-ghost">Log in</a>
+      <a href="/login?mode=signup" class="msl-btn-solid">Get started</a>
+      <button class="msl-menu-toggle" id="mslMenuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mslMobileNav">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="msl-mobile-nav" id="mslMobileNav" aria-label="Mobile">
+    <a href="#chapter-1">The Experience</a>
+    <a href="#chapter-2">Live Mapping</a>
+    <a href="#chapter-3">Pipeline</a>
+    <a href="/explore">Explore</a>
+    <a href="/login">Log in</a>
+    <a href="/login?mode=signup" style="color: var(--gold);">Get started</a>
+  </nav>
+
+  <!-- ======================= HERO ======================= -->
+  <section class="msl-hero" id="top">
+    <div class="msl-hero-layer msl-hero-sky" data-plx="0.06"></div>
+    <div class="msl-hero-layer msl-hero-photo" data-plx="0.18"><div class="msl-hero-photo-inner"></div></div>
+    <div class="msl-hero-layer msl-hero-tint"></div>
+    <div class="msl-hero-layer msl-hero-fog" data-plx="0.3"><div class="msl-hero-fog-inner"></div></div>
+    <canvas id="mslDust" class="msl-hero-layer" aria-hidden="true"></canvas>
+
+    <div class="msl-hero-inner" data-plx="-0.22">
+      <p class="msl-eyebrow">Immersive Sales For Plotted Development</p>
+      <h1>Walk The Land <em>Before</em> The First Brick Is Laid.</h1>
+      <p class="msl-hero-sub">
+        MarketoState turns raw land, plotted townships and unbuilt towers into immersive
+        360° worlds — every plot drawn, priced and tracked live on the drone view itself,
+        and the whole project shared in one branded link a buyer can walk through from
+        anywhere on Earth.
+      </p>
+      <div class="msl-hero-ctas">
+        <a href="/login?mode=signup" class="msl-cta-primary">
+          Start for free
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#chapter-1" class="msl-scroll-hint">
+          scroll down
+          <svg width="16" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- left social rail -->
+    <aside class="msl-rail msl-rail--social" aria-label="Social links">
+      <span class="msl-rail-label">Follow us</span>
+      <a href="#" aria-label="Instagram">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="#" aria-label="LinkedIn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.4 8.1h4.2V23H.4V8.1zM8.2 8.1h4v2h.06c.56-1.05 1.93-2.16 3.97-2.16 4.25 0 5.03 2.8 5.03 6.44V23h-4.2v-7.5c0-1.79-.03-4.1-2.5-4.1-2.5 0-2.88 1.95-2.88 3.97V23H8.2V8.1z"/></svg>
+      </a>
+    </aside>
+
+    <!-- right chapter rail -->
+    <aside class="msl-rail msl-rail--nav" aria-label="Page sections">
+      <div class="msl-rail-links" id="mslRailLinks">
+        <a href="#top" class="is-active">Start</a>
+        <a href="#chapter-1">01</a>
+        <a href="#chapter-2">02</a>
+        <a href="#chapter-3">03</a>
+      </div>
+      <div class="msl-rail-track"><div class="msl-rail-thumb" id="mslRailThumb"></div></div>
+    </aside>
+  </section>
+
+  <!-- ======================= CHAPTERS ======================= -->
+  <main class="msl-main">
+
+    <!-- 01 — Immersive tours -->
+    <section class="msl-chapter" id="chapter-1">
+      <span class="msl-chapter-num" data-plx="-0.08" aria-hidden="true">01</span>
+
+      <div class="msl-chapter-copy msl-reveal">
+        <p class="msl-eyebrow">Immersive 360° Tours</p>
+        <h2>Step Inside From Anywhere On Earth.</h2>
+        <p>
+          Upload a drone panorama and it becomes a true spherical world your buyers grab,
+          spin and wander through — no app, no login, just a link. Navigator hotspots walk
+          them from the gatehouse to the ridgeline, markers carry photos and video pinned to
+          the exact spot they describe, and you can record a voice-over in the browser so
+          the site sells itself at 11pm.
+        </p>
+        <ul class="msl-chapter-points">
+          <li>True WebGL 360° panoramas — no headset, no install</li>
+          <li>Navigator hotspots that link scene to scene like a guided walk</li>
+          <li>Voice-over narration &amp; rich media pinned to any viewpoint</li>
+        </ul>
+        <a href="/explore" class="msl-more">
+          explore a live property
+          <svg width="18" height="14" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h20M15 2l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <div class="msl-chapter-visual msl-reveal" data-delay="1">
+        <div class="msl-photo-frame msl-pano" id="mslPano">
+          <div class="msl-photo-bg" id="mslPanoBg"></div>
+          <span class="msl-frame-chip"><span class="dot"></span> Live demo — drag me</span>
+          <span class="msl-pano-hotspot" style="left: 34%; top: 46%;" data-label="Clubhouse — 4 photos"></span>
+          <span class="msl-pano-hotspot" style="left: 62%; top: 62%;" data-label="Phase II · voice note"></span>
+          <span class="msl-pano-hotspot" style="left: 78%; top: 38%;" data-label="River deck → next scene"></span>
+          <div class="msl-pano-compass">
+            <span>PAN</span>
+            <span class="bar"><i id="mslPanoThumb"></i></span>
+            <span>360°</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 — Plot mapping -->
+    <section class="msl-chapter msl-chapter--flip" id="chapter-2">
+      <span class="msl-chapter-num" data-plx="-0.08" aria-hidden="true">02</span>
+
+      <div class="msl-chapter-visual msl-reveal" data-delay="1">
+        <div class="msl-photo-frame">
+          <img src="/static/img/landing/story-township.jpg" alt="Aerial view of a township with mapped plots" loading="lazy" />
+          <svg class="msl-plot-overlay" viewBox="0 0 100 125" preserveAspectRatio="none" aria-hidden="true">
+            <polygon points="8,74 34,71 36,88 9,92"></polygon>
+            <polygon class="p-hold" points="42,70 66,67 69,84 44,87"></polygon>
+            <polygon class="p-sold" points="12,96 38,92 41,110 14,114"></polygon>
+          </svg>
+          <span class="msl-plot-tag" style="left: 12%; top: 52%;"><span class="sw" style="background:#FBD784"></span>Available · ₹42L</span>
+          <span class="msl-plot-tag" style="left: 48%; top: 47%; transition-delay:.2s;"><span class="sw" style="background:#FFCF6E"></span>On hold</span>
+          <span class="msl-plot-tag" style="left: 16%; top: 78%; transition-delay:.4s;"><span class="sw" style="background:#FF7A59"></span>Sold</span>
+        </div>
+      </div>
+
+      <div class="msl-chapter-copy msl-reveal">
+        <p class="msl-eyebrow">Intelligent Plot Mapping</p>
+        <h2>Every Plot. Every Status. Live.</h2>
+        <p>
+          Draw sellable plot boundaries directly onto the 360° sphere — real polygons with
+          a name, area, price and status, not pins on a photo. Flip plots between Available,
+          Hold and Sold as the site sells, and lock a plot against a named buyer so two
+          agents can never sell it twice. Every change ripples instantly to every shared link.
+        </p>
+        <ul class="msl-chapter-points">
+          <li>Plot inventory drawn, priced &amp; tracked on real imagery</li>
+          <li>Plot Lock — hold a plot for a named buyer, end double-selling</li>
+          <li>Route maps, floor plans, building maps &amp; a 3D Earth view</li>
+        </ul>
+        <a href="/login?mode=signup" class="msl-more">
+          start mapping your site
+          <svg width="18" height="14" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h20M15 2l6 6-6 6"/></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- 03 — Pipeline -->
+    <section class="msl-chapter" id="chapter-3">
+      <span class="msl-chapter-num" data-plx="-0.08" aria-hidden="true">03</span>
+
+      <div class="msl-chapter-copy msl-reveal">
+        <p class="msl-eyebrow">From Walkthrough To Handshake</p>
+        <h2>Every Visitor Becomes A Lead.</h2>
+        <p>
+          Inside the tour, buyers shortlist the plots they love into a cart and send a buy
+          interest — and it lands in the built-in CRM as a qualified, broker-attributed lead.
+          Work the pipeline from first call to site visit to negotiation, generate a
+          quotation and email it in one move. Brokers bring their own buyers safely too:
+          contact details stay masked until the referring broker reveals them.
+        </p>
+        <ul class="msl-chapter-points">
+          <li>Plot cart &amp; buy interests wired straight into the CRM</li>
+          <li>Pipeline from New to Won, with printable emailed quotations</li>
+          <li>Broker referrals with masked contacts &amp; controlled reveal</li>
+        </ul>
+        <a href="/crm" class="msl-more">
+          see the pipeline
+          <svg width="18" height="14" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h20M15 2l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <div class="msl-chapter-visual msl-reveal" data-delay="1">
+        <div class="msl-photo-frame">
+          <img src="/static/img/landing/story-ridge.jpg" alt="Hillside village beneath a mountain ridge" loading="lazy" />
+          <div class="msl-crm-float" aria-hidden="true">
+            <div class="msl-crm-card"><span class="ava">RS</span><span>Riya Sharma<small>Viewed Phase II · 3 plots</small></span><span class="st">New lead</span></div>
+            <div class="msl-crm-card"><span class="ava">AK</span><span>Arjun Kapoor<small>Interested · Plot 14B</small></span><span class="st">Site visit</span></div>
+            <div class="msl-crm-card"><span class="ava">MD</span><span>Meera Desai<small>Assigned to broker Nikhil</small></span><span class="st">Negotiation</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================= DAY / NIGHT ======================= -->
+  <section class="msl-daynight" id="daynight">
+    <div class="msl-main">
+      <div class="msl-daynight-head msl-reveal">
+        <p class="msl-eyebrow msl-eyebrow--center">Day &amp; Night Views</p>
+        <h2>Drag Day Into Night.</h2>
+        <p>
+          Golden hour sells the dream; city lights close it. Buyers scrub the scene itself
+          from daylight to dusk to night — stitched render frames or frame-accurate video,
+          tuned to feel like turning a dial on the sky. Try it below.
+        </p>
+      </div>
+
+      <div class="msl-compare msl-reveal" data-delay="1" id="mslCompare" role="slider" aria-label="Day and night comparison" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55" tabindex="0">
+        <div class="night" aria-hidden="true"></div>
+        <div class="day" aria-hidden="true"></div>
+        <div class="msl-compare-handle" aria-hidden="true"></div>
+        <span class="msl-compare-label msl-compare-label--day">Day</span>
+        <span class="msl-compare-label msl-compare-label--night">Night</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= CAPABILITY INDEX ======================= -->
+  <section class="msl-index" id="capabilities">
+    <div class="msl-main">
+      <div class="msl-daynight-head msl-reveal" style="text-align:center; margin: 0 auto;">
+        <p class="msl-eyebrow msl-eyebrow--center">The Whole Expedition</p>
+        <h2>One Platform. The Entire Journey.</h2>
+      </div>
+
+      <div class="msl-index-grid msl-reveal" data-delay="1">
+        <div class="msl-index-cell"><span class="no">— 01</span><h3>360° Plot Editor</h3><p>Draw sellable plot polygons directly onto a spherical drone panorama — named, priced, statused.</p></div>
+        <div class="msl-index-cell"><span class="no">— 02</span><h3>Full View Microsites</h3><p>One branded link bundling tours, day/night, floor plans, galleries, brochures &amp; location — with a full visual theme editor.</p></div>
+        <div class="msl-index-cell"><span class="no">— 03</span><h3>Plot Cart &amp; Buy Interests</h3><p>Buyers shortlist plots inside the tour and submit — it lands as a structured CRM lead.</p></div>
+        <div class="msl-index-cell"><span class="no">— 04</span><h3>Day &amp; Night Scenes</h3><p>Scrub exterior renders from daylight to night — stitched frames or frame-accurate video.</p></div>
+        <div class="msl-index-cell"><span class="no">— 05</span><h3>Earth View</h3><p>A 3D globe with your land parcels drawn on real satellite terrain — fly buyers to the site.</p></div>
+        <div class="msl-index-cell"><span class="no">— 06</span><h3>Sales Route Maps</h3><p>Draw routes with distances from schools, highways &amp; airports to your gate — revealed on hover.</p></div>
+        <div class="msl-index-cell"><span class="no">— 07</span><h3>Building Maps &amp; Floor Plans</h3><p>Clickable floor zones on real elevations, linked to crisp lossless floor plan catalogues.</p></div>
+        <div class="msl-index-cell"><span class="no">— 08</span><h3>Plot Lock</h3><p>Hold a plot against a named buyer with granular lock rights — no plot ever sells twice.</p></div>
+        <div class="msl-index-cell"><span class="no">— 09</span><h3>Broker Referrals</h3><p>Brokers bring buyers safely: lead contacts stay masked until the referrer reveals them.</p></div>
+        <div class="msl-index-cell"><span class="no">— 10</span><h3>CRM &amp; Quotations</h3><p>Pipeline from New to Won, India-ready master data, and quotations emailed in one move.</p></div>
+        <div class="msl-index-cell"><span class="no">— 11</span><h3>Public Property Portal</h3><p>Published projects get discovered by buyers directly — browse, filter, map, step inside.</p></div>
+        <div class="msl-index-cell"><span class="no">— 12</span><h3>Teams &amp; Access Control</h3><p>Organizations, client teams, brokers and per-project grants — everyone sees exactly what they should.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= FINAL CTA ======================= -->
+  <section class="msl-cta-band" id="get-started">
+    <div class="msl-main msl-reveal">
+      <p class="msl-eyebrow msl-eyebrow--center">Your Next Project Awaits</p>
+      <h2>Get out there &amp; make every property <em>unforgettable</em>.</h2>
+      <div class="msl-hero-ctas" style="margin-top: 42px;">
+        <a href="/login?mode=signup" class="msl-cta-primary">
+          Start for free
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="/explore" class="msl-cta-secondary">
+          Explore a live property
+          <svg width="18" height="14" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h20M15 2l6 6-6 6"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= FOOTER ======================= -->
+  <footer class="msl-footer">
+    <div class="msl-main">
+      <div class="msl-footer-grid">
+        <div>
+          <a class="msl-logo" href="/" aria-label="MarketoState home">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <circle cx="20" cy="20" r="17" stroke="#FBD784" stroke-width="2.4"/>
+              <path d="M13 27V17.5l3.5 2v7.5M18.5 27V14l4 2.3V27M24.5 27v-8.5l3 1.7V27" stroke="#FFA300" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            MARKETOSTATE
+          </a>
+          <p class="msl-footer-tag">Get out there &amp; discover your next plot, project &amp; possibility!</p>
+        </div>
+        <div>
+          <h4>Platform</h4>
+          <ul class="msl-footer-links">
+            <li><a href="/explore">Explore properties</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/crm">CRM</a></li>
+            <li><a href="/login?mode=signup">Start for free</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>More on MarketoState</h4>
+          <ul class="msl-footer-links">
+            <li><a href="/login">Log in</a></li>
+            <li><a href="#chapter-1">The experience</a></li>
+            <li><a href="#chapter-2">Live mapping</a></li>
+            <li><a href="#chapter-3">Pipeline</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="msl-footer-bottom">
+        <span>Copyright © 2026 MarketoState, Inc. Terms &amp; Privacy</span>
+        <span>Crafted for the ones who sell places, not pictures.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    'use strict';
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------- header state ---------- */
+    var header = document.getElementById('mslHeader');
+    function headerState() {
+      if (header) header.classList.toggle('is-scrolled', window.scrollY > 40);
+    }
+    window.addEventListener('scroll', headerState, { passive: true });
+    headerState();
+
+    /* ---------- mobile menu ---------- */
+    var toggle = document.getElementById('mslMenuToggle');
+    var mobileNav = document.getElementById('mslMobileNav');
+    if (toggle && mobileNav) {
+      toggle.addEventListener('click', function () {
+        var open = mobileNav.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.style.overflow = open ? 'hidden' : '';
+      });
+      mobileNav.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') {
+          mobileNav.classList.remove('is-open');
+          toggle.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        }
+      });
+    }
+
+    /* ---------- scroll reveals ---------- */
+    var revealables = document.querySelectorAll('.msl-reveal, .msl-chapter, .msl-compare');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) {
+            en.target.classList.add('is-inview');
+            io.unobserve(en.target);
+          }
+        });
+      }, { threshold: 0.18, rootMargin: '0px 0px -6% 0px' });
+      revealables.forEach(function (el) { io.observe(el); });
+    } else {
+      revealables.forEach(function (el) { el.classList.add('is-inview'); });
+    }
+
+    /* ---------- parallax ---------- */
+    var plxEls = [];
+    document.querySelectorAll('[data-plx]').forEach(function (el) {
+      plxEls.push({ el: el, speed: parseFloat(el.getAttribute('data-plx')) || 0, cur: 0 });
+    });
+
+    var ticking = false;
+    function parallaxFrame() {
+      ticking = false;
+      var vh = window.innerHeight;
+      plxEls.forEach(function (item) {
+        var rect = item.el.getBoundingClientRect();
+        var target;
+        if (item.el.closest('.msl-hero')) {
+          target = window.scrollY * item.speed;
+        } else {
+          target = (rect.top + rect.height / 2 - vh / 2) * item.speed;
+        }
+        if (Math.abs(target - item.cur) > 0.1) {
+          item.cur = target;
+          item.el.style.transform = 'translate3d(0,' + target.toFixed(1) + 'px,0)';
+        }
+      });
+    }
+    function requestParallax() {
+      if (!ticking) { ticking = true; requestAnimationFrame(parallaxFrame); }
+    }
+    if (!reduceMotion && plxEls.length) {
+      window.addEventListener('scroll', requestParallax, { passive: true });
+      window.addEventListener('resize', requestParallax);
+      requestParallax();
+    }
+
+    /* ---------- right rail progress ---------- */
+    var railThumb = document.getElementById('mslRailThumb');
+    var railLinks = document.getElementById('mslRailLinks');
+    var railStops = ['top', 'chapter-1', 'chapter-2', 'chapter-3'];
+    function railUpdate() {
+      if (!railThumb || !railLinks) return;
+      var mid = window.scrollY + window.innerHeight / 2;
+      var idx = 0;
+      railStops.forEach(function (id, i) {
+        var el = document.getElementById(id);
+        if (el && mid >= el.offsetTop) idx = i;
+      });
+      var track = railThumb.parentElement;
+      var span = track.clientHeight - railThumb.clientHeight;
+      railThumb.style.top = (span * idx / (railStops.length - 1)) + 'px';
+      var links = railLinks.querySelectorAll('a');
+      links.forEach(function (a, i) { a.classList.toggle('is-active', i === idx); });
+    }
+    window.addEventListener('scroll', railUpdate, { passive: true });
+    railUpdate();
+
+    /* ---------- gold dust ---------- */
+    var dust = document.getElementById('mslDust');
+    if (dust && !reduceMotion) {
+      var ctx = dust.getContext('2d');
+      var parts = [];
+      var running = true;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      function dustSize() {
+        var r = dust.parentElement.getBoundingClientRect();
+        dust.width = r.width * dpr;
+        dust.height = r.height * dpr;
+      }
+      function seed() {
+        parts = [];
+        var n = Math.round(dust.width / dpr / 30);
+        for (var i = 0; i < n; i++) {
+          parts.push({
+            x: Math.random() * dust.width,
+            y: Math.random() * dust.height,
+            r: (Math.random() * 1.6 + 0.5) * dpr,
+            vy: (Math.random() * 0.22 + 0.06) * dpr,
+            sway: Math.random() * Math.PI * 2,
+            swaySpeed: Math.random() * 0.012 + 0.004,
+            a: Math.random() * 0.5 + 0.15
+          });
+        }
+      }
+      function dustFrame() {
+        if (!running) return;
+        ctx.clearRect(0, 0, dust.width, dust.height);
+        ctx.fillStyle = '#FBD784';
+        parts.forEach(function (p) {
+          p.y -= p.vy;
+          p.sway += p.swaySpeed;
+          p.x += Math.sin(p.sway) * 0.3 * dpr;
+          if (p.y < -8) { p.y = dust.height + 8; p.x = Math.random() * dust.width; }
+          ctx.globalAlpha = p.a * (0.6 + 0.4 * Math.sin(p.sway * 1.7));
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(dustFrame);
+      }
+      dustSize(); seed(); dustFrame();
+      var dustRs;
+      window.addEventListener('resize', function () {
+        clearTimeout(dustRs);
+        dustRs = setTimeout(function () { dustSize(); seed(); }, 150);
+      });
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          var vis = entries[0].isIntersecting;
+          if (vis && !running) { running = true; dustFrame(); }
+          else if (!vis) running = false;
+        }).observe(dust);
+      }
+    }
+
+    /* ---------- live pano demo ---------- */
+    var pano = document.getElementById('mslPano');
+    var panoBg = document.getElementById('mslPanoBg');
+    var panoThumb = document.getElementById('mslPanoThumb');
+    if (pano && panoBg) {
+      var pos = 30;            /* background-position-x percent */
+      var dragging = false;
+      var lastX = 0;
+      var idleTimer = null;
+      var autoDrift = !reduceMotion;
+
+      function renderPano() {
+        panoBg.style.backgroundPosition = pos.toFixed(2) + '% 42%';
+        if (panoThumb) panoThumb.style.left = 'calc(' + pos.toFixed(2) + '% - ' + (pos / 100 * 26).toFixed(1) + 'px)';
+      }
+      function drift() {
+        if (autoDrift && !dragging) {
+          pos += 0.018;
+          if (pos > 100) pos = 0;
+          renderPano();
+        }
+        requestAnimationFrame(drift);
+      }
+      pano.addEventListener('pointerdown', function (e) {
+        dragging = true;
+        lastX = e.clientX;
+        pano.setPointerCapture(e.pointerId);
+        clearTimeout(idleTimer);
+      });
+      pano.addEventListener('pointermove', function (e) {
+        if (!dragging) return;
+        var dx = e.clientX - lastX;
+        lastX = e.clientX;
+        pos = Math.min(100, Math.max(0, pos - dx * 0.18));
+        renderPano();
+      });
+      function panoRelease() {
+        dragging = false;
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(function () { autoDrift = !reduceMotion; }, 2200);
+        autoDrift = false;
+      }
+      pano.addEventListener('pointerup', panoRelease);
+      pano.addEventListener('pointercancel', panoRelease);
+      renderPano();
+      if (!reduceMotion) requestAnimationFrame(drift);
+    }
+
+    /* ---------- day / night compare ---------- */
+    var compare = document.getElementById('mslCompare');
+    if (compare) {
+      var cmpDrag = false;
+      function setSplit(clientX) {
+        var r = compare.getBoundingClientRect();
+        var pct = ((clientX - r.left) / r.width) * 100;
+        pct = Math.min(94, Math.max(6, pct));
+        compare.style.setProperty('--split', pct.toFixed(2) + '%');
+        compare.setAttribute('aria-valuenow', Math.round(pct));
+      }
+      compare.addEventListener('pointerdown', function (e) {
+        cmpDrag = true;
+        compare.setPointerCapture(e.pointerId);
+        setSplit(e.clientX);
+      });
+      compare.addEventListener('pointermove', function (e) { if (cmpDrag) setSplit(e.clientX); });
+      compare.addEventListener('pointerup', function () { cmpDrag = false; });
+      compare.addEventListener('pointercancel', function () { cmpDrag = false; });
+      compare.addEventListener('keydown', function (e) {
+        var cur = parseFloat(getComputedStyle(compare).getPropertyValue('--split')) || 55;
+        if (e.key === 'ArrowLeft') { compare.style.setProperty('--split', Math.max(6, cur - 4) + '%'); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { compare.style.setProperty('--split', Math.min(94, cur + 4) + '%'); e.preventDefault(); }
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

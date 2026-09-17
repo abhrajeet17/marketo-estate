@@ -1,0 +1,30 @@
+<div class="crm-tabs" id="crm-tabs">
+    <div class="crm-tabs-top">
+        <div class="crm-tabs-top-left">
+            <button type="button" class="crm-tabs-menu-toggle lg:hidden inline-flex items-center justify-center size-8 rounded-lg border border-gray-200 bg-white text-gray-600" aria-label="Open menu" data-hs-overlay="#portal-sidebar">
+                <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+        </div>
+        <div class="crm-tabs-top-center">
+            <div class="crm-tab-strip" aria-label="CRM sections">
+                <button class="crm-tab active" data-tab="interests" id="tab-interests">Interests</button>
+                <button class="crm-tab" data-tab="deals" id="tab-deals">Deals</button>
+                <button class="crm-tab" data-tab="contacts" id="tab-contacts">Contacts</button>
+                <button class="crm-tab" data-tab="allotted-clients" id="tab-allotted-clients" style="display:none;">Allotted Clients</button>
+                <button class="crm-tab" data-tab="panoramas" id="tab-panoramas" style="display:none;">Panoramas</button>
+                <button class="crm-tab" data-tab="plots" id="tab-plots">Plotted List</button>
+                <button class="crm-tab" data-tab="projects" id="tab-projects" style="display:none;">Projects</button>
+                <button class="crm-tab" data-tab="masters" id="tab-masters" style="display:none;">Masters</button>
+                <button class="crm-tab" data-tab="manage-lock" id="tab-manage-lock" style="display:none;">Manage Lock</button>
+            </div>
+        </div>
+        <div class="crm-tabs-top-right">
+            <button class="crm-tab-action" id="btn-reports" type="button" title="Download Excel" aria-label="Download Excel">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </button>
+            <div class="crm-tabs-account">
+                {% include 'components/portal_user_dropdown.html' %}
+            </div>
+        </div>
+    </div>
+</div>

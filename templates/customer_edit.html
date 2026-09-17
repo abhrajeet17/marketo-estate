@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Customer View – {{ workspace_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Abel&family=Abril+Fatface&family=Acme&family=Alfa+Slab+One&family=Amatic+SC:wght@400;700&family=Anton&family=Archivo:wght@400;500;600;700&family=Archivo+Black&family=Bebas+Neue&family=Bitter:wght@400;700&family=Bodoni+Moda:wght@400;700&family=Bree+Serif&family=Cabin:wght@400;500;600;700&family=Caveat:wght@400;700&family=Cinzel:wght@400;700&family=Comfortaa:wght@400;700&family=Cormorant:wght@400;600;700&family=Crimson+Text:wght@400;600;700&family=Dancing+Script:wght@400;700&family=DM+Sans:wght@400;500;700&family=Domine:wght@400;700&family=Dosis:wght@400;600;700&family=EB+Garamond:wght@400;600;700&family=Exo+2:wght@400;600;700&family=Fira+Sans:wght@400;500;600;700&family=Fjalla+One&family=Francois+One&family=Fredoka:wght@400;600&family=Gloria+Hallelujah&family=Great+Vibes&family=Heebo:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600;700&family=Inconsolata:wght@400;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Josefin+Sans:wght@400;600;700&family=Josefin+Slab:wght@400;600;700&family=Jost:wght@400;500;600;700&family=Kanit:wght@400;600;700&family=Karla:wght@400;600;700&family=Kaushan+Script&family=Kreon:wght@400;600;700&family=Lato:wght@400;700&family=League+Spartan:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=Libre+Franklin:wght@400;600;700&family=Lobster&family=Lora:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Mukta:wght@400;600;700&family=Nunito:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600;700&family=Outfit:wght@400;500;600;700&family=Overpass:wght@400;600;700&family=Pacifico&family=Passion+One&family=Patua+One&family=Permanent+Marker&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=PT+Sans:wght@400;700&family=PT+Serif:wght@400;700&family=Quicksand:wght@400;600;700&family=Raleway:wght@400;500;600;700&family=Red+Hat+Display:wght@400;500;600;700&family=Righteous&family=Roboto:wght@400;500;700&family=Roboto+Condensed:wght@400;700&family=Roboto+Mono:wght@400;700&family=Roboto+Slab:wght@400;700&family=Rock+Salt&family=Rubik:wght@400;500;600;700&family=Rufina:wght@400;700&family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Spectral:wght@400;600;700&family=Spectral+SC:wght@400;700&family=Syne:wght@400;500;600;700&family=Tajawal:wght@400;700&family=Taviraj:wght@400;600;700&family=Tinos:wght@400;700&family=Titillium+Web:wght@400;600;700&family=Ubuntu:wght@400;500;700&family=Unbounded:wght@400;700&family=Urbanist:wght@400;600;700&family=Work+Sans:wght@400;500;600;700&family=Yanone+Kaffeesatz:wght@400;700&family=Yeseva+One&family=Zilla+Slab:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.css">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/plugins/markers.css">
+    <script src="/static/vendor/uevent/browser.js"></script>
+    <script src="/static/vendor/three/three.min.js"></script>
+    <script src="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.js"></script>
+    <script src="/static/vendor/photo-sphere-viewer/plugins/markers.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/components/buttons.css">
+    <link rel="stylesheet" href="/static/css/components/cards.css">
+    <link rel="stylesheet" href="/static/css/components/modals.css">
+    <link rel="stylesheet" href="/static/css/components/forms.css">
+    <link rel="stylesheet" href="/static/css/components/layout.css">
+    <link rel="stylesheet" href="/static/css/customer_3d.css">
+    <link rel="stylesheet" href="/static/css/customer_edit.css">
+    <script src="/static/js/supabase.min.js"></script>
+</head>
+
+<body>
+    <script>
+        (function () { var url = {{ (supabase_url or '')| tojson }}; var key = {{ (supabase_anon_key or '')| tojson }};
+        if (!url || !key || !window.supabase) return;
+        var s = window.supabase.createClient(url, key);
+        window._supabase = s;
+        window.getAuthHeaders = function () { return s.auth.getSession().then(function (r) { var h = {}; if (r.data.session && r.data.session.access_token) h['Authorization'] = 'Bearer ' + r.data.session.access_token; return h; }); };
+    }) ();
+    </script>
+
+    <div class="ce-element-modal-backdrop" id="ce-element-modal-backdrop">
+        <div class="ce-element-modal" id="ce-element-modal">
+            <div class="ce-element-modal-header">
+                <span class="ce-element-modal-title" id="ce-element-modal-title">Element</span>
+                <div class="ce-element-modal-header-actions">
+                    <button type="button" class="ce-element-collapse-btn" id="ce-element-collapse-btn" title="Collapse">−</button>
+                    <button type="button" class="ce-element-close-btn" id="ce-element-close-btn" title="Close">×</button>
+                </div>
+            </div>
+            <div class="ce-element-modal-body" id="ce-element-modal-body"></div>
+            <div class="ce-element-modal-footer" id="ce-element-modal-footer">
+                <button type="button" class="ce-element-modal-save modal-btn primary" id="ce-element-modal-save-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="ce-element-fab" id="ce-element-fab" type="button" title="Open options" style="display:none;">✎</button>
+    <div class="ce-bottom-actions">
+        <a href="/dashboard" class="ce-bottom-action-btn" id="ce-dashboard-btn" title="Back to Plotted Development" aria-label="Back to Plotted Development">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </a>
+        <button type="button" class="ce-bottom-action-btn" id="ce-bring-back-all-btn" title="Bring back all" aria-label="Bring back all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button type="button" class="ce-bottom-action-btn ce-bottom-action-save" id="ce-save-btn" title="Save" aria-label="Save">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        </button>
+    </div>
+
+    <div class="ce-canvas-wrap" id="ce-canvas-wrap">
+        <div id="psv-container" style="position:absolute;top:0;left:0;width:100%;height:100%;background:var(--color-bg);cursor:grab;"></div>
+
+        <div class="overlay-gradient" id="cv-overlay-gradient"></div>
+
+        <div class="ui-overlay" id="cv-ui-overlay">
+            <header class="header ce-editable" id="cv-header" data-ce-id="header">
+                <div class="header-left">
+                    <button id="panorama-nav-toggle" class="hdr-action-btn panorama-nav-toggle-btn ce-editable" type="button" data-ce-id="panoramaNavToggle" aria-expanded="false" title="Panorama List">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                        </svg>
+                    </button>
+                    <div class="project-badge ce-editable" id="cv-project-badge" data-ce-id="projectBadge">
+                        <span class="project-badge-name" id="cv-badge-name">{{ panorama.name }}</span>
+                        <span class="project-badge-dot"></span>
+                        <span class="project-badge-label" id="cv-badge-label">{{ '360° Explorer' if panorama.get('is_360') else 'Panorama Explorer' }}</span>
+                    </div>
+                </div>
+                <div class="header-center" id="cv-header-center">
+                    <div class="search-shell ce-editable" id="plot-search-shell" data-ce-id="searchBar">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input id="plot-search-input" class="search-plot-input" type="search" placeholder="Search plots..." disabled>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button id="cv-back-btn" class="hdr-action-btn ce-editable" type="button" data-ce-id="backBtn" title="Go back">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button id="cv-export-btn" class="hdr-action-btn ce-editable" type="button" data-ce-id="exportPlots" title="Export plots">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                    <button id="cv-overlays-btn" class="hdr-action-btn ce-editable" type="button" data-ce-id="toggleOverlays" title="Toggle overlays">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                    <button id="cv-fullscreen-btn" class="hdr-action-btn ce-editable" type="button" data-ce-id="fullscreen" title="Fullscreen">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    </button>
+                    <div class="hdr-divider"></div>
+                    <button id="cv-cart-btn" class="hdr-cart-btn ce-editable" type="button" data-ce-id="viewCart" title="View cart">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                        <span class="cart-badge">0</span>
+                    </button>
+                </div>
+            </header>
+        </div>
+
+        <div class="panorama-nav-shell ce-editable is-collapsed" id="cv-panorama-nav-shell" data-ce-id="panoramaNav">
+            <aside class="panorama-nav-panel" id="cv-panorama-nav-panel">
+                <div class="panorama-nav-absorbed-header">
+                    <div class="project-badge">
+                        <span class="project-badge-name" id="cv-absorbed-badge-name">{{ panorama.name }}</span>
+                        <span class="project-badge-dot"></span>
+                        <span class="project-badge-label" id="cv-absorbed-badge-label">{{ '360° Explorer' if panorama.get('is_360') else 'Panorama Explorer' }}</span>
+                    </div>
+                    <button type="button" class="panorama-nav-collapse-btn" id="cv-panorama-nav-collapse" title="Close" aria-label="Close panorama list">×</button>
+                </div>
+                <div class="panorama-nav-head">
+                    <div class="panorama-nav-head-text">
+                        <div class="panorama-nav-title">Panorama List</div>
+                        <div class="panorama-nav-subtitle" id="cv-panorama-nav-subtitle"></div>
+                    </div>
+                </div>
+                <div class="panorama-nav-list" id="cv-panorama-nav-list"></div>
+            </aside>
+        </div>
+
+        <div class="customer-legends-stack ce-editable" id="cv-legend-stack" data-ce-id="statusLegend">
+            <div class="plot-size-legend" id="cv-plot-size-legend"></div>
+            <div class="status-legend" id="cv-status-legend">
+                <div class="legend-head">
+                    <span>Plot Range</span>
+                    <span class="legend-total">0</span>
+                </div>
+                <div class="legend-grid">
+                    <div class="status-pill available"><span class="status-dot"></span><span>Available</span><strong>0</strong></div>
+                    <div class="status-pill hold"><span class="status-dot"></span><span>On Hold</span><strong>0</strong></div>
+                    <div class="status-pill sold"><span class="status-dot"></span><span>Sold</span><strong>0</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ce-toast" id="ce-toast"></div>
+
+    <script>
+        var WORKSPACE_ID = {{ workspace_id | tojson }};
+        var WORKSPACE_PANORAMAS = {{ (workspace_panoramas or []) | tojson }};
+        var PANORAMA_ID = {{ panorama.id }};
+        var IS_360 = {{ (panorama.get('is_360', false) if panorama else false) | tojson }};
+        var CE_FONTS = ['Abel', 'Abril Fatface', 'Acme', 'Alfa Slab One', 'Amatic SC', 'Anton', 'Archivo', 'Archivo Black', 'Bebas Neue', 'Bitter', 'Bodoni Moda', 'Bree Serif', 'Cabin', 'Caveat', 'Cinzel', 'Comfortaa', 'Cormorant', 'Crimson Text', 'Dancing Script', 'DM Sans', 'Domine', 'Dosis', 'EB Garamond', 'Exo 2', 'Fira Sans', 'Fjalla One', 'Francois One', 'Fredoka', 'Gloria Hallelujah', 'Great Vibes', 'Heebo', 'IBM Plex Sans', 'IBM Plex Serif', 'Inconsolata', 'Instrument Serif', 'Inter', 'Josefin Sans', 'Josefin Slab', 'Jost', 'Kanit', 'Karla', 'Kaushan Script', 'Kreon', 'Lato', 'League Spartan', 'Libre Baskerville', 'Libre Franklin', 'Lobster', 'Lora', 'Manrope', 'Merriweather', 'Montserrat', 'Mukta', 'Nunito', 'Open Sans', 'Oswald', 'Outfit', 'Overpass', 'Pacifico', 'Passion One', 'Patua One', 'Permanent Marker', 'Playfair Display', 'Poppins', 'PT Sans', 'PT Serif', 'Quicksand', 'Raleway', 'Red Hat Display', 'Righteous', 'Roboto', 'Roboto Condensed', 'Roboto Mono', 'Roboto Slab', 'Rock Salt', 'Rubik', 'Rufina', 'Source Sans 3', 'Source Serif 4', 'Space Grotesk', 'Space Mono', 'Spectral', 'Spectral SC', 'Syne', 'Tajawal', 'Taviraj', 'Tinos', 'Titillium Web', 'Ubuntu', 'Unbounded', 'Urbanist', 'Work Sans', 'Yanone Kaffeesatz', 'Yeseva One', 'Zilla Slab'];
+        var MOVE_STEP = 10;
+
+        var config = {
+            theme: { primaryColor: '#b5772d', headerBg: '#f6f8fc', headerTextColor: '#23395f', buttonBg: '#f6f8fc', buttonTextColor: '#23395f' },
+            transparency: { header: 0.93, overlayGradient: 0.22, statusLegend: 0.85, panoramaNav: 0.72 },
+            header: { position: 'top', font: 'Syne', fontSize: '1rem' },
+            projectBadge: { visible: true, customText: '', customLabel: '', font: 'Syne', fontSize: '0.85rem' },
+            buttons: { panoramaNavToggle: true, backBtn: true, exportPlots: true, toggleOverlays: true, fullscreen: true, viewCart: true },
+            searchBar: { visible: true },
+            statusLegend: { visible: true, color: '#23395f', bg: '#f7f9fd' },
+            plotSizeLegend: {
+                visible: true,
+                collapsed: false,
+                bands: [
+                    { color: '#E8D5ED', sqftMin: 1000, sqftMax: 1300, sqmMin: 92.9, sqmMax: 120.77, sqydMin: 111, sqydMax: 144.3 },
+                    { color: '#E8B849', sqftMin: 1300, sqftMax: 1600, sqmMin: 120.77, sqmMax: 150, sqydMin: 144.3, sqydMax: 177.6 },
+                    { color: '#C5E8C8', sqftMin: 1600, sqftMax: 1800, sqmMin: 148.64, sqmMax: 167.22, sqydMin: 177.77, sqydMax: 200 },
+                    { color: '#5BC0EB', sqftMin: 1800, sqftMax: 2200, sqmMin: 165, sqmMax: 205, sqydMin: 199.8, sqydMax: 244.2 },
+                    { color: '#FFF4D6', sqftMin: 2200, sqftMax: 2500, sqmMin: 205, sqmMax: 235, sqydMin: 244.2, sqydMax: 277.5 }
+                ]
+            },
+            panoramaList: { visible: true, order: [], hiddenGlobal: [], position: 'left', title: 'Panorama List', subheader: null, titleFont: 'Syne', subheaderFont: 'Syne', itemFont: 'Syne', titleFontSize: '0.6rem', subheaderFontSize: '0.52rem', itemFontSize: '0.76rem', panelBg: '#0a1220', titleColor: '#7a8ba8', subheaderColor: '#a0aec0', itemColor: '#1a2e4d', titleAlign: 'left', subheaderAlign: 'left', itemAlignX: 'left', itemAlignY: 'center', absorbedHeaderFont: 'Syne', absorbedHeaderFontSize: '0.88rem', absorbedHeaderColor: '#1a2e4d', absorbedHeaderAlign: 'left' },
+            elementPositions: { header: { x: null, y: null }, customerLegends: { x: null, y: null }, panoramaNav: { x: null, y: null } }
+        };
+
+        function deepMerge(target, source) {
+            if (!source || typeof source !== 'object') return target;
+            Object.keys(source).forEach(function (key) {
+                if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && target[key] && typeof target[key] === 'object') {
+                    deepMerge(target[key], source[key]);
+                } else {
+                    target[key] = source[key];
+                }
+            });
+            return target;
+        }
+
+        function ensurePlotSizeLegendConfig() {
+            if (!config.plotSizeLegend || typeof config.plotSizeLegend !== 'object') config.plotSizeLegend = { visible: true, bands: [] };
+            var psl = config.plotSizeLegend;
+            if (psl.visible !== false && psl.visible !== true) psl.visible = true;
+            if (psl.collapsed !== true && psl.collapsed !== false) psl.collapsed = false;
+            if (!Array.isArray(psl.bands) || psl.bands.length === 0) {
+                psl.bands = [
+                    { color: '#E8D5ED', sqftMin: 1000, sqftMax: 1300, sqmMin: 92.9, sqmMax: 120.77, sqydMin: 111, sqydMax: 144.3 },
+                    { color: '#E8B849', sqftMin: 1300, sqftMax: 1600, sqmMin: 120.77, sqmMax: 150, sqydMin: 144.3, sqydMax: 177.6 },
+                    { color: '#C5E8C8', sqftMin: 1600, sqftMax: 1800, sqmMin: 148.64, sqmMax: 167.22, sqydMin: 177.77, sqydMax: 200 },
+                    { color: '#5BC0EB', sqftMin: 1800, sqftMax: 2200, sqmMin: 165, sqmMax: 205, sqydMin: 199.8, sqydMax: 244.2 },
+                    { color: '#FFF4D6', sqftMin: 2200, sqftMax: 2500, sqmMin: 205, sqmMax: 235, sqydMin: 244.2, sqydMax: 277.5 }
+                ];
+            }
+        }
+
+        function formatPlotSizeLegendNum(n) {
+            var x = Number(n);
+            if (!isFinite(x)) return '—';
+            if (Math.abs(x - Math.round(x)) < 1e-6) return String(Math.round(x));
+            var t = x.toFixed(2);
+            if (t.indexOf('.') >= 0) t = t.replace(/0+$/, '').replace(/\.$/, '');
+            return t;
+        }
+
+        function wireCvPlotSizeLegendPreview(el) {
+            if (!el) return;
+            var tgl = el.querySelector('.plot-size-collapse-toggle');
+            var hdl = el.querySelector('.plot-size-drag-handle');
+            if (tgl) {
+                tgl.addEventListener('click', function (ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    var now = el.classList.toggle('plot-size-legend--collapsed');
+                    tgl.setAttribute('aria-expanded', now ? 'false' : 'true');
+                    var ic = tgl.querySelector('.plot-size-caret');
+                    if (ic) ic.setAttribute('icon', now ? 'ph:caret-down' : 'ph:caret-up');
+                });
+            }
+            if (hdl) {
+                hdl.addEventListener('pointerdown', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var stack = document.getElementById('cv-legend-stack');
+                    if (!stack) return;
+                    var rect = stack.getBoundingClientRect();
+                    var grabX = e.clientX - rect.left;
+                    var grabY = e.clientY - rect.top;
+                    function move(ev) {
+                        stack.style.position = 'fixed';
+                        stack.style.left = (ev.clientX - grabX) + 'px';
+                        stack.style.top = (ev.clientY - grabY) + 'px';
+                        stack.style.right = 'auto';
+                        stack.style.bottom = 'auto';
+                        stack.style.transform = 'none';
+                    }
+                    function up() {
+                        document.removeEventListener('pointermove', move);
+                        document.removeEventListener('pointerup', up);
+                        var r = stack.getBoundingClientRect();
+                        if (!config.elementPositions) config.elementPositions = {};
+                        if (!config.elementPositions.customerLegends) config.elementPositions.customerLegends = { x: null, y: null };
+                        config.elementPositions.customerLegends.x = r.left;
+                        config.elementPositions.customerLegends.y = r.top;
+                        applyConfig();
+                    }
+                    document.addEventListener('pointermove', move);
+                    document.addEventListener('pointerup', up);
+                });
+            }
+        }
+
+        function renderCvPlotSizeLegend() {
+            var el = document.getElementById('cv-plot-size-legend');
+            if (!el) return;
+            ensurePlotSizeLegendConfig();
+            var psl = config.plotSizeLegend;
+            var tc = (config.statusLegend && config.statusLegend.color) || '#23395f';
+            var bands = Array.isArray(psl.bands) ? psl.bands : [];
+            var collapsed = psl.collapsed === true;
+            var rows = bands.map(function (b) {
+                var c = b && b.color && String(b.color).indexOf('#') === 0 ? b.color : '#cccccc';
+                var l1 = formatPlotSizeLegendNum(b.sqftMin) + ' – ' + formatPlotSizeLegendNum(b.sqftMax) + ' SQ. FEET';
+                var l2 = formatPlotSizeLegendNum(b.sqmMin) + ' – ' + formatPlotSizeLegendNum(b.sqmMax) + ' SQ. METER';
+                var l3 = formatPlotSizeLegendNum(b.sqydMin) + ' – ' + formatPlotSizeLegendNum(b.sqydMax) + ' SQ. YARDS';
+                return '<div class="plot-size-row"><div class="plot-size-swatch" style="background:' + c + '"></div><div class="plot-size-card"><div class="plot-size-line">' + l1 + '</div><div class="plot-size-line">' + l2 + '</div><div class="plot-size-line">' + l3 + '</div></div></div>';
+            }).join('');
+            el.className = 'plot-size-legend' + (collapsed ? ' plot-size-legend--collapsed' : '');
+            el.innerHTML = '<div class="plot-size-legend-head">' +
+                '<span class="plot-size-drag-handle" title="Drag to move"><iconify-icon icon="ph:dots-six-vertical"></iconify-icon></span>' +
+                '<button type="button" class="plot-size-collapse-toggle" aria-expanded="' + (!collapsed) + '">' +
+                '<span class="plot-size-head-title">Size guide</span><iconify-icon class="plot-size-caret" icon="' + (collapsed ? 'ph:caret-down' : 'ph:caret-up') + '"></iconify-icon></button></div>' +
+                '<div class="plot-size-bands">' + rows + '</div>';
+            el.style.color = tc;
+            wireCvPlotSizeLegendPreview(el);
+        }
+
+        function fetchCustomerConfigThenInit() {
+            if (!window.getAuthHeaders) { startPsvInit(); return; }
+            return window.getAuthHeaders().then(function (headers) {
+                return fetch('/api/workspaces/' + WORKSPACE_ID + '/customer-config', { headers: headers });
+            }).then(function (res) {
+                if (res.status === 401 || res.status === 403) { window.location.href = '/dashboard'; return Promise.reject(new Error('Unauthorized')); }
+                return res.json();
+            }).then(function (data) {
+                if (data && data.config && typeof data.config === 'object') deepMerge(config, data.config);
+                if (config.panoramaList && !Array.isArray(config.panoramaList.order)) config.panoramaList.order = [];
+                if (config.panoramaList && !Array.isArray(config.panoramaList.hiddenGlobal)) config.panoramaList.hiddenGlobal = [];
+                ensurePlotSizeLegendConfig();
+                if (config.elementPositions && typeof config.elementPositions === 'object' && !config.elementPositions.customerLegends) {
+                    config.elementPositions.customerLegends = { x: null, y: null };
+                }
+                startPsvInit();
+            }).catch(function (err) {
+                if (err && err.message !== 'Unauthorized') startPsvInit();
+            });
+        }
+
+        var elementModalBackdrop = document.getElementById('ce-element-modal-backdrop');
+        var elementModal = document.getElementById('ce-element-modal');
+        var elementModalTitle = document.getElementById('ce-element-modal-title');
+        var elementModalBody = document.getElementById('ce-element-modal-body');
+        var elementModalFooter = document.getElementById('ce-element-modal-footer');
+        var elementModalSaveBtn = document.getElementById('ce-element-modal-save-btn');
+        var elementCollapseBtn = document.getElementById('ce-element-collapse-btn');
+        var elementCloseBtn = document.getElementById('ce-element-close-btn');
+        var elementFab = document.getElementById('ce-element-fab');
+        var saveBtn = document.getElementById('ce-save-btn');
+        var toastEl = document.getElementById('ce-toast');
+
+        function saveCustomerConfig() {
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+            if (elementModalSaveBtn) { elementModalSaveBtn.disabled = true; elementModalSaveBtn.textContent = 'Saving...'; }
+            if (!config.elementPositions) config.elementPositions = {};
+            if (!config.elementPositions.customerLegends) config.elementPositions.customerLegends = { x: null, y: null };
+            return window.getAuthHeaders().then(function (headers) {
+                headers['Content-Type'] = 'application/json';
+                return fetch('/api/workspaces/' + WORKSPACE_ID + '/customer-config', { method: 'PATCH', headers: headers, body: JSON.stringify({ config: config }) });
+            }).then(function (r) { return r.json(); }).then(function (data) {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+                if (elementModalSaveBtn) { elementModalSaveBtn.disabled = false; elementModalSaveBtn.textContent = 'Save'; }
+                if (data.success) { showToast('Saved'); if (elementModalBackdrop && elementModalBackdrop.classList.contains('visible')) closeElementModal(); }
+                else showToast('Error: ' + (data.error || 'Save failed'));
+            }).catch(function (err) {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+                if (elementModalSaveBtn) { elementModalSaveBtn.disabled = false; elementModalSaveBtn.textContent = 'Save'; }
+                showToast('Error: ' + err.message);
+            });
+        }
+
+        var currentElementId = null;
+        var elementLabels = {
+            header: 'Header',
+            projectBadge: 'Project badge',
+            panoramaNavToggle: 'Panorama list button',
+            searchBar: 'Search bar',
+            backBtn: 'Back button',
+            exportPlots: 'Export plots',
+            toggleOverlays: 'Toggle overlays',
+            fullscreen: 'Fullscreen',
+            viewCart: 'View cart',
+            statusLegend: 'Plot Range',
+            panoramaNav: 'Panorama list'
+        };
+        var textElements = { header: true, projectBadge: true };
+
+        function escapeHtml(str) {
+            var d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function showToast(msg) {
+            if (!toastEl) return;
+            toastEl.textContent = msg;
+            toastEl.classList.add('visible');
+            setTimeout(function () { toastEl.classList.remove('visible'); }, 2500);
+        }
+
+        function hexToRgba(hex, alpha) {
+            if (!hex || hex.length < 7) return 'rgba(0,0,0,' + alpha + ')';
+            var r = parseInt(hex.slice(1, 3), 16);
+            var g = parseInt(hex.slice(3, 5), 16);
+            var b = parseInt(hex.slice(5, 7), 16);
+            return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+        }
+
+        function applyPanoramaItemStyles() {
+            var listEl = document.getElementById('cv-panorama-nav-list');
+            if (!listEl) return;
+            var x = (config.panoramaList && config.panoramaList.itemAlignX) || 'left';
+            var y = (config.panoramaList && config.panoramaList.itemAlignY) || 'center';
+            var xMap = { left: 'flex-start', center: 'center', right: 'flex-end' };
+            var yMap = { top: 'flex-start', center: 'center', bottom: 'flex-end' };
+            var textAlign = x === 'center' ? 'center' : x === 'right' ? 'right' : 'left';
+            var itemFont = (config.panoramaList.itemFont || 'Syne') + ', sans-serif';
+            listEl.style.fontFamily = itemFont;
+            listEl.style.fontSize = config.panoramaList.itemFontSize || '0.76rem';
+            listEl.style.color = config.panoramaList.itemColor || '#1a2e4d';
+            var navShell = listEl.closest('.panorama-nav-shell') || listEl.closest('#cv-panorama-nav-shell') || document.getElementById('cv-panorama-nav-shell');
+            var isHorizontal = navShell && (navShell.classList.contains('pos-top') || navShell.classList.contains('pos-bottom'));
+            if (isHorizontal) {
+                listEl.style.alignItems = yMap[y] || 'center';
+            } else {
+                listEl.style.display = 'flex';
+                listEl.style.flexDirection = 'column';
+                listEl.style.justifyContent = yMap[y] || 'center';
+                listEl.style.minHeight = '0';
+            }
+            listEl.style.transform = y === 'center' ? 'translateY(-30)' : 'none';
+            listEl.querySelectorAll('.panorama-nav-item').forEach(function (item) {
+                item.style.fontFamily = itemFont;
+                item.style.alignItems = xMap[x] || 'flex-start';
+                item.style.justifyContent = yMap[y] || 'center';
+                item.style.textAlign = textAlign;
+            });
+            var itemFontSize = config.panoramaList.itemFontSize || '0.76rem';
+            listEl.querySelectorAll('.panorama-nav-item-name').forEach(function (el) {
+                el.style.fontFamily = itemFont;
+                el.style.fontSize = itemFontSize;
+                el.style.color = config.panoramaList.itemColor || '#1a2e4d';
+                el.style.textAlign = textAlign;
+            });
+            listEl.querySelectorAll('.panorama-nav-item-meta').forEach(function (el) {
+                el.style.fontFamily = itemFont;
+                el.style.fontSize = itemFontSize;
+                el.style.color = config.panoramaList.itemColor || '#1a2e4d';
+                el.style.opacity = '0.8';
+                el.style.textAlign = textAlign;
+            });
+        }
+
+        function applyConfig() {
+            var header = document.getElementById('cv-header');
+            var uiOverlay = document.getElementById('cv-ui-overlay');
+            var gradient = document.getElementById('cv-overlay-gradient');
+            var legendStack = document.getElementById('cv-legend-stack');
+            var legend = document.getElementById('cv-status-legend');
+            var plotSizeLegendEl = document.getElementById('cv-plot-size-legend');
+            var navShell = document.getElementById('cv-panorama-nav-shell');
+            var badge = document.getElementById('cv-project-badge');
+            var badgeName = document.getElementById('cv-badge-name');
+            var badgeLabel = document.getElementById('cv-badge-label');
+            var searchShell = document.getElementById('plot-search-shell');
+            var navToggle = document.getElementById('panorama-nav-toggle');
+            var backBtn = document.getElementById('cv-back-btn');
+            var exportBtn = document.getElementById('cv-export-btn');
+            var overlaysBtn = document.getElementById('cv-overlays-btn');
+            var fullscreenBtn = document.getElementById('cv-fullscreen-btn');
+            var cartBtn = document.getElementById('cv-cart-btn');
+
+            var t = config.theme;
+            var headerLeft = header && header.querySelector('.header-left');
+            var headerRight = header && header.querySelector('.header-right');
+            var searchInput = document.getElementById('plot-search-input');
+            if (header) {
+                header.style.background = 'transparent';
+                header.style.color = t.headerTextColor;
+                header.style.fontFamily = config.header.font + ', sans-serif';
+                header.style.fontSize = config.header.fontSize;
+            }
+            if (headerLeft) {
+                var hideHeaderLeft = !config.projectBadge.visible && !config.buttons.panoramaNavToggle;
+                headerLeft.style.display = hideHeaderLeft ? 'none' : '';
+                headerLeft.style.background = hexToRgba(t.headerBg, config.transparency.header);
+                headerLeft.style.color = t.headerTextColor;
+                headerLeft.style.backdropFilter = 'blur(18px) saturate(160%)';
+                headerLeft.style.webkitBackdropFilter = 'blur(18px) saturate(160%)';
+            }
+            if (headerRight) {
+                var allRightHidden = !config.buttons.backBtn && !config.buttons.exportPlots && !config.buttons.toggleOverlays && !config.buttons.fullscreen && !config.buttons.viewCart;
+                headerRight.style.display = allRightHidden ? 'none' : '';
+                headerRight.style.background = hexToRgba(t.headerBg, config.transparency.header);
+                headerRight.style.color = t.buttonTextColor;
+                headerRight.style.backdropFilter = 'blur(18px) saturate(160%)';
+                headerRight.style.webkitBackdropFilter = 'blur(18px) saturate(160%)';
+            }
+            if (searchShell) {
+                searchShell.style.background = 'transparent';
+            }
+            if (searchInput) {
+                searchInput.style.background = hexToRgba(t.headerBg, config.transparency.header);
+                searchInput.style.color = t.headerTextColor;
+                searchInput.style.borderColor = 'rgba(22, 35, 56, 0.08)';
+            }
+            [navToggle, backBtn, exportBtn, overlaysBtn, fullscreenBtn, cartBtn].forEach(function (btn) {
+                if (btn) { btn.style.background = 'transparent'; btn.style.color = t.buttonTextColor; }
+            });
+            if (badgeName) badgeName.style.color = t.primaryColor;
+            if (gradient) gradient.style.opacity = config.transparency.overlayGradient;
+            ensurePlotSizeLegendConfig();
+            if (legend) {
+                legend.style.background = hexToRgba(config.statusLegend.bg || '#f7f9fd', config.transparency.statusLegend);
+                legend.style.color = config.statusLegend.color || '#23395f';
+            }
+            if (plotSizeLegendEl) {
+                plotSizeLegendEl.style.background = hexToRgba(config.statusLegend.bg || '#f7f9fd', config.transparency.statusLegend);
+                renderCvPlotSizeLegend();
+            }
+            if (navShell && navShell.querySelector('.panorama-nav-panel')) {
+                navShell.querySelector('.panorama-nav-panel').style.background = hexToRgba('#0a1220', config.transparency.panoramaNav);
+            }
+            if (uiOverlay) {
+                if (config.header.position === 'bottom') { uiOverlay.style.top = 'auto'; uiOverlay.style.bottom = '0'; }
+                else { uiOverlay.style.top = '0'; uiOverlay.style.bottom = ''; }
+            }
+            if (badge) badge.style.display = config.projectBadge.visible ? '' : 'none';
+            if (badgeName) badgeName.textContent = config.projectBadge.customText || {{ (panorama.name or '') | tojson }};
+            if (badgeLabel) badgeLabel.textContent = config.projectBadge.customLabel || (IS_360 ? '360° Explorer' : 'Panorama Explorer');
+            if (badge) badge.style.fontFamily = config.projectBadge.font + ', sans-serif';
+            if (badgeName) badgeName.style.fontSize = config.projectBadge.fontSize;
+            if (navToggle) navToggle.style.display = config.buttons.panoramaNavToggle ? '' : 'none';
+            if (backBtn) backBtn.style.display = config.buttons.backBtn ? '' : 'none';
+            if (exportBtn) exportBtn.style.display = config.buttons.exportPlots ? '' : 'none';
+            if (overlaysBtn) overlaysBtn.style.display = config.buttons.toggleOverlays ? '' : 'none';
+            if (fullscreenBtn) fullscreenBtn.style.display = config.buttons.fullscreen ? '' : 'none';
+            if (cartBtn) cartBtn.style.display = config.buttons.viewCart ? '' : 'none';
+            if (searchShell) searchShell.style.display = config.searchBar.visible ? '' : 'none';
+            var showSizePreview = config.plotSizeLegend.visible !== false && Array.isArray(config.plotSizeLegend.bands) && config.plotSizeLegend.bands.length > 0;
+            var showStatusPreview = config.statusLegend.visible !== false;
+            if (plotSizeLegendEl) plotSizeLegendEl.style.display = showSizePreview ? '' : 'none';
+            if (legend) legend.style.display = showStatusPreview ? '' : 'none';
+            if (legendStack) legendStack.style.display = (showSizePreview || showStatusPreview) ? '' : 'none';
+            if (navShell) {
+                navShell.style.display = config.panoramaList.visible ? '' : 'none';
+                navShell.classList.remove('pos-left', 'pos-right', 'pos-top', 'pos-bottom');
+                navShell.classList.add('pos-' + (config.panoramaList.position || 'left'));
+                if (config.panoramaList.visible) {
+                    navShell.classList.remove('is-collapsed');
+                    var pnavTgl = document.getElementById('panorama-nav-toggle');
+                    if (pnavTgl) pnavTgl.setAttribute('aria-expanded', 'true');
+                }
+                var panel = navShell.querySelector('.panorama-nav-panel');
+                var head = navShell.querySelector('.panorama-nav-head');
+                var titleEl = navShell.querySelector('.panorama-nav-title');
+                var subtitleEl = navShell.querySelector('.panorama-nav-subtitle');
+                var listEl = navShell.querySelector('.panorama-nav-list');
+                if (panel) {
+                    var pBg = config.panoramaList.panelBg || '#0a1220';
+                    panel.style.background = hexToRgba(pBg, config.transparency.panoramaNav);
+                    panel.style.display = 'flex';
+                    panel.style.flexDirection = 'column';
+                    panel.style.justifyContent = 'flex-start';
+                }
+                if (titleEl) {
+                    titleEl.textContent = config.panoramaList.title || 'Panorama List';
+                    titleEl.style.fontFamily = (config.panoramaList.titleFont || 'Syne') + ', sans-serif';
+                    titleEl.style.fontSize = config.panoramaList.titleFontSize || '0.6rem';
+                    titleEl.style.color = config.panoramaList.titleColor || '#7a8ba8';
+                    titleEl.style.textAlign = config.panoramaList.titleAlign || 'left';
+                }
+                if (subtitleEl) {
+                    var hasSub = config.panoramaList.subheader != null && config.panoramaList.subheader !== '';
+                    subtitleEl.style.display = hasSub ? '' : 'none';
+                    if (hasSub) {
+                        subtitleEl.textContent = config.panoramaList.subheader;
+                    subtitleEl.style.fontFamily = (config.panoramaList.subheaderFont || 'Syne') + ', sans-serif';
+                    subtitleEl.style.fontSize = config.panoramaList.subheaderFontSize || '0.52rem';
+                    subtitleEl.style.color = config.panoramaList.subheaderColor || '#a0aec0';
+                        subtitleEl.style.textAlign = config.panoramaList.subheaderAlign || 'left';
+                    }
+                }
+                var absorbedHeader = navShell.querySelector('.panorama-nav-absorbed-header');
+                if (absorbedHeader) {
+                    var absorbedBadge = absorbedHeader.querySelector('.project-badge');
+                    var absorbedName = absorbedHeader.querySelector('.project-badge-name');
+                    var absorbedLabel = absorbedHeader.querySelector('.project-badge-label');
+                    var align = config.panoramaList.absorbedHeaderAlign || 'left';
+                    if (absorbedBadge) {
+                        absorbedBadge.style.flex = '1';
+                        absorbedBadge.style.minWidth = '0';
+                        absorbedBadge.style.justifyContent = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
+                    }
+                    if (absorbedHeader) {
+                        absorbedHeader.style.color = config.panoramaList.absorbedHeaderColor || '#1a2e4d';
+                    }
+                    if (absorbedName) {
+                        absorbedName.textContent = config.projectBadge.customText || {{ (panorama.name or '') | tojson }};
+                        absorbedName.style.fontFamily = (config.panoramaList.absorbedHeaderFont || 'Syne') + ', sans-serif';
+                        absorbedName.style.fontSize = config.panoramaList.absorbedHeaderFontSize || '0.88rem';
+                    }
+                    if (absorbedLabel) {
+                        absorbedLabel.textContent = config.projectBadge.customLabel || (IS_360 ? '360° Explorer' : 'Panorama Explorer');
+                        absorbedLabel.style.fontFamily = (config.panoramaList.absorbedHeaderFont || 'Syne') + ', sans-serif';
+                    }
+                }
+                if (listEl) applyPanoramaItemStyles();
+            }
+            var ep = config.elementPositions || {};
+            if (header && ep.header && ep.header.x !== null && ep.header.y !== null) {
+                header.style.position = 'fixed';
+                header.style.left = ep.header.x + 'px';
+                header.style.top = ep.header.y + 'px';
+                header.style.right = 'auto';
+                header.style.bottom = 'auto';
+            } else if (header) {
+                header.style.position = '';
+                header.style.left = '';
+                header.style.top = '';
+                header.style.right = '';
+                header.style.bottom = '';
+            }
+            var epcL = ep.customerLegends;
+            if (epcL && epcL.x !== null && epcL.y !== null && legendStack) {
+                legendStack.style.position = 'fixed';
+                legendStack.style.left = epcL.x + 'px';
+                legendStack.style.top = epcL.y + 'px';
+                legendStack.style.bottom = 'auto';
+                legendStack.style.right = 'auto';
+                legendStack.style.transform = 'none';
+            } else if (legendStack) {
+                legendStack.style.position = '';
+                legendStack.style.left = '';
+                legendStack.style.top = '';
+                legendStack.style.bottom = '';
+                legendStack.style.right = '';
+                legendStack.style.transform = '';
+                if (config.header.position === 'bottom') {
+                    legendStack.style.top = 'auto';
+                    legendStack.style.right = '1rem';
+                    legendStack.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem + 8px + 2.5rem + 0.5rem)';
+                }
+            }
+            if (navShell && ep.panoramaNav && ep.panoramaNav.x !== null && ep.panoramaNav.y !== null) {
+                navShell.style.position = 'fixed';
+                navShell.style.left = ep.panoramaNav.x + 'px';
+                navShell.style.top = ep.panoramaNav.y + 'px';
+                navShell.style.right = 'auto';
+                navShell.style.bottom = 'auto';
+                navShell.style.transform = 'none';
+            } else if (navShell) {
+                navShell.style.position = '';
+                navShell.style.left = '';
+                navShell.style.top = '';
+                navShell.style.right = '';
+                navShell.style.bottom = '';
+                navShell.style.transform = '';
+            }
+        }
+
+        function getPositionForElement(id) {
+            var key = id === 'statusLegend' ? 'customerLegends' : id === 'panoramaNav' ? 'panoramaNav' : id === 'header' ? 'header' : null;
+            if (!key || !config.elementPositions[key]) return { x: 0, y: 0 };
+            var p = config.elementPositions[key];
+            return { x: p.x != null ? p.x : 0, y: p.y != null ? p.y : 0 };
+        }
+
+        function setPositionForElement(id, dx, dy) {
+            var key = id === 'statusLegend' ? 'customerLegends' : id === 'panoramaNav' ? 'panoramaNav' : id === 'header' ? 'header' : null;
+            if (!key) return;
+            if (!config.elementPositions[key]) config.elementPositions[key] = { x: null, y: null };
+            var el = document.getElementById(id === 'statusLegend' ? 'cv-legend-stack' : id === 'panoramaNav' ? 'cv-panorama-nav-shell' : 'cv-header');
+            if (!el) return;
+            var rect = el.getBoundingClientRect();
+            var curX = config.elementPositions[key].x != null ? config.elementPositions[key].x : rect.left;
+            var curY = config.elementPositions[key].y != null ? config.elementPositions[key].y : rect.top;
+            config.elementPositions[key].x = curX + dx;
+            config.elementPositions[key].y = curY + dy;
+            applyConfig();
+        }
+
+        function openElementModal(elementId) {
+            currentElementId = elementId;
+            elementModal.classList.toggle('ce-modal-panorama', elementId === 'panoramaNav');
+            elementModal.classList.toggle('ce-modal-status-wide', elementId === 'statusLegend');
+            elementModalTitle.textContent = elementLabels[elementId] || elementId;
+            elementModalBody.innerHTML = '';
+
+            var hasVisible = ['projectBadge', 'panoramaNavToggle', 'searchBar', 'backBtn', 'exportPlots', 'toggleOverlays', 'fullscreen', 'viewCart', 'statusLegend', 'panoramaNav'].indexOf(elementId) >= 0;
+            var hasPosition = ['header', 'statusLegend', 'panoramaNav'].indexOf(elementId) >= 0;
+            var isText = textElements[elementId];
+
+            var frag = document.createDocumentFragment();
+
+            if (elementId === 'panoramaNav') {
+                var panoTitle = config.panoramaList.title || 'Panorama List';
+                var panoSub = config.panoramaList.subheader != null && config.panoramaList.subheader !== '' ? config.panoramaList.subheader : '';
+                function mkSection(title) {
+                    var s = document.createElement('div');
+                    s.className = 'ce-modal-section';
+                    s.innerHTML = '<div class="ce-modal-section-title">' + title + '</div><div class="ce-modal-section-content"></div>';
+                    return s;
+                }
+                function addTo(section, el) {
+                    section.querySelector('.ce-modal-section-content').appendChild(el);
+                }
+                var secContent = mkSection('Content');
+                var secHeader = mkSection('Header styling');
+                var secAbsorbed = mkSection('Absorbed header');
+                var secList = mkSection('List');
+                var secPanel = mkSection('Panel & position');
+
+                var rowShow = document.createElement('div');
+                rowShow.className = 'ce-opt-row ce-opt-row-show';
+                rowShow.innerHTML = '<label class="ce-opt-label">Show</label><input type="checkbox" id="ce-opt-visible" class="ce-opt-checkbox" ' + (config.panoramaList.visible ? 'checked' : '') + '>';
+                rowShow.querySelector('#ce-opt-visible').addEventListener('change', function () { config.panoramaList.visible = this.checked; applyConfig(); });
+                addTo(secContent, rowShow);
+                var rowCurrent = document.createElement('div');
+                rowCurrent.className = 'ce-opt-row ce-current-preview';
+                rowCurrent.innerHTML = '<label class="ce-opt-label">Current on screen</label><div class="ce-preview-text"><strong>' + escapeHtml(panoTitle) + '</strong><span>' + escapeHtml(panoSub) + '</span></div>';
+                addTo(secContent, rowCurrent);
+                var rowTitle = document.createElement('div');
+                rowTitle.className = 'ce-opt-row';
+                rowTitle.innerHTML = '<label class="ce-opt-label">Header (title)</label><input type="text" id="ce-pano-title" class="ce-opt-input" value="' + escapeHtml(panoTitle) + '" placeholder="Panorama List">';
+                rowTitle.querySelector('#ce-pano-title').addEventListener('input', function () { config.panoramaList.title = this.value || 'Panorama List'; applyConfig(); });
+                addTo(secContent, rowTitle);
+                var rowSub = document.createElement('div');
+                rowSub.className = 'ce-opt-row';
+                rowSub.innerHTML = '<label class="ce-opt-label">Subheader</label><input type="text" id="ce-pano-subheader" class="ce-opt-input" value="' + escapeHtml(config.panoramaList.subheader || '') + '" placeholder="Leave empty to hide">';
+                rowSub.querySelector('#ce-pano-subheader').addEventListener('input', function () { config.panoramaList.subheader = this.value === '' ? null : this.value; applyConfig(); });
+                addTo(secContent, rowSub);
+
+                var titleAlign = config.panoramaList.titleAlign || 'left';
+                var rowTitleAlign = document.createElement('div');
+                rowTitleAlign.className = 'ce-opt-row';
+                rowTitleAlign.innerHTML = '<label class="ce-opt-label">Title align</label><div class="ce-pos-btns"><button type="button" class="ce-pos-btn' + (titleAlign === 'left' ? ' active' : '') + '" data-title-align="left">Left</button><button type="button" class="ce-pos-btn' + (titleAlign === 'center' ? ' active' : '') + '" data-title-align="center">Center</button><button type="button" class="ce-pos-btn' + (titleAlign === 'right' ? ' active' : '') + '" data-title-align="right">Right</button></div>';
+                rowTitleAlign.querySelectorAll('.ce-pos-btn').forEach(function (btn) { btn.addEventListener('click', function () { config.panoramaList.titleAlign = this.dataset.titleAlign; rowTitleAlign.querySelectorAll('.ce-pos-btn').forEach(function (b) { b.classList.remove('active'); }); this.classList.add('active'); applyConfig(); }); });
+                addTo(secHeader, rowTitleAlign);
+                var subAlign = config.panoramaList.subheaderAlign || 'left';
+                var rowSubAlign = document.createElement('div');
+                rowSubAlign.className = 'ce-opt-row';
+                rowSubAlign.innerHTML = '<label class="ce-opt-label">Subheader align</label><div class="ce-pos-btns"><button type="button" class="ce-pos-btn' + (subAlign === 'left' ? ' active' : '') + '" data-sub-align="left">Left</button><button type="button" class="ce-pos-btn' + (subAlign === 'center' ? ' active' : '') + '" data-sub-align="center">Center</button><button type="button" class="ce-pos-btn' + (subAlign === 'right' ? ' active' : '') + '" data-sub-align="right">Right</button></div>';
+                rowSubAlign.querySelectorAll('.ce-pos-btn').forEach(function (btn) { btn.addEventListener('click', function () { config.panoramaList.subheaderAlign = this.dataset.subAlign; rowSubAlign.querySelectorAll('.ce-pos-btn').forEach(function (b) { b.classList.remove('active'); }); this.classList.add('active'); applyConfig(); }); });
+                addTo(secHeader, rowSubAlign);
+                var rowTitleFont = document.createElement('div');
+                rowTitleFont.className = 'ce-opt-row';
+                var titleFontVal = config.panoramaList.titleFont || 'Syne';
+                var titleFontHtml = '<label class="ce-opt-label">Title font</label><select id="ce-pano-title-font" class="ce-font-select" draggable="true">';
+                CE_FONTS.forEach(function (f) { titleFontHtml += '<option value="' + escapeHtml(f) + '" style="font-family:' + escapeHtml(f) + ',sans-serif"' + (f === titleFontVal ? ' selected' : '') + '>' + escapeHtml(f) + '</option>'; });
+                titleFontHtml += '</select>';
+                rowTitleFont.innerHTML = titleFontHtml;
+                rowTitleFont.querySelector('#ce-pano-title-font').addEventListener('change', function () { config.panoramaList.titleFont = this.value; applyConfig(); });
+                addTo(secHeader, rowTitleFont);
+                var rowSubFont = document.createElement('div');
+                rowSubFont.className = 'ce-opt-row';
+                var subFontVal = config.panoramaList.subheaderFont || 'Syne';
+                var subFontHtml = '<label class="ce-opt-label">Subheader font</label><select id="ce-pano-subheader-font" class="ce-font-select" draggable="true">';
+                CE_FONTS.forEach(function (f) { subFontHtml += '<option value="' + escapeHtml(f) + '" style="font-family:' + escapeHtml(f) + ',sans-serif"' + (f === subFontVal ? ' selected' : '') + '>' + escapeHtml(f) + '</option>'; });
+                rowSubFont.innerHTML = subFontHtml + '</select>';
+                rowSubFont.querySelector('#ce-pano-subheader-font').addEventListener('change', function () { config.panoramaList.subheaderFont = this.value; applyConfig(); });
+                addTo(secHeader, rowSubFont);
+                function remToSlider(remStr, def) { var n = parseFloat(String(remStr).replace(/rem$/, '')); return isNaN(n) ? def : Math.min(60, Math.max(6, Math.round(n * 20))); }
+                function sliderToRem(val) { return (val * 0.05).toFixed(2) + 'rem'; }
+                var rowTitleSize = document.createElement('div');
+                rowTitleSize.className = 'ce-opt-row';
+                rowTitleSize.innerHTML = '<label class="ce-opt-label">Title font size</label><div class="ce-range-row"><input type="range" id="ce-pano-title-size" min="6" max="60" value="' + remToSlider(config.panoramaList.titleFontSize, 12) + '"><span class="ce-range-val" id="ce-pano-title-size-val">' + (config.panoramaList.titleFontSize || '0.6rem') + '</span></div>';
+                rowTitleSize.querySelector('#ce-pano-title-size').addEventListener('input', function () { var v = parseInt(this.value, 10); config.panoramaList.titleFontSize = sliderToRem(v); rowTitleSize.querySelector('#ce-pano-title-size-val').textContent = sliderToRem(v); applyConfig(); });
+                addTo(secHeader, rowTitleSize);
+                var rowSubSize = document.createElement('div');
+                rowSubSize.className = 'ce-opt-row';
+                rowSubSize.innerHTML = '<label class="ce-opt-label">Subheader font size</label><div class="ce-range-row"><input type="range" id="ce-pano-subheader-size" min="8" max="24" value="' + remToSlider(config.panoramaList.subheaderFontSize, 10) + '"><span class="ce-range-val" id="ce-pano-subheader-size-val">' + (config.panoramaList.subheaderFontSize || '0.52rem') + '</span></div>';
+                rowSubSize.querySelector('#ce-pano-subheader-size').addEventListener('input', function () { var v = parseInt(this.value, 10); config.panoramaList.subheaderFontSize = sliderToRem(v); rowSubSize.querySelector('#ce-pano-subheader-size-val').textContent = sliderToRem(v); applyConfig(); });
+                addTo(secHeader, rowSubSize);
+                var rowTitleColor = document.createElement('div');
+                rowTitleColor.className = 'ce-opt-row';
+                var titleColorVal = config.panoramaList.titleColor || '#7a8ba8';
+                rowTitleColor.innerHTML = '<label class="ce-opt-label">Title color</label><div class="ce-color-row"><input type="color" id="ce-opt-color" value="' + (titleColorVal.indexOf('#') === 0 ? titleColorVal : '#7a8ba8') + '"><span id="ce-opt-color-hex">' + (titleColorVal.indexOf('#') === 0 ? titleColorVal : '#7a8ba8') + '</span></div>';
+                rowTitleColor.querySelector('#ce-opt-color').addEventListener('input', function () { config.panoramaList.titleColor = this.value; rowTitleColor.querySelector('#ce-opt-color-hex').textContent = this.value; applyConfig(); });
+                addTo(secHeader, rowTitleColor);
+                var rowSubColor = document.createElement('div');
+                rowSubColor.className = 'ce-opt-row';
+                var subColorVal = config.panoramaList.subheaderColor || '#a0aec0';
+                rowSubColor.innerHTML = '<label class="ce-opt-label">Subheader color</label><div class="ce-color-row"><input type="color" id="ce-pano-subheader-color" value="' + (subColorVal.indexOf('#') === 0 ? subColorVal : '#a0aec0') + '"><span id="ce-pano-subheader-color-hex">' + (subColorVal.indexOf('#') === 0 ? subColorVal : '#a0aec0') + '</span></div>';
+                rowSubColor.querySelector('#ce-pano-subheader-color').addEventListener('input', function () { config.panoramaList.subheaderColor = this.value; rowSubColor.querySelector('#ce-pano-subheader-color-hex').textContent = this.value; applyConfig(); });
+                addTo(secHeader, rowSubColor);
+
+                var absorbedPreview = document.createElement('div');
+                absorbedPreview.className = 'ce-opt-row ce-current-preview';
+                var absorbedNamePreview = config.projectBadge.customText || {{ (panorama.name or '') | tojson }};
+                var absorbedLabelPreview = config.projectBadge.customLabel || (IS_360 ? '360° Explorer' : 'Panorama Explorer');
+                absorbedPreview.innerHTML = '<label class="ce-opt-label">Preview</label><div class="ce-preview-text"><strong>' + escapeHtml(absorbedNamePreview) + '</strong><span>' + escapeHtml(absorbedLabelPreview) + '</span></div>';
+                addTo(secAbsorbed, absorbedPreview);
+                var absorbedAlign = config.panoramaList.absorbedHeaderAlign || 'left';
+                var rowAbsorbedAlign = document.createElement('div');
+                rowAbsorbedAlign.className = 'ce-opt-row';
+                rowAbsorbedAlign.innerHTML = '<label class="ce-opt-label">Absorbed header align</label><div class="ce-pos-btns"><button type="button" class="ce-pos-btn' + (absorbedAlign === 'left' ? ' active' : '') + '" data-absorbed-align="left">Left</button><button type="button" class="ce-pos-btn' + (absorbedAlign === 'center' ? ' active' : '') + '" data-absorbed-align="center">Center</button><button type="button" class="ce-pos-btn' + (absorbedAlign === 'right' ? ' active' : '') + '" data-absorbed-align="right">Right</button></div>';
+                rowAbsorbedAlign.querySelectorAll('.ce-pos-btn').forEach(function (btn) { btn.addEventListener('click', function () { config.panoramaList.absorbedHeaderAlign = this.dataset.absorbedAlign; rowAbsorbedAlign.querySelectorAll('.ce-pos-btn').forEach(function (b) { b.classList.remove('active'); }); this.classList.add('active'); applyConfig(); }); });
+                addTo(secAbsorbed, rowAbsorbedAlign);
+                var rowAbsorbedFont = document.createElement('div');
+                rowAbsorbedFont.className = 'ce-opt-row';
+                var absorbedFontVal = config.panoramaList.absorbedHeaderFont || 'Syne';
+                var absorbedFontHtml = '<label class="ce-opt-label">Absorbed header font</label><select id="ce-pano-absorbed-font" class="ce-font-select" draggable="true">';
+                CE_FONTS.forEach(function (f) { absorbedFontHtml += '<option value="' + escapeHtml(f) + '" style="font-family:' + escapeHtml(f) + ',sans-serif"' + (f === absorbedFontVal ? ' selected' : '') + '>' + escapeHtml(f) + '</option>'; });
+                absorbedFontHtml += '</select>';
+                rowAbsorbedFont.innerHTML = absorbedFontHtml;
+                rowAbsorbedFont.querySelector('#ce-pano-absorbed-font').addEventListener('change', function () { config.panoramaList.absorbedHeaderFont = this.value; applyConfig(); });
+                addTo(secAbsorbed, rowAbsorbedFont);
+                var rowAbsorbedSize = document.createElement('div');
+                rowAbsorbedSize.className = 'ce-opt-row';
+                rowAbsorbedSize.innerHTML = '<label class="ce-opt-label">Absorbed header font size</label><div class="ce-range-row"><input type="range" id="ce-pano-absorbed-size" min="6" max="60" value="' + remToSlider(config.panoramaList.absorbedHeaderFontSize, 18) + '"><span class="ce-range-val" id="ce-pano-absorbed-size-val">' + (config.panoramaList.absorbedHeaderFontSize || '0.88rem') + '</span></div>';
+                rowAbsorbedSize.querySelector('#ce-pano-absorbed-size').addEventListener('input', function () { var v = parseInt(this.value, 10); config.panoramaList.absorbedHeaderFontSize = sliderToRem(v); rowAbsorbedSize.querySelector('#ce-pano-absorbed-size-val').textContent = sliderToRem(v); applyConfig(); });
+                addTo(secAbsorbed, rowAbsorbedSize);
+                var rowAbsorbedColor = document.createElement('div');
+                rowAbsorbedColor.className = 'ce-opt-row';
+                var absorbedColorVal = config.panoramaList.absorbedHeaderColor || '#1a2e4d';
+                rowAbsorbedColor.innerHTML = '<label class="ce-opt-label">Absorbed header color</label><div class="ce-color-row"><input type="color" id="ce-pano-absorbed-color" value="' + (absorbedColorVal.indexOf('#') === 0 ? absorbedColorVal : '#1a2e4d') + '"><span id="ce-pano-absorbed-color-hex">' + (absorbedColorVal.indexOf('#') === 0 ? absorbedColorVal : '#1a2e4d') + '</span></div>';
+                rowAbsorbedColor.querySelector('#ce-pano-absorbed-color').addEventListener('input', function () { config.panoramaList.absorbedHeaderColor = this.value; rowAbsorbedColor.querySelector('#ce-pano-absorbed-color-hex').textContent = this.value; applyConfig(); });
+                addTo(secAbsorbed, rowAbsorbedColor);
+
+                var navPosition = config.panoramaList.position || 'left';
+                var rowNavPos = document.createElement('div');
+                rowNavPos.className = 'ce-opt-row';
+                rowNavPos.innerHTML = '<label class="ce-opt-label">List position</label><div class="ce-pos-btns"><button type="button" class="ce-pos-btn' + (navPosition === 'left' ? ' active' : '') + '" data-nav-pos="left">Left</button><button type="button" class="ce-pos-btn' + (navPosition === 'right' ? ' active' : '') + '" data-nav-pos="right">Right</button><button type="button" class="ce-pos-btn' + (navPosition === 'top' ? ' active' : '') + '" data-nav-pos="top">Top</button><button type="button" class="ce-pos-btn' + (navPosition === 'bottom' ? ' active' : '') + '" data-nav-pos="bottom">Bottom</button></div>';
+                rowNavPos.querySelectorAll('.ce-pos-btn').forEach(function (btn) { btn.addEventListener('click', function () { config.panoramaList.position = this.dataset.navPos; if (!config.elementPositions.panoramaNav) config.elementPositions.panoramaNav = { x: null, y: null }; config.elementPositions.panoramaNav.x = null; config.elementPositions.panoramaNav.y = null; rowNavPos.querySelectorAll('.ce-pos-btn').forEach(function (b) { b.classList.remove('active'); }); this.classList.add('active'); applyConfig(); }); });
+                addTo(secList, rowNavPos);
+                var itemAlignX = config.panoramaList.itemAlignX || 'left';
+                var rowItemAlignX = document.createElement('div');
+                rowItemAlignX.className = 'ce-opt-row';
+                rowItemAlignX.innerHTML = '<label class="ce-opt-label">Items horizontal align</label><div class="ce-pos-btns"><button type="button" class="ce-pos-btn' + (itemAlignX === 'left' ? ' active' : '') + '" data-item-align-x="left">Left</button><button type="button" class="ce-pos-btn' + (itemAlignX === 'center' ? ' active' : '') + '" data-item-align-x="center">Center</button><button type="button" class="ce-pos-btn' + (itemAlignX === 'right' ? ' active' : '') + '" data-item-align-x="right">Right</button></div>';
+                rowItemAlignX.querySelectorAll('.ce-pos-btn').forEach(function (btn) { btn.addEventListener('click', function () { config.panoramaList.itemAlignX = this.dataset.itemAlignX; rowItemAlignX.querySelectorAll('.ce-pos-btn').forEach(function (b) { b.classList.remove('active'); }); this.classList.add('active'); applyConfig(); }); });
+                addTo(secList, rowItemAlignX);
+                var itemAlignY = config.panoramaList.itemAlignY || 'center';
+                var rowItemAlignY = document.createElement('div');
+                rowItemAlignY.className = 'ce-opt-row';
+                rowItemAlignY.innerHTML = '<label class="ce-opt-label">Items vertical align</label><div class="ce-pos-btns"><button type="button" class="ce-pos-btn' + (itemAlignY === 'top' ? ' active' : '') + '" data-item-align-y="top">Top</button><button type="button" class="ce-pos-btn' + (itemAlignY === 'center' ? ' active' : '') + '" data-item-align-y="center">Center</button><button type="button" class="ce-pos-btn' + (itemAlignY === 'bottom' ? ' active' : '') + '" data-item-align-y="bottom">Bottom</button></div>';
+                rowItemAlignY.querySelectorAll('.ce-pos-btn').forEach(function (btn) { btn.addEventListener('click', function () { config.panoramaList.itemAlignY = this.dataset.itemAlignY; rowItemAlignY.querySelectorAll('.ce-pos-btn').forEach(function (b) { b.classList.remove('active'); }); this.classList.add('active'); applyConfig(); }); });
+                addTo(secList, rowItemAlignY);
+                var rowItemFont = document.createElement('div');
+                rowItemFont.className = 'ce-opt-row';
+                var itemFontVal = config.panoramaList.itemFont || 'Syne';
+                var itemFontHtml = '<label class="ce-opt-label">List items font</label><select id="ce-pano-item-font" class="ce-font-select" draggable="true">';
+                CE_FONTS.forEach(function (f) { itemFontHtml += '<option value="' + escapeHtml(f) + '" style="font-family:' + escapeHtml(f) + ',sans-serif"' + (f === itemFontVal ? ' selected' : '') + '>' + escapeHtml(f) + '</option>'; });
+                rowItemFont.innerHTML = itemFontHtml + '</select>';
+                rowItemFont.querySelector('#ce-pano-item-font').addEventListener('change', function () { config.panoramaList.itemFont = this.value; applyConfig(); });
+                addTo(secList, rowItemFont);
+                var rowItemSize = document.createElement('div');
+                rowItemSize.className = 'ce-opt-row';
+                rowItemSize.innerHTML = '<label class="ce-opt-label">List item font size</label><div class="ce-range-row"><input type="range" id="ce-pano-item-size" min="6" max="60" value="' + remToSlider(config.panoramaList.itemFontSize, 15) + '"><span class="ce-range-val" id="ce-pano-item-size-val">' + (config.panoramaList.itemFontSize || '0.76rem') + '</span></div>';
+                rowItemSize.querySelector('#ce-pano-item-size').addEventListener('input', function () { var v = parseInt(this.value, 10); config.panoramaList.itemFontSize = sliderToRem(v); rowItemSize.querySelector('#ce-pano-item-size-val').textContent = sliderToRem(v); applyConfig(); });
+                addTo(secList, rowItemSize);
+                var rowItemColor = document.createElement('div');
+                rowItemColor.className = 'ce-opt-row';
+                var itemColorVal = config.panoramaList.itemColor || '#1a2e4d';
+                rowItemColor.innerHTML = '<label class="ce-opt-label">List item color</label><div class="ce-color-row"><input type="color" id="ce-pano-item-color" value="' + (itemColorVal.indexOf('#') === 0 ? itemColorVal : '#1a2e4d') + '"><span id="ce-pano-item-color-hex">' + (itemColorVal.indexOf('#') === 0 ? itemColorVal : '#1a2e4d') + '</span></div>';
+                rowItemColor.querySelector('#ce-pano-item-color').addEventListener('input', function () { config.panoramaList.itemColor = this.value; rowItemColor.querySelector('#ce-pano-item-color-hex').textContent = this.value; applyConfig(); });
+                addTo(secList, rowItemColor);
+                var configOrder = config.panoramaList && config.panoramaList.order;
+                var ordered = configOrder && configOrder.length > 0 ? configOrder.map(function (id) { return WORKSPACE_PANORAMAS.find(function (p) { return String(p.id) === String(id); }); }).filter(Boolean) : WORKSPACE_PANORAMAS.slice();
+                if (configOrder && configOrder.length > 0) WORKSPACE_PANORAMAS.forEach(function (p) { if (!ordered.find(function (o) { return o && String(o.id) === String(p.id); })) ordered.push(p); });
+                var hiddenGlobalSet = new Set((Array.isArray(config.panoramaList.hiddenGlobal) ? config.panoramaList.hiddenGlobal : []).map(function (id) { return String(id); }));
+                var rowOrder = document.createElement('div');
+                rowOrder.className = 'ce-opt-row ce-pano-order-wrap';
+                rowOrder.innerHTML = '<label class="ce-opt-label">Arrange order</label>';
+                var orderList = document.createElement('div');
+                orderList.className = 'ce-pano-order-list';
+                ordered.forEach(function (p, idx) {
+                    var item = document.createElement('div');
+                    item.className = 'ce-pano-order-item' + (hiddenGlobalSet.has(String(p.id)) ? ' is-hidden' : '');
+                    item.dataset.panoId = p.id;
+                    item.dataset.panoName = p.name || 'Panorama';
+                    item.innerHTML = '<span class="ce-pano-order-name">' + escapeHtml(p.name || 'Panorama') + '</span><div class="ce-pano-order-actions"><label class="ce-pano-hide-toggle"><input type="checkbox" class="ce-opt-checkbox ce-pano-hide-checkbox" ' + (hiddenGlobalSet.has(String(p.id)) ? 'checked' : '') + '><span>Hide</span></label><button type="button" class="ce-pano-order-btn" data-dir="up" ' + (idx === 0 ? 'disabled' : '') + '>↑</button><button type="button" class="ce-pano-order-btn" data-dir="down" ' + (idx === ordered.length - 1 ? 'disabled' : '') + '>↓</button></div>';
+                    orderList.appendChild(item);
+                });
+                rowOrder.appendChild(orderList);
+                function refreshPanoOrderButtons() {
+                    rowOrder.querySelectorAll('.ce-pano-order-item').forEach(function (item) {
+                        var id = String(item.dataset.panoId || '');
+                        var isHidden = hiddenGlobalSet.has(id);
+                        var nameEl = item.querySelector('.ce-pano-order-name');
+                        if (nameEl) nameEl.textContent = item.dataset.panoName || 'Panorama';
+                        item.classList.toggle('is-hidden', isHidden);
+                        var hideCb = item.querySelector('.ce-pano-hide-checkbox');
+                        if (hideCb) hideCb.checked = isHidden;
+                    });
+                    rowOrder.querySelectorAll('[data-dir]').forEach(function (b) {
+                        var i = b.closest('.ce-pano-order-item');
+                        var idx2 = Array.prototype.indexOf.call(i.parentNode.children, i);
+                        b.disabled = (b.dataset.dir === 'up' && idx2 === 0) || (b.dataset.dir === 'down' && idx2 === i.parentNode.children.length - 1);
+                    });
+                }
+                rowOrder.querySelectorAll('.ce-pano-hide-checkbox').forEach(function (cb) {
+                    cb.addEventListener('change', function () {
+                        var item = this.closest('.ce-pano-order-item');
+                        if (!item) return;
+                        var idVal = String(item.dataset.panoId || '');
+                        if (!idVal) return;
+                        if (this.checked) hiddenGlobalSet.add(idVal);
+                        else hiddenGlobalSet.delete(idVal);
+                        config.panoramaList.hiddenGlobal = Array.from(hiddenGlobalSet);
+                        applyConfig();
+                        renderPanoramaNavList();
+                        refreshPanoOrderButtons();
+                    });
+                });
+                rowOrder.querySelectorAll('.ce-pano-order-btn[data-dir]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var item = this.closest('.ce-pano-order-item');
+                        if (!item) return;
+                        if (this.disabled) return;
+                        var list = item.parentNode;
+                        var dir = this.dataset.dir;
+                        var idx = Array.prototype.indexOf.call(list.children, item);
+                        if (dir === 'up' && idx > 0) list.insertBefore(item, list.children[idx - 1]);
+                        else if (dir === 'down' && idx < list.children.length - 1) list.insertBefore(item, list.children[idx + 1].nextSibling);
+                        config.panoramaList.order = Array.prototype.slice.call(list.querySelectorAll('.ce-pano-order-item')).map(function (el) { var id = el.dataset.panoId; return id != null && id !== '' ? id : undefined; }).filter(Boolean);
+                        applyConfig();
+                        renderPanoramaNavList();
+                        refreshPanoOrderButtons();
+                    });
+                });
+                refreshPanoOrderButtons();
+                addTo(secList, rowOrder);
+
+                var rowBg = document.createElement('div');
+                rowBg.className = 'ce-opt-row';
+                rowBg.innerHTML = '<label class="ce-opt-label">Panel background</label><div class="ce-color-row"><input type="color" id="ce-opt-bg" value="' + ((config.panoramaList.panelBg || '#0a1220').indexOf('#') === 0 ? config.panoramaList.panelBg : '#0a1220') + '"><span id="ce-opt-bg-hex">' + (config.panoramaList.panelBg || '#0a1220') + '</span></div>';
+                rowBg.querySelector('#ce-opt-bg').addEventListener('input', function () { config.panoramaList.panelBg = this.value; rowBg.querySelector('#ce-opt-bg-hex').textContent = this.value; applyConfig(); });
+                addTo(secPanel, rowBg);
+                var rowAlpha = document.createElement('div');
+                rowAlpha.className = 'ce-opt-row';
+                rowAlpha.innerHTML = '<label class="ce-opt-label">Transparency</label><div class="ce-range-row"><input type="range" id="ce-opt-alpha" min="0" max="100" value="' + Math.round((config.transparency.panoramaNav || 0.72) * 100) + '"><span class="ce-range-val" id="ce-opt-alpha-val">' + Math.round((config.transparency.panoramaNav || 0.72) * 100) + '%</span></div>';
+                rowAlpha.querySelector('#ce-opt-alpha').addEventListener('input', function () { config.transparency.panoramaNav = parseInt(this.value, 10) / 100; rowAlpha.querySelector('#ce-opt-alpha-val').textContent = this.value + '%'; applyConfig(); });
+                addTo(secPanel, rowAlpha);
+                var rowMove = document.createElement('div');
+                rowMove.className = 'ce-opt-row';
+                rowMove.innerHTML = '<label class="ce-opt-label">Move</label><div class="ce-drag-controller"><div class="ce-drag-pad" id="ce-drag-pad"><div class="ce-drag-pad-guide"></div><div class="ce-drag-knob" id="ce-drag-knob"></div></div><div class="ce-move-btns"><button type="button" class="ce-move-btn" data-dx="0" data-dy="-10">↑</button><button type="button" class="ce-move-btn" data-dx="-10" data-dy="0">←</button><button type="button" class="ce-move-btn" data-dx="10" data-dy="0">→</button><button type="button" class="ce-move-btn" data-dx="0" data-dy="10">↓</button></div></div>';
+                var dragPad = rowMove.querySelector('#ce-drag-pad');
+                var dragKnob = rowMove.querySelector('#ce-drag-knob');
+                function updateDragKnob(clientX, clientY) {
+                    var rect = dragPad.getBoundingClientRect();
+                    var cx = rect.left + (rect.width / 2);
+                    var cy = rect.top + (rect.height / 2);
+                    var dx = clientX - cx, dy = clientY - cy;
+                    var max = 26, dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    var useDx = dist > max ? (dx / dist) * max : dx, useDy = dist > max ? (dy / dist) * max : dy;
+                    dragKnob.style.transform = 'translate(' + useDx + 'px,' + useDy + 'px)';
+                    setPositionForElement('panoramaNav', Math.round(useDx / 4), Math.round(useDy / 4));
+                }
+                var panoDragging = false;
+                dragPad.addEventListener('pointerdown', function (e) { panoDragging = true; dragPad.setPointerCapture(e.pointerId); updateDragKnob(e.clientX, e.clientY); });
+                dragPad.addEventListener('pointermove', function (e) { if (panoDragging) updateDragKnob(e.clientX, e.clientY); });
+                dragPad.addEventListener('pointerup', function () { panoDragging = false; dragKnob.style.transform = 'translate(0,0)'; });
+                dragPad.addEventListener('pointercancel', function () { panoDragging = false; dragKnob.style.transform = 'translate(0,0)'; });
+                rowMove.querySelectorAll('.ce-move-btn').forEach(function (btn) { btn.addEventListener('click', function () { setPositionForElement('panoramaNav', parseInt(this.dataset.dx, 10), parseInt(this.dataset.dy, 10)); }); });
+                addTo(secPanel, rowMove);
+
+                var panoGrid = document.createElement('div');
+                panoGrid.className = 'ce-modal-pano-grid';
+                panoGrid.appendChild(secContent);
+                panoGrid.appendChild(secHeader);
+                panoGrid.appendChild(secAbsorbed);
+                panoGrid.appendChild(secList);
+                panoGrid.appendChild(secPanel);
+                frag.appendChild(panoGrid);
+            } else if (hasVisible) {
+                var visible = false;
+                if (elementId === 'projectBadge') visible = config.projectBadge.visible;
+                else if (elementId === 'panoramaNavToggle') visible = config.buttons.panoramaNavToggle;
+                else if (elementId === 'searchBar') visible = config.searchBar.visible;
+                else if (elementId === 'backBtn') visible = config.buttons.backBtn;
+                else if (elementId === 'exportPlots') visible = config.buttons.exportPlots;
+                else if (elementId === 'toggleOverlays') visible = config.buttons.toggleOverlays;
+                else if (elementId === 'fullscreen') visible = config.buttons.fullscreen;
+                else if (elementId === 'viewCart') visible = config.buttons.viewCart;
+                else if (elementId === 'statusLegend') visible = config.statusLegend.visible;
+                else if (elementId === 'panoramaNav') visible = config.panoramaList.visible;
+                var row = document.createElement('div');
+                row.className = 'ce-opt-row ce-opt-row-show';
+                row.innerHTML = '<label class="ce-opt-label">Show</label><input type="checkbox" id="ce-opt-visible" class="ce-opt-checkbox" ' + (visible ? 'checked' : '') + '>';
+                row.querySelector('#ce-opt-visible').addEventListener('change', function () {
+                    var v = this.checked;
+                    if (elementId === 'projectBadge') config.projectBadge.visible = v;
+                    else if (elementId === 'panoramaNavToggle') config.buttons.panoramaNavToggle = v;
+                    else if (elementId === 'searchBar') config.searchBar.visible = v;
+                    else if (elementId === 'backBtn') config.buttons.backBtn = v;
+                    else if (elementId === 'exportPlots') config.buttons.exportPlots = v;
+                    else if (elementId === 'toggleOverlays') config.buttons.toggleOverlays = v;
+                    else if (elementId === 'fullscreen') config.buttons.fullscreen = v;
+                    else if (elementId === 'viewCart') config.buttons.viewCart = v;
+                    else if (elementId === 'statusLegend') config.statusLegend.visible = v;
+                    else if (elementId === 'panoramaNav') config.panoramaList.visible = v;
+                    applyConfig();
+                });
+                frag.appendChild(row);
+            }
+
+            if (elementId !== 'panoramaNav') {
+            var colorVal = config.theme.headerTextColor;
+            var bgVal = config.theme.headerBg;
+            var alphaVal = 93;
+            if (elementId === 'header') { colorVal = config.theme.headerTextColor; bgVal = config.theme.headerBg; alphaVal = Math.round(config.transparency.header * 100); }
+            else if (elementId === 'projectBadge') { colorVal = config.theme.primaryColor; alphaVal = 100; }
+            else if (['panoramaNavToggle', 'backBtn', 'exportPlots', 'toggleOverlays', 'fullscreen', 'viewCart'].indexOf(elementId) >= 0) { colorVal = config.theme.buttonTextColor; bgVal = config.theme.buttonBg; alphaVal = 94; }
+            else if (elementId === 'searchBar') { colorVal = config.theme.headerTextColor; bgVal = config.theme.headerBg; alphaVal = 93; }
+            else if (elementId === 'statusLegend') { colorVal = config.statusLegend.color || '#23395f'; bgVal = config.statusLegend.bg || '#f7f9fd'; alphaVal = Math.round(config.transparency.statusLegend * 100); }
+            else if (elementId === 'panoramaNav') { colorVal = config.panoramaList.titleColor || '#7a8ba8'; bgVal = config.panoramaList.panelBg || '#0a1220'; alphaVal = Math.round(config.transparency.panoramaNav * 100); }
+
+            var rowColor = document.createElement('div');
+            rowColor.className = 'ce-opt-row';
+            rowColor.innerHTML = '<label class="ce-opt-label">' + (elementId === 'panoramaNav' ? 'Title color' : 'Color') + '</label><div class="ce-color-row"><input type="color" id="ce-opt-color" value="' + (colorVal && colorVal.indexOf('#') === 0 ? colorVal : '#23395f') + '"><span id="ce-opt-color-hex">' + (colorVal && colorVal.indexOf('#') === 0 ? colorVal : '#23395f') + '</span></div>';
+            var colorInput = rowColor.querySelector('#ce-opt-color');
+            colorInput.addEventListener('input', function () {
+                var hex = this.value;
+                if (elementId === 'header') config.theme.headerTextColor = hex;
+                else if (elementId === 'projectBadge') config.theme.primaryColor = hex;
+                else if (['panoramaNavToggle', 'backBtn', 'exportPlots', 'toggleOverlays', 'fullscreen', 'viewCart'].indexOf(elementId) >= 0) config.theme.buttonTextColor = hex;
+                else if (elementId === 'searchBar') config.theme.headerTextColor = hex;
+                else if (elementId === 'panoramaNav') config.panoramaList.titleColor = hex;
+                else if (elementId === 'statusLegend') config.statusLegend.color = hex;
+                rowColor.querySelector('#ce-opt-color-hex').textContent = hex;
+                applyConfig();
+            });
+            frag.appendChild(rowColor);
+
+            var rowBg = document.createElement('div');
+            rowBg.className = 'ce-opt-row';
+            rowBg.innerHTML = '<label class="ce-opt-label">' + (elementId === 'panoramaNav' ? 'Panel background' : 'Background') + '</label><div class="ce-color-row"><input type="color" id="ce-opt-bg" value="' + (bgVal && bgVal.indexOf('#') === 0 ? bgVal : '#f6f8fc') + '"><span id="ce-opt-bg-hex">' + (bgVal && bgVal.indexOf('#') === 0 ? bgVal : '#f6f8fc') + '</span></div>';
+            var bgInput = rowBg.querySelector('#ce-opt-bg');
+            bgInput.addEventListener('input', function () {
+                var hex = this.value;
+                if (elementId === 'header') config.theme.headerBg = hex;
+                else if (['panoramaNavToggle', 'backBtn', 'exportPlots', 'toggleOverlays', 'fullscreen', 'viewCart'].indexOf(elementId) >= 0) config.theme.buttonBg = hex;
+                else if (elementId === 'searchBar') config.theme.headerBg = hex;
+                else if (elementId === 'panoramaNav') config.panoramaList.panelBg = hex;
+                else if (elementId === 'statusLegend') config.statusLegend.bg = hex;
+                rowBg.querySelector('#ce-opt-bg-hex').textContent = hex;
+                applyConfig();
+            });
+            frag.appendChild(rowBg);
+
+            var rowAlpha = document.createElement('div');
+            rowAlpha.className = 'ce-opt-row';
+            rowAlpha.innerHTML = '<label class="ce-opt-label">Transparency</label><div class="ce-range-row"><input type="range" id="ce-opt-alpha" min="0" max="100" value="' + alphaVal + '"><span class="ce-range-val" id="ce-opt-alpha-val">' + alphaVal + '%</span></div>';
+            rowAlpha.querySelector('#ce-opt-alpha').addEventListener('input', function () {
+                var v = parseInt(this.value, 10) / 100;
+                if (elementId === 'header') config.transparency.header = v;
+                else if (elementId === 'statusLegend') config.transparency.statusLegend = v;
+                else if (elementId === 'panoramaNav') config.transparency.panoramaNav = v;
+                rowAlpha.querySelector('#ce-opt-alpha-val').textContent = this.value + '%';
+                applyConfig();
+            });
+            frag.appendChild(rowAlpha);
+
+            if (elementId === 'statusLegend') {
+                ensurePlotSizeLegendConfig();
+                var secSz = document.createElement('div');
+                secSz.className = 'ce-modal-section ce-modal-section-plot-sizes';
+                secSz.innerHTML = '<div class="ce-modal-section-title">Size guide</div><div class="ce-modal-section-content" id="ce-plot-size-bands-root"></div>';
+                var root = secSz.querySelector('#ce-plot-size-bands-root');
+                var rowSzVis = document.createElement('div');
+                rowSzVis.className = 'ce-opt-row ce-opt-row-show';
+                rowSzVis.innerHTML = '<label class="ce-opt-label">Show size guide</label><input type="checkbox" id="ce-plot-size-vis" class="ce-opt-checkbox" ' + (config.plotSizeLegend.visible !== false ? 'checked' : '') + '>';
+                rowSzVis.querySelector('#ce-plot-size-vis').addEventListener('change', function () {
+                    config.plotSizeLegend.visible = this.checked;
+                    applyConfig();
+                });
+                root.appendChild(rowSzVis);
+                var rowColDef = document.createElement('div');
+                rowColDef.className = 'ce-opt-row ce-opt-row-show';
+                rowColDef.innerHTML = '<label class="ce-opt-label">Collapsed by default</label><input type="checkbox" id="ce-plot-size-collapsed-def" class="ce-opt-checkbox" ' + (config.plotSizeLegend.collapsed === true ? 'checked' : '') + '>';
+                rowColDef.querySelector('#ce-plot-size-collapsed-def').addEventListener('change', function () {
+                    config.plotSizeLegend.collapsed = this.checked;
+                    applyConfig();
+                });
+                root.appendChild(rowColDef);
+                var bandWrap = document.createElement('div');
+                bandWrap.className = 'ce-plot-size-band-editors';
+                root.appendChild(bandWrap);
+                function ceParseNum(v) {
+                    var x = parseFloat(String(v).replace(/,/g, ''));
+                    return isFinite(x) ? x : 0;
+                }
+                function redrawBandEditors() {
+                    ensurePlotSizeLegendConfig();
+                    bandWrap.innerHTML = '';
+                    config.plotSizeLegend.bands.forEach(function (band, idx) {
+                        var col = band.color && String(band.color).indexOf('#') === 0 ? band.color : '#E8D5ED';
+                        var card = document.createElement('div');
+                        card.className = 'ce-plot-band-card';
+                        var h = document.createElement('div');
+                        h.className = 'ce-plot-band-card-head';
+                        h.innerHTML = '<span class="ce-opt-label">Band ' + (idx + 1) + '</span>';
+                        var colInp = document.createElement('input');
+                        colInp.type = 'color';
+                        colInp.className = 'ce-plot-band-color';
+                        colInp.value = col;
+                        colInp.addEventListener('input', function () {
+                            config.plotSizeLegend.bands[idx].color = this.value;
+                            applyConfig();
+                        });
+                        h.appendChild(colInp);
+                        card.appendChild(h);
+                        var g = document.createElement('div');
+                        g.className = 'ce-plot-band-grid';
+                        function addRow(label, k1, k2) {
+                            var s1 = document.createElement('span');
+                            s1.textContent = label;
+                            g.appendChild(s1);
+                            var i1 = document.createElement('input');
+                            i1.type = 'text';
+                            i1.className = 'ce-plot-band-inp';
+                            i1.dataset.k = k1;
+                            i1.value = band[k1] != null ? String(band[k1]) : '';
+                            var i2 = document.createElement('input');
+                            i2.type = 'text';
+                            i2.className = 'ce-plot-band-inp';
+                            i2.dataset.k = k2;
+                            i2.value = band[k2] != null ? String(band[k2]) : '';
+                            function onCh(inp) {
+                                inp.addEventListener('change', function () {
+                                    var k = this.dataset.k;
+                                    if (k) config.plotSizeLegend.bands[idx][k] = ceParseNum(this.value);
+                                    applyConfig();
+                                });
+                            }
+                            onCh(i1);
+                            onCh(i2);
+                            g.appendChild(i1);
+                            g.appendChild(i2);
+                        }
+                        addRow('Sq ft', 'sqftMin', 'sqftMax');
+                        addRow('Sq m', 'sqmMin', 'sqmMax');
+                        addRow('Sq yd', 'sqydMin', 'sqydMax');
+                        card.appendChild(g);
+                        bandWrap.appendChild(card);
+                    });
+                }
+                redrawBandEditors();
+                var rowAddRem = document.createElement('div');
+                rowAddRem.className = 'ce-opt-row ce-plot-band-actions';
+                var btnAdd = document.createElement('button');
+                btnAdd.type = 'button';
+                btnAdd.className = 'ce-pos-btn';
+                btnAdd.textContent = 'Add band';
+                btnAdd.addEventListener('click', function () {
+                    ensurePlotSizeLegendConfig();
+                    var bands = config.plotSizeLegend.bands;
+                    var last = bands[bands.length - 1];
+                    var tpl = last ? JSON.parse(JSON.stringify(last)) : { color: '#E8D5ED', sqftMin: 0, sqftMax: 0, sqmMin: 0, sqmMax: 0, sqydMin: 0, sqydMax: 0 };
+                    bands.push(tpl);
+                    redrawBandEditors();
+                    applyConfig();
+                });
+                var btnRem = document.createElement('button');
+                btnRem.type = 'button';
+                btnRem.className = 'ce-pos-btn';
+                btnRem.textContent = 'Remove last';
+                btnRem.addEventListener('click', function () {
+                    ensurePlotSizeLegendConfig();
+                    if (config.plotSizeLegend.bands.length <= 1) return;
+                    config.plotSizeLegend.bands.pop();
+                    redrawBandEditors();
+                    applyConfig();
+                });
+                rowAddRem.appendChild(btnAdd);
+                rowAddRem.appendChild(btnRem);
+                root.appendChild(rowAddRem);
+                frag.appendChild(secSz);
+            }
+
+            if (elementId === 'header') {
+                var rowPos = document.createElement('div');
+                rowPos.className = 'ce-opt-row';
+                rowPos.innerHTML = '<label class="ce-opt-label">Position</label><div class="ce-pos-btns"><button type="button" class="ce-pos-btn' + (config.header.position === 'top' ? ' active' : '') + '" data-pos="top">Top</button><button type="button" class="ce-pos-btn' + (config.header.position === 'bottom' ? ' active' : '') + '" data-pos="bottom">Bottom</button></div>';
+                rowPos.querySelectorAll('.ce-pos-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        config.header.position = this.dataset.pos;
+                        if (!config.elementPositions.header) config.elementPositions.header = { x: null, y: null };
+                        config.elementPositions.header.x = null;
+                        config.elementPositions.header.y = null;
+                        rowPos.querySelectorAll('.ce-pos-btn').forEach(function (b) { b.classList.remove('active'); });
+                        this.classList.add('active');
+                        applyConfig();
+                    });
+                });
+                frag.appendChild(rowPos);
+            }
+            if (hasPosition) {
+                var rowMove = document.createElement('div');
+                rowMove.className = 'ce-opt-row' + (elementId === 'panoramaNav' ? ' ce-opt-row-full' : '');
+                rowMove.innerHTML = '<label class="ce-opt-label">Move</label><div class="ce-drag-controller"><div class="ce-drag-pad" id="ce-drag-pad"><div class="ce-drag-pad-guide"></div><div class="ce-drag-knob" id="ce-drag-knob"></div></div><div class="ce-move-btns"><button type="button" class="ce-move-btn" data-dx="0" data-dy="-10">↑</button><button type="button" class="ce-move-btn" data-dx="-10" data-dy="0">←</button><button type="button" class="ce-move-btn" data-dx="10" data-dy="0">→</button><button type="button" class="ce-move-btn" data-dx="0" data-dy="10">↓</button></div></div>';
+                var dragPad = rowMove.querySelector('#ce-drag-pad');
+                var dragKnob = rowMove.querySelector('#ce-drag-knob');
+                var dragState = { active: false, centerX: 0, centerY: 0 };
+                function updateDragKnob(clientX, clientY) {
+                    var rect = dragPad.getBoundingClientRect();
+                    var cx = rect.left + (rect.width / 2);
+                    var cy = rect.top + (rect.height / 2);
+                    var dx = clientX - cx;
+                    var dy = clientY - cy;
+                    var max = 26;
+                    var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    var useDx = dist > max ? (dx / dist) * max : dx;
+                    var useDy = dist > max ? (dy / dist) * max : dy;
+                    dragKnob.style.transform = 'translate(' + useDx + 'px,' + useDy + 'px)';
+                    setPositionForElement(elementId, Math.round(useDx / 4), Math.round(useDy / 4));
+                }
+                function resetDragKnob() {
+                    dragKnob.style.transform = 'translate(0,0)';
+                }
+                dragPad.addEventListener('pointerdown', function (e) {
+                    dragState.active = true;
+                    dragPad.setPointerCapture(e.pointerId);
+                    updateDragKnob(e.clientX, e.clientY);
+                });
+                dragPad.addEventListener('pointermove', function (e) {
+                    if (!dragState.active) return;
+                    updateDragKnob(e.clientX, e.clientY);
+                });
+                dragPad.addEventListener('pointerup', function () {
+                    dragState.active = false;
+                    resetDragKnob();
+                });
+                dragPad.addEventListener('pointercancel', function () {
+                    dragState.active = false;
+                    resetDragKnob();
+                });
+                rowMove.querySelectorAll('.ce-move-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        setPositionForElement(elementId, parseInt(this.dataset.dx, 10), parseInt(this.dataset.dy, 10));
+                        });
+                        });
+                frag.appendChild(rowMove);
+            }
+            }
+
+            if (isText) {
+                var fontVal = elementId === 'header' ? config.header.font : config.projectBadge.font;
+                var rowFont = document.createElement('div');
+                rowFont.className = 'ce-opt-row';
+                var selectHtml = '<label class="ce-opt-label">Font</label><select id="ce-opt-font" class="ce-font-select" draggable="true">';
+                CE_FONTS.forEach(function (f) {
+                    selectHtml += '<option value="' + escapeHtml(f) + '" style="font-family:' + escapeHtml(f) + ',sans-serif"' + (f === fontVal ? ' selected' : '') + '>' + escapeHtml(f) + '</option>';
+                });
+                selectHtml += '</select>';
+                rowFont.innerHTML = selectHtml;
+                rowFont.querySelector('#ce-opt-font').addEventListener('change', function () {
+                    var v = this.value;
+                    if (elementId === 'header') config.header.font = v;
+                    else if (elementId === 'projectBadge') config.projectBadge.font = v;
+                    applyConfig();
+                });
+                frag.appendChild(rowFont);
+                function remToSliderText(remStr, def) { var n = parseFloat(String(remStr).replace(/rem$/, '')); return isNaN(n) ? def : Math.min(60, Math.max(6, Math.round(n * 20))); }
+                function sliderToRemText(val) { return (val * 0.05).toFixed(2) + 'rem'; }
+                var fontSizeVal = elementId === 'header' ? (config.header.fontSize || '1rem') : (config.projectBadge.fontSize || '0.85rem');
+                var fontSizeDef = elementId === 'header' ? 20 : 17;
+                var rowFontSize = document.createElement('div');
+                rowFontSize.className = 'ce-opt-row';
+                rowFontSize.innerHTML = '<label class="ce-opt-label">Font size</label><div class="ce-range-row"><input type="range" id="ce-opt-font-size" min="6" max="60" value="' + remToSliderText(fontSizeVal, fontSizeDef) + '"><span class="ce-range-val" id="ce-opt-font-size-val">' + fontSizeVal + '</span></div>';
+                rowFontSize.querySelector('#ce-opt-font-size').addEventListener('input', function () {
+                    var v = parseInt(this.value, 10);
+                    var rem = sliderToRemText(v);
+                    if (elementId === 'header') config.header.fontSize = rem;
+                    else if (elementId === 'projectBadge') config.projectBadge.fontSize = rem;
+                    rowFontSize.querySelector('#ce-opt-font-size-val').textContent = rem;
+                    applyConfig();
+                });
+                frag.appendChild(rowFontSize);
+            }
+
+            elementModalBody.appendChild(frag);
+            elementModalBackdrop.classList.remove('ce-element-collapsed');
+            elementModalBody.style.display = '';
+            if (elementModalFooter) elementModalFooter.style.display = '';
+            elementCollapseBtn.textContent = '−';
+            elementFab.style.display = 'none';
+            elementModalBackdrop.classList.add('visible');
+            if (viewer) viewer.autoSize();
+        }
+
+        function closeElementModal() {
+            currentElementId = null;
+            elementModal.classList.remove('ce-modal-panorama');
+            elementModal.classList.remove('ce-modal-status-wide');
+            elementModalBackdrop.classList.remove('visible');
+            elementFab.style.display = 'none';
+        }
+
+        function setElementModalCollapsed(collapsed) {
+            if (collapsed) {
+                elementModalBackdrop.classList.add('ce-element-collapsed');
+                elementModalBody.style.display = 'none';
+                if (elementModalFooter) elementModalFooter.style.display = 'none';
+                elementCollapseBtn.textContent = '+';
+                elementFab.style.display = 'block';
+            } else {
+                elementModalBackdrop.classList.remove('ce-element-collapsed');
+                elementModalBody.style.display = '';
+                if (elementModalFooter) elementModalFooter.style.display = '';
+                elementCollapseBtn.textContent = '−';
+                elementFab.style.display = 'none';
+            }
+            if (viewer) viewer.autoSize();
+        }
+
+        var canvasWrap = document.getElementById('ce-canvas-wrap');
+        if (canvasWrap) {
+            canvasWrap.addEventListener('click', function (e) {
+                if (e.target.closest('#ce-element-modal-backdrop')) return;
+                var editable = e.target.closest('.ce-editable');
+                if (editable && editable.dataset.ceId) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    openElementModal(editable.dataset.ceId);
+                }
+            }, true);
+        }
+
+        if (elementCloseBtn) elementCloseBtn.addEventListener('click', closeElementModal);
+        if (elementCollapseBtn) elementCollapseBtn.addEventListener('click', function () {
+            setElementModalCollapsed(elementModalBackdrop.classList.contains('ce-element-collapsed') ? false : true);
+        });
+        if (elementFab) elementFab.addEventListener('click', function () { setElementModalCollapsed(false); });
+        if (elementModalBackdrop) elementModalBackdrop.addEventListener('click', function (e) {
+            if (e.target === elementModalBackdrop) closeElementModal();
+        });
+
+        if (saveBtn) saveBtn.addEventListener('click', saveCustomerConfig);
+        if (elementModalSaveBtn) elementModalSaveBtn.addEventListener('click', saveCustomerConfig);
+
+        var bringBackAllBtn = document.getElementById('ce-bring-back-all-btn');
+        if (bringBackAllBtn) bringBackAllBtn.addEventListener('click', function () {
+            config.projectBadge.visible = true;
+            config.buttons.panoramaNavToggle = true;
+            config.buttons.backBtn = true;
+            config.buttons.exportPlots = true;
+            config.buttons.toggleOverlays = true;
+            config.buttons.fullscreen = true;
+            config.buttons.viewCart = true;
+            config.searchBar.visible = true;
+            config.statusLegend.visible = true;
+            ensurePlotSizeLegendConfig();
+            config.plotSizeLegend.visible = true;
+            config.panoramaList.visible = true;
+            applyConfig();
+            showToast('All elements shown');
+        });
+
+        var pnavShell = document.getElementById('cv-panorama-nav-shell');
+        var pnavToggle = document.getElementById('panorama-nav-toggle');
+        var pnavCollapse = document.getElementById('cv-panorama-nav-collapse');
+        if (pnavCollapse && pnavShell) pnavCollapse.addEventListener('click', function () {
+            pnavShell.classList.add('is-collapsed');
+            if (pnavToggle) pnavToggle.setAttribute('aria-expanded', 'false');
+        });
+        if (pnavToggle && pnavShell) pnavToggle.addEventListener('click', function (e) {
+            if (pnavShell.classList.contains('is-collapsed')) {
+                pnavShell.classList.remove('is-collapsed');
+                pnavToggle.setAttribute('aria-expanded', 'true');
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+
+        var viewer = null;
+        var psvContainer = document.getElementById('psv-container');
+        var psvRetryCount = 0;
+
+        function renderPanoramaNavList() {
+            var listEl = document.getElementById('cv-panorama-nav-list');
+            var subtitleEl = document.getElementById('cv-panorama-nav-subtitle');
+            var configOrder = config.panoramaList && config.panoramaList.order;
+            var hiddenGlobalSet = new Set((config.panoramaList && Array.isArray(config.panoramaList.hiddenGlobal) ? config.panoramaList.hiddenGlobal : []).map(function (id) { return String(id); }));
+            var ordered;
+            if (configOrder && configOrder.length > 0) {
+                ordered = configOrder.map(function (id) { return WORKSPACE_PANORAMAS.find(function (p) { return String(p.id) === String(id); }); }).filter(Boolean);
+                WORKSPACE_PANORAMAS.forEach(function (p) {
+                    if (!ordered.find(function (o) { return o && String(o.id) === String(p.id); })) ordered.push(p);
+                });
+            } else {
+                ordered = WORKSPACE_PANORAMAS.slice();
+            }
+            if (subtitleEl) {
+                var hasSub = config.panoramaList.subheader != null && config.panoramaList.subheader !== '';
+                subtitleEl.style.display = hasSub ? '' : 'none';
+                if (hasSub) subtitleEl.textContent = config.panoramaList.subheader;
+            }
+            if (!listEl) return;
+            listEl.innerHTML = '';
+            ordered.forEach(function (p) {
+                if (hiddenGlobalSet.has(String(p.id))) return;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'panorama-nav-item' + (p.id === PANORAMA_ID ? ' active' : '');
+                btn.innerHTML = '<span class="panorama-nav-item-name">' + escapeHtml(p.name) + '</span>';
+                listEl.appendChild(btn);
+            });
+            applyPanoramaItemStyles();
+        }
+
+        function initPsv() {
+            if (!psvContainer) return;
+            if (!IS_360) {
+                psvContainer.style.background = 'var(--color-bg) url("/uploads/{{ panorama.filename }}?size=optimized") center center / contain no-repeat';
+                applyConfig();
+                renderPanoramaNavList();
+                return;
+            }
+            var imageUrl = '/uploads/{{ panorama.filename }}';
+            viewer = new PhotoSphereViewer.Viewer({
+                container: psvContainer,
+                panorama: imageUrl,
+                navbar: false,
+                mousewheel: true,
+                mousemove: true,
+                touchmoveTwoFingers: false,
+                loadingTxt: '',
+                plugins: [[PhotoSphereViewer.MarkersPlugin, {}]]
+            });
+            viewer.on('ready', function () {
+                applyConfig();
+                renderPanoramaNavList();
+            });
+        }
+
+        function startPsvInit() {
+            if (!IS_360) {
+                initPsv();
+                return;
+            }
+            if (typeof THREE === 'undefined' || typeof PhotoSphereViewer === 'undefined' || !PhotoSphereViewer.MarkersPlugin) {
+                psvRetryCount += 1;
+                if (psvRetryCount < 50) setTimeout(startPsvInit, 100);
+                return;
+            }
+            initPsv();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fetchCustomerConfigThenInit);
+        } else {
+            fetchCustomerConfigThenInit();
+        }
+    </script>
+</body>
+
+</html>

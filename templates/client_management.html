@@ -1,0 +1,1390 @@
+{% set page_title = 'Team Management - MarketoState' %}
+{% set active_nav = 'team' %}
+{% set use_marketostate_brand_theme = true %}
+{% set portal_extra_css = '/static/css/client_management_portal.css?v=20260623-19' %}
+{% include 'components/portal_shell_start.html' %}
+
+<div class="team-page-shell team-page-shell--loading" id="team-page-shell">
+{% set loader_id = 'team-tab-loader' %}
+{% set arc_id = 'team-loader-arc' %}
+{% set percent_id = 'team-loader-percent' %}
+{% set steps_id = 'team-loader-steps' %}
+{% set caption_id = 'team-loader-caption' %}
+{% set label_id = 'team-loader-label' %}
+{% set initial_caption = 'Loading your teams' %}
+{% set initial_label = 'Syncing teams' %}
+{% set steps = ['teams', 'members', 'roster'] %}
+{% include 'components/portal_tab_loader.html' %}
+
+<div class="team-page portal-page-shell__content" id="client-mgmt-page">
+    <div class="team-heading">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge bg-label-primary">Team Management</span>
+                <span class="text-body-secondary small" id="team-group-count">Loading teams...</span>
+            </div>
+            <p class="text-body-secondary mb-0">Manage members, roles, and project access across your client teams.</p>
+        </div>
+    </div>
+
+    <div class="alert alert-danger" id="banner" style="display:none;" role="alert"></div>
+
+    <div class="team-kpi-grid">
+        <article class="team-kpi-card team-kpi-card--members">
+            <div class="team-kpi-card__accent" aria-hidden="true"></div>
+            <div class="team-kpi-card__body">
+                <div class="team-kpi-card__top">
+                    <span class="team-kpi-card__label">Total members</span>
+                    <span class="team-kpi-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="team-kpi-card__value" id="team-total-members">0</div>
+                <span class="team-kpi-card__meta">Active across all teams</span>
+            </div>
+        </article>
+        <article class="team-kpi-card team-kpi-card--agents">
+            <div class="team-kpi-card__accent" aria-hidden="true"></div>
+            <div class="team-kpi-card__body">
+                <div class="team-kpi-card__top">
+                    <span class="team-kpi-card__label">Sales agents</span>
+                    <span class="team-kpi-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="team-kpi-card__value" id="team-sales-agents">0</div>
+                <span class="team-kpi-card__meta">Client user role</span>
+            </div>
+        </article>
+        <article class="team-kpi-card team-kpi-card--brokers">
+            <div class="team-kpi-card__accent" aria-hidden="true"></div>
+            <div class="team-kpi-card__body">
+                <div class="team-kpi-card__top">
+                    <span class="team-kpi-card__label">Brokers</span>
+                    <span class="team-kpi-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 7h-9M14 3v4M6 17H4a2 2 0 01-2-2V5a2 2 0 012-2h3.9a2 2 0 011.69.9L12 6h8a2 2 0 012 2v7a2 2 0 01-2 2h-2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 17v4h12v-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="team-kpi-card__value" id="team-brokers">0</div>
+                <span class="team-kpi-card__meta">Partner brokers</span>
+            </div>
+        </article>
+        <article class="team-kpi-card team-kpi-card--pending">
+            <div class="team-kpi-card__accent" aria-hidden="true"></div>
+            <div class="team-kpi-card__body">
+                <div class="team-kpi-card__top">
+                    <span class="team-kpi-card__label">Pending invites</span>
+                    <span class="team-kpi-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h16v16H4z" stroke-linecap="round" stroke-linejoin="round"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="team-kpi-card__value" id="team-pending-invites">0</div>
+                <span class="team-kpi-card__meta">Awaiting acceptance</span>
+            </div>
+        </article>
+    </div>
+
+    <div class="card team-empty" id="groups-empty" style="display:none;">
+        <div>
+            <span class="team-kpi-icon bg-label-secondary mb-3"><i class="bx bx-group"></i></span>
+            <h5>No client teams found</h5>
+            <p class="mb-0">You are not currently assigned as a client admin for any team.</p>
+        </div>
+    </div>
+    <div id="groups-container"></div>
+</div>
+</div>
+
+<div class="team-modal-backdrop" id="modal-invite-member">
+    <div class="team-dialog" role="dialog" aria-modal="true" aria-label="Add team member">
+        <div class="team-dialog-header">
+            <div>
+                <h5 class="mb-1">Add Team Member</h5>
+                <span class="text-body-secondary small">Send an invitation to join <strong id="invite-group-name"></strong>.</span>
+            </div>
+            <button class="btn-close" id="close-invite-member-modal" type="button" aria-label="Close"></button>
+        </div>
+        <div class="team-dialog-body">
+            <div class="mb-4">
+                <label class="form-label" for="invite-member-name">Display Name <span class="text-danger">*</span></label>
+                <input class="form-control" id="invite-member-name" type="text" placeholder="Full name" autocomplete="name">
+            </div>
+            <div class="mb-4">
+                <label class="form-label" for="invite-member-email">Email <span class="text-danger">*</span></label>
+                <input class="form-control" id="invite-member-email" type="email" placeholder="user@example.com" autocomplete="email">
+            </div>
+            <div>
+                <label class="form-label" for="invite-member-role">Role</label>
+                <select class="form-select" id="invite-member-role">
+                    <option value="client_admin">Admin</option>
+                    <option value="client_user" selected>Sales Agent</option>
+                    <option value="broker">Broker</option>
+                </select>
+            </div>
+            <div class="alert alert-danger mt-4 mb-0" id="invite-member-error" style="display:none;"></div>
+            <div class="alert alert-success mt-4 mb-0" id="invite-member-success" style="display:none;"></div>
+        </div>
+        <div class="team-dialog-footer">
+            <button class="btn btn-outline-secondary" id="cancel-invite-member" type="button">Cancel</button>
+            <button class="btn btn-primary" id="confirm-invite-member" type="button"><i class="bx bx-user-plus me-1"></i>Add Member</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="team-modal-backdrop" id="modal-member-view">
+    <div class="team-dialog" role="dialog" aria-modal="true" aria-label="View member">
+        <div class="team-dialog-header">
+            <div>
+                <h5 class="mb-1">Member Details</h5>
+                <span class="text-body-secondary small">Account and team membership information.</span>
+            </div>
+            <button class="btn-close" id="close-member-view-modal" type="button" aria-label="Close"></button>
+        </div>
+        <div class="team-dialog-body">
+            <div class="team-detail-list">
+                <div class="team-detail-item"><span class="team-detail-label">Name</span><span class="team-detail-value" id="member-view-name">-</span></div>
+                <div class="team-detail-item"><span class="team-detail-label">Email</span><span class="team-detail-value" id="member-view-email">-</span></div>
+                <div class="team-detail-item"><span class="team-detail-label">Role</span><span class="team-detail-value" id="member-view-role">-</span></div>
+                <div class="team-detail-item"><span class="team-detail-label">Joined</span><span class="team-detail-value" id="member-view-joined">-</span></div>
+                <div class="team-detail-item"><span class="team-detail-label">Status</span><span class="badge bg-label-primary justify-self-start">Active</span></div>
+            </div>
+        </div>
+        <div class="team-dialog-footer">
+            <button class="btn btn-outline-secondary" id="dismiss-member-view" type="button">Close</button>
+        </div>
+    </div>
+</div>
+
+<div class="team-modal-backdrop" id="modal-member-access">
+    <div class="team-dialog team-dialog-lg" role="dialog" aria-modal="true" aria-label="Manage project access">
+        <div class="team-dialog-header">
+            <div>
+                <h5 class="mb-1">Project Access</h5>
+                <span class="text-body-secondary small">Manage resources available to <strong id="access-member-name"></strong>.</span>
+            </div>
+            <button class="btn-close" id="close-member-access-modal" type="button" aria-label="Close"></button>
+        </div>
+        <div class="team-dialog-body">
+            <div class="team-access-grid">
+                <div>
+                    <h6>Grant New Access</h6>
+                    <p class="text-body-secondary small">Choose a project and its access level.</p>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label" for="member-access-resource-id">Project</label>
+                            <select class="form-select" id="member-access-resource-id"></select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" for="member-access-level">Access Level</label>
+                            <select class="form-select" id="member-access-level">
+                                <option value="client">Client</option>
+                                <option value="broker">Broker</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alert alert-danger mt-4 mb-0" id="member-access-error" style="display:none;"></div>
+                </div>
+                <div>
+                    <h6>Current Access</h6>
+                    <p class="text-body-secondary small">Resources already assigned to this member.</p>
+                    <div class="access-list" id="member-access-list"></div>
+                    <div class="team-empty team-empty--compact" id="member-access-empty" style="display:none;">No project access assigned yet.</div>
+                </div>
+            </div>
+        </div>
+        <div class="team-dialog-footer">
+            <button class="btn btn-outline-secondary" id="cancel-member-access" type="button">Cancel</button>
+            <button class="btn btn-primary" id="confirm-member-access" type="button"><i class="bx bx-lock-open-alt me-1"></i>Grant Access</button>
+        </div>
+    </div>
+</div>
+
+<div class="team-modal-backdrop" id="modal-edit-member-role">
+    <div class="team-dialog" role="dialog" aria-modal="true" aria-label="Edit member role">
+        <div class="team-dialog-header">
+            <div>
+                <h5 class="mb-1">Edit Member Role</h5>
+                <span class="text-body-secondary small">Update this member's team permissions.</span>
+            </div>
+            <button class="btn-close" id="close-edit-member-role-modal" type="button" aria-label="Close"></button>
+        </div>
+        <div class="team-dialog-body">
+            <div class="mb-4">
+                <label class="form-label">Member</label>
+                <div class="form-control bg-lighter" id="edit-member-role-name">-</div>
+            </div>
+            <div>
+                <label class="form-label" for="edit-member-role-select">Role</label>
+                <select class="form-select" id="edit-member-role-select">
+                    <option value="client_admin">Admin</option>
+                    <option value="client_user">Sales Agent</option>
+                    <option value="broker">Broker</option>
+                </select>
+            </div>
+            <div class="alert alert-danger mt-4 mb-0" id="edit-member-role-error" style="display:none;"></div>
+        </div>
+        <div class="team-dialog-footer">
+            <button class="btn btn-outline-secondary" id="cancel-edit-member-role" type="button">Cancel</button>
+            <button class="btn btn-primary" id="confirm-edit-member-role" type="button">Save Role</button>
+        </div>
+    </div>
+</div>
+
+{% include 'components/portal_shell_end.html' %}
+<script>
+    window.__SUPABASE_URL__      = {{ (supabase_url or '') | tojson }};
+    window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '') | tojson }};
+</script>
+<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
+<script src="/static/js/portal_tab_loader.js?v=20260623-3"></script>
+<script>
+(function () {
+    'use strict';
+
+    var supabase = window._supabase;
+    if (!supabase) return;
+
+    var teamLoader = window.PortalTabLoader ? new window.PortalTabLoader({
+        shellId: 'team-page-shell',
+        loaderId: 'team-tab-loader',
+        shellLoadingClass: 'team-page-shell--loading',
+        stepOrder: ['teams', 'members', 'roster'],
+        finalStep: 'roster',
+        ids: {
+            percent: 'team-loader-percent',
+            steps: 'team-loader-steps',
+            caption: 'team-loader-caption',
+            label: 'team-loader-label',
+            arc: 'team-loader-arc'
+        }
+    }) : null;
+
+    if (teamLoader) {
+        teamLoader.boot('teams', 'Loading your teams', 18, 'Syncing teams');
+    }
+
+    function teamSectionLoaderMarkup(label) {
+        if (window.PortalTabLoader && typeof window.PortalTabLoader.sectionMarkup === 'function') {
+            return window.PortalTabLoader.sectionMarkup(label);
+        }
+        return '<div class="team-panel-loading__content"><span>Loading team roster...</span></div>';
+    }
+
+    function setTeamPanelLoading(loadingEl, isLoading, label) {
+        if (!loadingEl) return;
+        if (!loadingEl._portalSectionLoader && window.PortalTabLoader) {
+            if (!loadingEl.querySelector('.portal-tab-loader')) {
+                loadingEl.innerHTML = teamSectionLoaderMarkup(label || 'Loading team roster...');
+            }
+            window.PortalTabLoader.bindSectionLoader(loadingEl);
+        }
+        if (loadingEl._portalSectionLoader) {
+            loadingEl._portalSectionLoader.setLoading(!!isLoading, label || 'Loading team roster...');
+            return;
+        }
+        loadingEl.style.display = isLoading ? '' : 'none';
+    }
+
+    var roleLabels = {
+        client_admin: 'Admin',
+        client_user: 'Sales Agent',
+        broker: 'Broker'
+    };
+    function normalizeMemberRole(role) {
+        var key = String(role || '').trim().toLowerCase();
+        return key;
+    }
+    var inviteTargetGroupId = null;
+    var modalInviteMember = null;
+    var modalMemberView = null;
+    var modalMemberAccess = null;
+    var modalEditMemberRole = null;
+    var membersByGroup = {};
+    var invitesByGroup = {};
+    var groupsById = {};
+    var memberRoleEditState = { groupId: '', userId: '', currentRole: '' };
+    var memberAccessState = {
+        groupId: '',
+        userId: '',
+        memberRole: '',
+        groupAccess: { workspaces: [], panoramas: [] },
+        memberAccess: { workspaces: [], panoramas: [] }
+    };
+    var rosterPagerByGroup = {};
+    var ROSTER_PAGE_SIZE_DEFAULT = 10;
+    var ROSTER_PAGE_SIZE_OPTIONS = [10, 25, 50];
+
+    function getAuthHeaders() {
+        var base = { 'Content-Type': 'application/json' };
+        if (window.pmApi && typeof window.pmApi.getAuthHeaders === 'function') {
+            return window.pmApi.getAuthHeaders({ headers: base });
+        }
+        return supabase.auth.getSession().then(function (r) {
+            var h = Object.assign({}, base);
+            if (r.data.session && r.data.session.access_token)
+                h['Authorization'] = 'Bearer ' + r.data.session.access_token;
+            return h;
+        });
+    }
+
+    function fetchJson(url, opts) {
+        return fetch(url, opts || {}).then(function (r) {
+            return r.json().then(function (d) {
+                return { ok: r.ok, status: r.status, data: d };
+            }).catch(function () {
+                return { ok: r.ok, status: r.status, data: null };
+            });
+        });
+    }
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, function (c) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c;
+        });
+    }
+
+    function showBanner(msg) {
+        var el = document.getElementById('banner');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.style.display = msg ? 'block' : 'none';
+    }
+
+    function setError(el, msg) {
+        if (!el) return;
+        el.textContent = msg || '';
+        el.style.display = msg ? 'block' : 'none';
+    }
+
+    function openModal(el) {
+        if (!el) return;
+        el.classList.add('visible');
+        document.body.classList.add('team-modal-open');
+    }
+    function closeModal(el) {
+        if (!el) return;
+        el.classList.remove('visible');
+        if (!document.querySelector('.team-modal-backdrop.visible')) {
+            document.body.classList.remove('team-modal-open');
+        }
+    }
+    function getInitials(name, email) {
+        var value = String(name || email || 'User').trim();
+        var parts = value.split(/\s+/).filter(Boolean);
+        if (parts.length > 1) return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+        return value.slice(0, 2).toUpperCase();
+    }
+    function updateTeamSummary() {
+        var total = 0;
+        var salesAgents = 0;
+        var brokers = 0;
+        var pendingInvites = 0;
+        Object.keys(membersByGroup).forEach(function (groupId) {
+            (membersByGroup[groupId] || []).forEach(function (member) {
+                total += 1;
+                var role = normalizeMemberRole(member.member_role);
+                if (role === 'client_user') salesAgents += 1;
+                if (role === 'broker') brokers += 1;
+            });
+        });
+        Object.keys(invitesByGroup).forEach(function (groupId) {
+            (invitesByGroup[groupId] || []).forEach(function (invite) {
+                if (String(invite.status || '').toLowerCase() === 'pending') pendingInvites += 1;
+            });
+        });
+        var totalEl = document.getElementById('team-total-members');
+        var salesEl = document.getElementById('team-sales-agents');
+        var brokersEl = document.getElementById('team-brokers');
+        var invitesEl = document.getElementById('team-pending-invites');
+        if (totalEl) totalEl.textContent = String(total);
+        if (salesEl) salesEl.textContent = String(salesAgents);
+        if (brokersEl) brokersEl.textContent = String(brokers);
+        if (invitesEl) invitesEl.textContent = String(pendingInvites);
+    }
+    function activePendingInviteCount(invites) {
+        return (invites || []).filter(function (invite) {
+            if (String(invite.status || '').toLowerCase() !== 'pending') return false;
+            if (!invite.expires_at) return true;
+            var expiry = new Date(invite.expires_at).getTime();
+            return !isFinite(expiry) || expiry >= Date.now();
+        }).length;
+    }
+    function groupCapacityState(groupId) {
+        var key = String(groupId || '');
+        var group = groupsById[key] || {};
+        var membersAllowed = parseInt(group.members_allowed, 10);
+        if (!membersAllowed || membersAllowed < 1) membersAllowed = 10;
+        var memberCount = Object.prototype.hasOwnProperty.call(membersByGroup, key)
+            ? (membersByGroup[key] || []).length
+            : (parseInt(group.member_count, 10) || 0);
+        var pendingInviteCount = Object.prototype.hasOwnProperty.call(invitesByGroup, key)
+            ? activePendingInviteCount(invitesByGroup[key])
+            : (parseInt(group.pending_invite_count, 10) || 0);
+        var occupiedCount = memberCount + pendingInviteCount;
+        return {
+            membersAllowed: membersAllowed,
+            memberCount: memberCount,
+            pendingInviteCount: pendingInviteCount,
+            occupiedCount: occupiedCount,
+            atCapacity: occupiedCount >= membersAllowed
+        };
+    }
+    function groupLimitMessage(groupId) {
+        return 'Restricted to ' + groupCapacityState(groupId).membersAllowed + ' users. Contact Admin to Unlock More';
+    }
+    function syncGroupCapacityUi(groupId) {
+        var key = String(groupId || '');
+        var state = groupCapacityState(key);
+        var group = groupsById[key];
+        if (group) {
+            group.member_count = state.memberCount;
+            group.pending_invite_count = state.pendingInviteCount;
+            group.occupied_count = state.occupiedCount;
+            group.at_capacity = state.atCapacity;
+        }
+        var indicator = document.getElementById('team-capacity-' + key);
+        if (indicator) {
+            indicator.textContent = state.occupiedCount + ' / ' + state.membersAllowed + ' slots';
+            indicator.classList.toggle('team-capacity-indicator--full', state.atCapacity);
+            indicator.title = state.memberCount + ' active member(s), ' + state.pendingInviteCount + ' pending invitation(s)';
+        }
+        document.querySelectorAll('[data-capacity-group="' + key + '"]').forEach(function (wrapper) {
+            var button = wrapper.querySelector('button');
+            wrapper.title = state.atCapacity ? groupLimitMessage(key) : '';
+            if (button) button.disabled = state.atCapacity;
+        });
+    }
+    function pendingInvitesForRoster(members, invites) {
+        var memberEmails = {};
+        (members || []).forEach(function (m) {
+            var em = String(m.email || '').trim().toLowerCase();
+            if (em) memberEmails[em] = true;
+        });
+        return (invites || []).filter(function (inv) {
+            if (String(inv.status || '').toLowerCase() !== 'pending') return false;
+            var em = String(inv.email || '').trim().toLowerCase();
+            return em && !memberEmails[em];
+        });
+    }
+    function getRosterPager(groupId) {
+        var key = String(groupId || '');
+        if (!rosterPagerByGroup[key]) {
+            rosterPagerByGroup[key] = { page: 1, size: ROSTER_PAGE_SIZE_DEFAULT };
+        }
+        return rosterPagerByGroup[key];
+    }
+
+    function renderRosterPagination(groupId, meta) {
+        var key = String(groupId || '');
+        var el = document.getElementById('members-pagination-' + key);
+        if (!el) return;
+        var pager = getRosterPager(key);
+        var total = parseInt(meta && meta.total, 10) || 0;
+        var limit = Math.max(1, parseInt(pager.size, 10) || ROSTER_PAGE_SIZE_DEFAULT);
+        var pages = Math.max(1, parseInt(meta && meta.pages, 10) || Math.ceil(total / limit) || 1);
+        pager.page = Math.min(Math.max(1, parseInt(pager.page, 10) || 1), pages);
+        pager.size = limit;
+
+        if (!total) {
+            el.innerHTML = '';
+            el.style.display = 'none';
+            return;
+        }
+
+        var start = ((pager.page - 1) * limit) + 1;
+        var end = Math.min(total, pager.page * limit);
+        el.style.display = 'flex';
+        el.innerHTML =
+            '<span class="team-pagination__meta">' + escapeHtml(start) + '-' + escapeHtml(end) + ' of ' + escapeHtml(total) + '</span>' +
+            '<select class="team-pagination__size" data-page-size>' +
+                ROSTER_PAGE_SIZE_OPTIONS.map(function (size) {
+                    return '<option value="' + size + '"' + (size === limit ? ' selected' : '') + '>' + size + ' / page</option>';
+                }).join('') +
+            '</select>' +
+            '<button class="team-pagination__btn" type="button" data-page-prev' + (pager.page <= 1 ? ' disabled' : '') + '>Prev</button>' +
+            '<span class="team-pagination__meta">Page ' + escapeHtml(pager.page) + ' / ' + escapeHtml(pages) + '</span>' +
+            '<button class="team-pagination__btn" type="button" data-page-next' + (pager.page >= pages ? ' disabled' : '') + '>Next</button>';
+
+        var sizeEl = el.querySelector('[data-page-size]');
+        if (sizeEl) {
+            sizeEl.addEventListener('change', function () {
+                pager.size = parseInt(sizeEl.value, 10) || ROSTER_PAGE_SIZE_DEFAULT;
+                pager.page = 1;
+                applyMemberPagination(key);
+            });
+        }
+        var prevBtn = el.querySelector('[data-page-prev]');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function () {
+                pager.page = Math.max(1, pager.page - 1);
+                applyMemberPagination(key);
+            });
+        }
+        var nextBtn = el.querySelector('[data-page-next]');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function () {
+                pager.page = Math.min(pages, pager.page + 1);
+                applyMemberPagination(key);
+            });
+        }
+    }
+
+    function applyMemberPagination(groupId) {
+        var key = String(groupId || '');
+        var card = getGroupCard(key);
+        if (!card) return;
+        var pager = getRosterPager(key);
+        var rows = Array.prototype.slice.call(card.querySelectorAll('.team-roster-row')).filter(function (row) {
+            return !row.classList.contains('team-row-hidden');
+        });
+        var total = rows.length;
+        var limit = Math.max(1, parseInt(pager.size, 10) || ROSTER_PAGE_SIZE_DEFAULT);
+        var pages = Math.max(1, Math.ceil(total / limit) || 1);
+        pager.page = Math.min(Math.max(1, parseInt(pager.page, 10) || 1), pages);
+        var start = (pager.page - 1) * limit;
+        var end = start + limit;
+
+        card.querySelectorAll('.team-roster-row').forEach(function (row) {
+            row.classList.remove('team-row-paged-out');
+        });
+        rows.forEach(function (row, index) {
+            if (index < start || index >= end) {
+                row.classList.add('team-row-paged-out');
+            }
+        });
+
+        var paginationEl = document.getElementById('members-pagination-' + key);
+        var listWrapEl = card.querySelector('#members-list-wrap-' + key);
+        if (paginationEl && listWrapEl) {
+            paginationEl.style.display = total && listWrapEl.style.display !== 'none' ? 'flex' : 'none';
+        }
+        renderRosterPagination(key, { total: total, pages: pages });
+    }
+
+    function applyMemberFilters(resetPages) {
+        var searchEl = document.getElementById('team-search-input');
+        var roleEl = document.getElementById('team-role-filter');
+        var search = String(searchEl ? searchEl.value : '').trim().toLowerCase();
+        var role = String(roleEl ? roleEl.value : '').trim().toLowerCase();
+        document.querySelectorAll('.team-group-card').forEach(function (card) {
+            var groupId = String(card.getAttribute('data-group-id') || '');
+            var visibleCount = 0;
+            card.querySelectorAll('.team-roster-row').forEach(function (row) {
+                var matchesSearch = !search || String(row.getAttribute('data-search') || '').indexOf(search) !== -1;
+                var matchesRole = !role || String(row.getAttribute('data-role') || '') === role;
+                var visible = matchesSearch && matchesRole;
+                row.classList.toggle('team-row-hidden', !visible);
+                if (visible) visibleCount += 1;
+            });
+            var filteredEmpty = card.querySelector('.members-filter-empty');
+            var hasRows = card.querySelectorAll('.team-roster-row').length > 0;
+            if (filteredEmpty) filteredEmpty.style.display = hasRows && !visibleCount ? 'block' : 'none';
+            if (resetPages) getRosterPager(groupId).page = 1;
+            applyMemberPagination(groupId);
+        });
+    }
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            var d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        } catch (e) { return '-'; }
+    }
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            var d = new Date(dateStr);
+            return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        } catch (e) { return '-'; }
+    }
+    function formatRelativeTime(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            var d = new Date(dateStr);
+            var diffMs = Date.now() - d.getTime();
+            if (!isFinite(diffMs)) return '-';
+            var mins = Math.floor(diffMs / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return mins + ' min ago';
+            var hours = Math.floor(mins / 60);
+            if (hours < 24) return hours + 'h ago';
+            var days = Math.floor(hours / 24);
+            if (days < 30) return days + ' day' + (days > 1 ? 's' : '') + ' ago';
+            var months = Math.floor(days / 30);
+            if (months < 12) return months + ' month' + (months > 1 ? 's' : '') + ' ago';
+            var years = Math.floor(months / 12);
+            return years + ' year' + (years > 1 ? 's' : '') + ' ago';
+        } catch (e) { return '-'; }
+    }
+
+    function openInviteMemberModal(groupId, groupName) {
+        if (groupCapacityState(groupId).atCapacity) {
+            showBanner(groupLimitMessage(groupId));
+            return;
+        }
+        inviteTargetGroupId = groupId;
+        document.getElementById('invite-group-name').textContent = groupName || '';
+        document.getElementById('invite-member-name').value = '';
+        document.getElementById('invite-member-email').value = '';
+        document.getElementById('invite-member-role').value = 'client_user';
+        setError(document.getElementById('invite-member-error'), '');
+        setError(document.getElementById('invite-member-success'), '');
+        openModal(modalInviteMember);
+        setTimeout(function () { document.getElementById('invite-member-name').focus(); }, 20);
+    }
+
+    function doInviteMember() {
+        var errEl = document.getElementById('invite-member-error');
+        var successEl = document.getElementById('invite-member-success');
+        var name = (document.getElementById('invite-member-name').value || '').trim();
+        var email = (document.getElementById('invite-member-email').value || '').trim();
+        var memberRole = document.getElementById('invite-member-role').value;
+        var confirmInviteBtn = document.getElementById('confirm-invite-member');
+        if (!inviteTargetGroupId) { setError(errEl, 'Please pick a client group first.'); return; }
+        if (!name) { setError(errEl, 'Display name is required.'); return; }
+        if (!email || email.indexOf('@') === -1) { setError(errEl, 'Valid email is required.'); return; }
+        setError(errEl, '');
+        setError(successEl, '');
+        if (confirmInviteBtn) confirmInviteBtn.disabled = true;
+        getAuthHeaders().then(function (h) {
+            return fetchJson('/api/clients/' + encodeURIComponent(inviteTargetGroupId) + '/invite', {
+                method: 'POST',
+                headers: h,
+                body: JSON.stringify({ display_name: name, email: email, member_role: memberRole })
+            });
+        }).then(function (res) {
+            if (!res.ok) {
+                setError(errEl, (res.data && res.data.error) || 'Failed to send invite');
+                return;
+            }
+            var inviteLink = (res.data && res.data.invite_link) ? String(res.data.invite_link) : '';
+            var emailErr = (res.data && res.data.email_error) ? String(res.data.email_error) : '';
+            var sentMsg = (res.data && res.data.email_sent === false)
+                ? ('Invite created, but email could not be sent. Share link manually.' + (emailErr ? (' Reason: ' + emailErr) : ''))
+                : ('Invitation sent to ' + email + '!');
+            setError(successEl, inviteLink ? (sentMsg + ' Invite Link: ' + inviteLink) : sentMsg);
+            if (inviteLink && navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(inviteLink).then(function () {
+                    setError(successEl, sentMsg + ' Invite link copied to clipboard.');
+                }).catch(function () {});
+            }
+            document.getElementById('invite-member-name').value = '';
+            document.getElementById('invite-member-email').value = '';
+            getAuthHeaders().then(function (h) {
+                return fetchJson('/api/clients/' + encodeURIComponent(inviteTargetGroupId) + '/invites', { headers: h });
+            }).then(function (invRes) {
+                if (invRes.ok && Array.isArray(invRes.data)) {
+                    invitesByGroup[String(inviteTargetGroupId)] = invRes.data.slice();
+                    renderTeamRoster(inviteTargetGroupId);
+                }
+            });
+        }).finally(function () {
+            if (confirmInviteBtn) confirmInviteBtn.disabled = false;
+        });
+    }
+
+    function openEditMemberRoleModal(groupId, userId, memberName, memberRole) {
+        memberRoleEditState.groupId = String(groupId || '');
+        memberRoleEditState.userId = String(userId || '');
+        memberRoleEditState.currentRole = normalizeMemberRole(memberRole || '');
+        var nameEl = document.getElementById('edit-member-role-name');
+        var roleEl = document.getElementById('edit-member-role-select');
+        if (nameEl) nameEl.textContent = memberName || '-';
+        if (roleEl) roleEl.value = memberRoleEditState.currentRole || 'client_user';
+        setError(document.getElementById('edit-member-role-error'), '');
+        openModal(modalEditMemberRole);
+    }
+
+    function doEditMemberRole() {
+        var groupId = memberRoleEditState.groupId;
+        var userId = memberRoleEditState.userId;
+        var roleEl = document.getElementById('edit-member-role-select');
+        var errEl = document.getElementById('edit-member-role-error');
+        var btn = document.getElementById('confirm-edit-member-role');
+        if (!groupId || !userId || !roleEl) {
+            setError(errEl, 'Invalid member selection');
+            return;
+        }
+        var newRole = normalizeMemberRole(roleEl.value || '');
+        if (!newRole) {
+            setError(errEl, 'Role is required');
+            return;
+        }
+        setError(errEl, '');
+        if (btn) btn.disabled = true;
+        getAuthHeaders().then(function (h) {
+            return fetchJson(
+                '/api/clients/' + encodeURIComponent(groupId) + '/members/' + encodeURIComponent(userId),
+                { method: 'PATCH', headers: h, body: JSON.stringify({ member_role: newRole }) }
+            );
+        }).then(function (res) {
+            if (!res.ok) throw new Error((res.data && res.data.error) || 'Failed to update role');
+            closeModal(modalEditMemberRole);
+            return getAuthHeaders().then(function (h) {
+                return fetchJson('/api/clients/' + encodeURIComponent(groupId) + '/members', { headers: h });
+            }).then(function (membersRes) {
+                if (!membersRes.ok || !Array.isArray(membersRes.data)) {
+                    throw new Error((membersRes.data && membersRes.data.error) || 'Failed to reload members');
+                }
+                renderTeamRoster(groupId, membersRes.data);
+            });
+        }).catch(function (err) {
+            setError(errEl, err && err.message ? err.message : 'Failed to update role');
+        }).finally(function () {
+            if (btn) btn.disabled = false;
+        });
+    }
+
+    function projectAccessDefaultForRole(role) {
+        return normalizeMemberRole(role) === 'broker' ? 'broker' : 'client';
+    }
+
+    function loadMemberAccessResources() {
+        var sel = document.getElementById('member-access-resource-id');
+        if (!sel) return;
+        var rows = memberAccessState.groupAccess.workspaces || [];
+        sel.innerHTML = rows.length ? rows.map(function (row) {
+            return '<option value="' + escapeHtml(String(row.workspace_id || '')) + '">' + escapeHtml(row.name || row.workspace_id || '') + '</option>';
+        }).join('') : '<option value="">No projects available</option>';
+    }
+
+    function renderMemberAccessList() {
+        var listEl = document.getElementById('member-access-list');
+        var emptyEl = document.getElementById('member-access-empty');
+        if (!listEl) return;
+        var rows = [];
+        (memberAccessState.memberAccess.workspaces || []).forEach(function (w) {
+            rows.push({ type: 'workspace', id: w.workspace_id, name: w.name, access_type: w.access_type });
+        });
+        (memberAccessState.memberAccess.panoramas || []).forEach(function (p) {
+            rows.push({ type: 'panorama', id: p.panorama_id, name: p.name, access_type: p.access_type });
+        });
+        if (emptyEl) emptyEl.style.display = rows.length ? 'none' : 'block';
+        listEl.innerHTML = rows.map(function (row) {
+            return '<div class="access-row">' +
+                '<span class="badge bg-label-primary">' + escapeHtml(row.type) + '</span>' +
+                '<span class="fw-medium text-truncate">' + escapeHtml(row.name || row.id || '') + '</span>' +
+                '<span class="badge bg-label-secondary">' + escapeHtml(row.access_type || '') + '</span>' +
+                '<button class="btn-sm btn-sm--danger member-access-revoke" type="button" data-rtype="' + escapeHtml(row.type) + '" data-rid="' + escapeHtml(String(row.id || '')) + '">Revoke</button>' +
+            '</div>';
+        }).join('');
+        listEl.querySelectorAll('.member-access-revoke').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var rtype = btn.getAttribute('data-rtype');
+                var rid = btn.getAttribute('data-rid');
+                if (!rtype || !rid || !confirm('Revoke access for this ' + rtype + '?')) return;
+                btn.disabled = true;
+                getAuthHeaders().then(function (h) {
+                    return fetchJson('/api/clients/' + encodeURIComponent(memberAccessState.groupId) + '/access', {
+                        method: 'DELETE',
+                        headers: h,
+                        body: JSON.stringify({ resource_type: rtype, resource_id: rid, target_user_id: memberAccessState.userId })
+                    });
+                }).then(function (res) {
+                    if (!res.ok) throw new Error((res.data && res.data.error) || 'Failed to revoke access');
+                    return refreshMemberAccess();
+                }).catch(function (err) {
+                    alert(err && err.message ? err.message : 'Failed to revoke access');
+                }).finally(function () {
+                    btn.disabled = false;
+                });
+            });
+        });
+    }
+
+    function refreshMemberAccess() {
+        return getAuthHeaders().then(function (h) {
+            return Promise.all([
+                fetchJson('/api/clients/' + encodeURIComponent(memberAccessState.groupId) + '/access', { headers: h }),
+                fetchJson('/api/clients/' + encodeURIComponent(memberAccessState.groupId) + '/access?target_user_id=' + encodeURIComponent(memberAccessState.userId), { headers: h })
+            ]);
+        }).then(function (results) {
+            if (!results[0].ok) throw new Error((results[0].data && results[0].data.error) || 'Failed to load group access');
+            if (!results[1].ok) throw new Error((results[1].data && results[1].data.error) || 'Failed to load member access');
+            memberAccessState.groupAccess = results[0].data || { workspaces: [], panoramas: [] };
+            memberAccessState.memberAccess = results[1].data || { workspaces: [], panoramas: [] };
+            loadMemberAccessResources();
+            renderMemberAccessList();
+        });
+    }
+
+    function openMemberAccessModal(groupId, userId, name, role) {
+        memberAccessState.groupId = String(groupId || '');
+        memberAccessState.userId = String(userId || '');
+        memberAccessState.memberRole = normalizeMemberRole(role);
+        document.getElementById('access-member-name').textContent = name || 'Member';
+        var levelSelect = document.getElementById('member-access-level');
+        if (levelSelect) {
+            levelSelect.value = projectAccessDefaultForRole(role);
+            levelSelect.disabled = normalizeMemberRole(role) === 'broker';
+        }
+        setError(document.getElementById('member-access-error'), '');
+        openModal(modalMemberAccess);
+        refreshMemberAccess().catch(function (err) {
+            setError(document.getElementById('member-access-error'), err && err.message ? err.message : 'Failed to load access');
+        });
+    }
+
+    function grantMemberAccess() {
+        var errEl = document.getElementById('member-access-error');
+        var rtype = 'workspace';
+        var rid = document.getElementById('member-access-resource-id').value;
+        var accessType = document.getElementById('member-access-level').value || projectAccessDefaultForRole(memberAccessState.memberRole);
+        var btn = document.getElementById('confirm-member-access');
+        if (!rid) { setError(errEl, 'Please select a project.'); return; }
+        if (normalizeMemberRole(memberAccessState.memberRole) === 'broker') accessType = 'broker';
+        setError(errEl, '');
+        if (btn) btn.disabled = true;
+        getAuthHeaders().then(function (h) {
+            return fetchJson('/api/clients/' + encodeURIComponent(memberAccessState.groupId) + '/access', {
+                method: 'POST',
+                headers: h,
+                body: JSON.stringify({
+                    resource_type: rtype,
+                    resource_id: rid,
+                    access_type: accessType,
+                    target_user_id: memberAccessState.userId
+                })
+            });
+        }).then(function (res) {
+            if (!res.ok) { setError(errEl, (res.data && res.data.error) || 'Failed to grant access'); return; }
+            return refreshMemberAccess();
+        }).finally(function () {
+            if (btn) btn.disabled = false;
+        });
+    }
+
+    function loadTeamData() {
+        return getAuthHeaders().then(function (h) {
+            return Promise.all([
+                fetchJson('/api/clients/mine', { headers: h }),
+                h
+            ]);
+        });
+    }
+
+    function actionIcon(kind) {
+        if (kind === 'edit') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+        if (kind === 'save') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>';
+        if (kind === 'cancel') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+        if (kind === 'view') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.06 12.35a1 1 0 0 1 0-.7C3.41 7.84 7.36 5 12 5s8.59 2.84 9.94 6.65a1 1 0 0 1 0 .7C20.59 16.16 16.64 19 12 19s-8.59-2.84-9.94-6.65Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        if (kind === 'access') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+        if (kind === 'delete') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg>';
+        if (kind === 'resend') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>';
+        if (kind === 'share') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>';
+        return '';
+    }
+
+    function refreshTeamRoster(gid) {
+        return getAuthHeaders().then(function (h) {
+            return Promise.all([
+                fetchJson('/api/clients/' + encodeURIComponent(gid) + '/members', { headers: h }),
+                fetchJson('/api/clients/' + encodeURIComponent(gid) + '/invites', { headers: h })
+            ]);
+        }).then(function (results) {
+            if (!results[0].ok || !Array.isArray(results[0].data)) {
+                throw new Error((results[0].data && results[0].data.error) || 'Failed to reload members');
+            }
+            membersByGroup[String(gid)] = results[0].data.slice();
+            if (results[1].ok && Array.isArray(results[1].data)) {
+                invitesByGroup[String(gid)] = results[1].data.slice();
+            }
+            renderTeamRoster(gid);
+        });
+    }
+
+    function copyInviteLink(link, btn) {
+        if (!link) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(function () {
+                if (!btn) return;
+                var old = btn.innerHTML;
+                btn.innerHTML = '<i class="bx bx-check me-1"></i>Copied';
+                setTimeout(function () { btn.innerHTML = old; }, 1400);
+            }).catch(function () {
+                alert(link);
+            });
+        } else {
+            alert(link);
+        }
+    }
+
+    function getGroupCard(groupId) {
+        var key = String(groupId || '');
+        if (!key) return null;
+        return document.querySelector('.team-group-card[data-group-id="' + key + '"]');
+    }
+
+    function removeDuplicateGroupPanels(groupId) {
+        var key = String(groupId || '');
+        if (!key) return;
+        var panels = document.querySelectorAll('#group-panel-members-' + key);
+        for (var i = 1; i < panels.length; i += 1) {
+            panels[i].remove();
+        }
+    }
+
+    function renderTeamRoster(groupId, membersOverride) {
+        var key = String(groupId || '');
+        if (membersOverride !== undefined) {
+            membersByGroup[key] = Array.isArray(membersOverride) ? membersOverride.slice() : [];
+        }
+        var members = membersByGroup[key] || [];
+        var invites = invitesByGroup[key] || [];
+        var pendingInvites = pendingInvitesForRoster(members, invites);
+        updateTeamSummary();
+        syncGroupCapacityUi(groupId);
+        removeDuplicateGroupPanels(key);
+
+        var cardEl = getGroupCard(key);
+        var listEl = cardEl ? cardEl.querySelector('#members-list-' + key) : document.getElementById('members-list-' + key);
+        var listWrapEl = cardEl ? cardEl.querySelector('#members-list-wrap-' + key) : document.getElementById('members-list-wrap-' + key);
+        var emptyEl = cardEl ? cardEl.querySelector('#members-empty-' + key) : document.getElementById('members-empty-' + key);
+        var loadingEl = cardEl ? cardEl.querySelector('#members-loading-' + key) : document.getElementById('members-loading-' + key);
+        if (loadingEl) setTeamPanelLoading(loadingEl, false);
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (listWrapEl) listWrapEl.style.display = 'none';
+
+        var hasRows = members.length || pendingInvites.length;
+        if (!hasRows) {
+            if (emptyEl) emptyEl.style.display = 'block';
+            var paginationEl = document.getElementById('members-pagination-' + key);
+            if (paginationEl) {
+                paginationEl.innerHTML = '';
+                paginationEl.style.display = 'none';
+            }
+            applyMemberFilters(true);
+            return;
+        }
+        if (listWrapEl) listWrapEl.style.display = '';
+        if (!listEl) return;
+
+        var rowsHtml = members.map(function (m) {
+            var uid = String(m.user_id || '');
+            var normalizedRole = normalizeMemberRole(m.member_role);
+            var roleLabel = escapeHtml(roleLabels[normalizedRole] || normalizedRole || '-');
+            var roleTone = normalizedRole === 'broker'
+                ? ' member-role-label--broker'
+                : (normalizedRole === 'client_admin' ? ' member-role-label--admin' : '');
+            var createdAt = escapeHtml(formatRelativeTime(m.created_at));
+            var createdAtFull = escapeHtml(formatDateTime(m.created_at));
+            var displayName = String(m.display_name || m.email || 'Member');
+            var searchValue = (String(m.display_name || '') + ' ' + String(m.email || '')).toLowerCase();
+            var initials = escapeHtml(getInitials(m.display_name, m.email));
+            var canManageProjectAccess = normalizedRole === 'client_user' || normalizedRole === 'broker';
+            var roleCellHtml = '<span class="member-role-label' + roleTone + '">' + roleLabel + '</span>';
+            var actionButtons =
+                '<button class="icon-action-btn member-edit-btn" title="Edit role" aria-label="Edit role" type="button" data-group="' + escapeHtml(key) + '" data-uid="' + escapeHtml(uid) + '" data-name="' + escapeHtml(displayName) + '" data-role="' + escapeHtml(normalizedRole) + '">' + actionIcon('edit') + '</button>' +
+                '<button class="icon-action-btn member-view-btn" title="View member" aria-label="View member" type="button" data-group="' + escapeHtml(key) + '" data-uid="' + escapeHtml(uid) + '">' + actionIcon('view') + '</button>' +
+                (canManageProjectAccess ? '<button class="icon-action-btn member-access-btn" title="Manage access" aria-label="Manage access" type="button" data-group="' + escapeHtml(key) + '" data-uid="' + escapeHtml(uid) + '" data-name="' + escapeHtml(displayName) + '" data-role="' + escapeHtml(normalizedRole) + '">' + actionIcon('access') + '</button>' : '') +
+                '<button class="icon-action-btn icon-action-btn--danger member-delete-btn" title="Remove member" aria-label="Remove member" type="button" data-group="' + escapeHtml(key) + '" data-uid="' + escapeHtml(uid) + '" data-name="' + escapeHtml(displayName) + '">' + actionIcon('delete') + '</button>';
+            return '<tr class="team-roster-row" data-kind="active" data-group="' + escapeHtml(key) + '" data-uid="' + escapeHtml(uid) + '" data-role="' + escapeHtml(normalizedRole) + '" data-search="' + escapeHtml(searchValue) + '">' +
+                '<td class="team-table-col team-table-col--member">' +
+                    '<div class="member-name-cell">' +
+                        '<span class="member-avatar bg-label-primary">' + initials + '</span>' +
+                        '<div><div class="member-name-cell__title">' + escapeHtml(m.display_name || '-') + '</div><span class="text-body-secondary small">Team member</span></div>' +
+                    '</div>' +
+                '</td>' +
+                '<td class="team-table-col team-table-col--email"><span class="member-email-text">' + escapeHtml(m.email || '-') + '</span></td>' +
+                '<td class="team-table-col team-table-col--role">' + roleCellHtml + '</td>' +
+                '<td class="team-table-col team-table-col--date" title="' + createdAtFull + '">' + createdAt + '</td>' +
+                '<td class="team-table-col team-table-col--status"><span class="member-status-pill member-status-pill--active">Active</span></td>' +
+                '<td class="team-table-col team-table-col--actions"><div class="actions-cell actions-cell--icons">' + actionButtons + '</div></td>' +
+                '</tr>';
+        }).join('');
+
+        rowsHtml += pendingInvites.map(function (inv) {
+            var inviteId = String(inv.id || '');
+            var normalizedRole = normalizeMemberRole(inv.member_role);
+            var roleLabel = escapeHtml(roleLabels[normalizedRole] || normalizedRole || '-');
+            var roleTone = normalizedRole === 'broker'
+                ? ' member-role-label--broker'
+                : (normalizedRole === 'client_admin' ? ' member-role-label--admin' : '');
+            var invitedAt = escapeHtml(formatRelativeTime(inv.created_at));
+            var invitedAtFull = escapeHtml(formatDateTime(inv.created_at));
+            var displayName = String(inv.display_name || inv.email || 'Invitee');
+            var searchValue = (String(inv.display_name || '') + ' ' + String(inv.email || '')).toLowerCase();
+            var initials = escapeHtml(getInitials(inv.display_name, inv.email));
+            var inviteLink = String(inv.invite_link || '');
+            var actionButtons =
+                '<button class="icon-action-btn invite-resend-btn" title="Resend invite" aria-label="Resend invite" data-group="' + escapeHtml(key) + '" data-invite-id="' + escapeHtml(inviteId) + '" type="button">' + actionIcon('resend') + '</button>' +
+                (inviteLink
+                    ? '<button class="icon-action-btn invite-copy-btn" title="Share link" aria-label="Share link" data-link="' + escapeHtml(inviteLink) + '" type="button">' + actionIcon('share') + '</button>'
+                    : '');
+            return '<tr class="team-roster-row" data-kind="inactive" data-group="' + escapeHtml(key) + '" data-invite-id="' + escapeHtml(inviteId) + '" data-role="' + escapeHtml(normalizedRole) + '" data-search="' + escapeHtml(searchValue) + '">' +
+                '<td class="team-table-col team-table-col--member">' +
+                    '<div class="member-name-cell">' +
+                        '<span class="member-avatar bg-label-warning">' + initials + '</span>' +
+                        '<div><div class="member-name-cell__title">' + escapeHtml(inv.display_name || '-') + '</div></div>' +
+                    '</div>' +
+                '</td>' +
+                '<td class="team-table-col team-table-col--email"><span class="member-email-text">' + escapeHtml(inv.email || '-') + '</span></td>' +
+                '<td class="team-table-col team-table-col--role"><span class="member-role-label' + roleTone + '">' + roleLabel + '</span></td>' +
+                '<td class="team-table-col team-table-col--date" title="' + invitedAtFull + '">' + invitedAt + '</td>' +
+                '<td class="team-table-col team-table-col--status"><span class="member-status-pill member-status-pill--inactive">Inactive</span></td>' +
+                '<td class="team-table-col team-table-col--actions"><div class="actions-cell actions-cell--icons">' + actionButtons + '</div></td>' +
+                '</tr>';
+        }).join('');
+
+        listEl.innerHTML = rowsHtml;
+        getRosterPager(key).page = 1;
+        applyMemberFilters(true);
+
+        listEl.querySelectorAll('.member-edit-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                openEditMemberRoleModal(
+                    btn.getAttribute('data-group'),
+                    btn.getAttribute('data-uid'),
+                    btn.getAttribute('data-name') || 'Member',
+                    btn.getAttribute('data-role') || ''
+                );
+            });
+        });
+
+        listEl.querySelectorAll('.member-view-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var gid = String(btn.getAttribute('data-group') || '');
+                var uid = String(btn.getAttribute('data-uid') || '');
+                var list = membersByGroup[gid] || [];
+                var member = null;
+                for (var i = 0; i < list.length; i += 1) {
+                    if (String(list[i].user_id || '') === uid) {
+                        member = list[i];
+                        break;
+                    }
+                }
+                if (!member) return;
+                var mvName = document.getElementById('member-view-name');
+                var mvEmail = document.getElementById('member-view-email');
+                var mvRole = document.getElementById('member-view-role');
+                var mvJoined = document.getElementById('member-view-joined');
+                if (mvName) mvName.textContent = member.display_name || '-';
+                if (mvEmail) mvEmail.textContent = member.email || '-';
+                var viewRole = normalizeMemberRole(member.member_role);
+                if (mvRole) mvRole.textContent = roleLabels[viewRole] || viewRole || '-';
+                if (mvJoined) mvJoined.textContent = formatDateTime(member.created_at);
+                openModal(modalMemberView);
+            });
+        });
+
+        listEl.querySelectorAll('.member-access-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                openMemberAccessModal(
+                    btn.getAttribute('data-group'),
+                    btn.getAttribute('data-uid'),
+                    btn.getAttribute('data-name') || 'Member',
+                    btn.getAttribute('data-role') || ''
+                );
+            });
+        });
+
+        listEl.querySelectorAll('.member-delete-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var gid = btn.getAttribute('data-group');
+                var uid = btn.getAttribute('data-uid');
+                var name = btn.getAttribute('data-name') || 'member';
+                if (!confirm('Remove ' + name + ' from this team?')) return;
+                btn.disabled = true;
+                getAuthHeaders().then(function (h) {
+                    return fetchJson(
+                        '/api/clients/' + encodeURIComponent(gid) + '/members/' + encodeURIComponent(uid),
+                        { method: 'DELETE', headers: h }
+                    );
+                }).then(function (res) {
+                    if (!res.ok) throw new Error((res.data && res.data.error) || 'Failed to remove member');
+                    return refreshTeamRoster(gid);
+                }).catch(function (err) {
+                    alert(err && err.message ? err.message : 'Failed to remove member');
+                }).finally(function () {
+                    btn.disabled = false;
+                });
+            });
+        });
+
+        listEl.querySelectorAll('.invite-copy-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                copyInviteLink(btn.getAttribute('data-link') || '', btn);
+            });
+        });
+
+        listEl.querySelectorAll('.invite-resend-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var gid = btn.getAttribute('data-group');
+                var inviteId = btn.getAttribute('data-invite-id');
+                if (!gid || !inviteId) return;
+                btn.disabled = true;
+                getAuthHeaders().then(function (h) {
+                    return fetchJson(
+                        '/api/clients/' + encodeURIComponent(gid) + '/invites/' + encodeURIComponent(inviteId) + '/resend',
+                        { method: 'POST', headers: h }
+                    );
+                }).then(function (res) {
+                    if (!res.ok) throw new Error((res.data && res.data.error) || 'Failed to resend invite');
+                    var inviteLink = (res.data && res.data.invite_link) ? String(res.data.invite_link) : '';
+                    var emailSent = res.data && res.data.email_sent;
+                    if (inviteLink) {
+                        var invites = invitesByGroup[String(gid)] || [];
+                        invites.forEach(function (inv) {
+                            if (String(inv.id || '') === String(inviteId)) inv.invite_link = inviteLink;
+                        });
+                        invitesByGroup[String(gid)] = invites;
+                        renderTeamRoster(gid);
+                    }
+                    if (emailSent) {
+                        showBanner('Invitation email resent successfully.');
+                    } else {
+                        var emailErr = (res.data && res.data.email_error) ? String(res.data.email_error) : '';
+                        showBanner('Invite refreshed, but email could not be sent.' + (emailErr ? (' ' + emailErr) : ''));
+                    }
+                }).catch(function (err) {
+                    alert(err && err.message ? err.message : 'Failed to resend invite');
+                }).finally(function () {
+                    btn.disabled = false;
+                });
+            });
+        });
+    }
+
+    // -- Render group cards then fetch all members in parallel --
+    var teamLoaderFinished = false;
+    function finishTeamLoader() {
+        if (!teamLoader || teamLoaderFinished) return;
+        teamLoaderFinished = true;
+        teamLoader.setStep('roster', 'Team roster ready', 96, 'Almost ready');
+        window.setTimeout(function () {
+            teamLoader.setLoading(false, {
+                finalCaption: 'Team roster ready',
+                finalLabel: 'All set'
+            });
+        }, 260);
+    }
+
+    function renderGroups(groups, headers) {
+        var emptyEl   = document.getElementById('groups-empty');
+        var container = document.getElementById('groups-container');
+
+        var seenGroupIds = {};
+        var uniqueGroups = (groups || []).filter(function (group) {
+            var gid = String(group && group.id || '').trim();
+            if (!gid || seenGroupIds[gid]) return false;
+            seenGroupIds[gid] = true;
+            return true;
+        });
+
+        if (!uniqueGroups.length) {
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (container) container.innerHTML = '';
+            finishTeamLoader();
+            return Promise.resolve();
+        }
+        if (teamLoader) {
+            teamLoader.setStep('members', 'Loading team rosters', 62, 'Fetching members');
+        }
+        var groupCountEl = document.getElementById('team-group-count');
+        if (groupCountEl) {
+            groupCountEl.textContent = uniqueGroups.length + ' client team' + (uniqueGroups.length === 1 ? '' : 's');
+        }
+        groupsById = {};
+        uniqueGroups.forEach(function (group) {
+            groupsById[String(group.id || '')] = group;
+        });
+
+        // Build all group cards first (instant paint)
+        if (!container) {
+            finishTeamLoader();
+            return Promise.resolve();
+        }
+        container.innerHTML = uniqueGroups.map(function (group) {
+            var gid = escapeHtml(group.id);
+            var groupName = escapeHtml(group.name || 'Client Team');
+            var groupInitials = escapeHtml(getInitials(group.name, 'Team'));
+            var capacity = groupCapacityState(group.id);
+            var limitMessage = capacity.atCapacity ? groupLimitMessage(group.id) : '';
+            return '<section class="card team-group-card" data-group-id="' + gid + '">' +
+                '<div class="team-group-header">' +
+                    '<div class="d-flex align-items-center gap-3">' +
+                        '<span class="team-group-avatar bg-label-primary">' + groupInitials + '</span>' +
+                        '<div>' +
+                            '<div class="d-flex align-items-center gap-2 flex-wrap"><h5 class="mb-0">' + groupName + '</h5><span class="badge bg-label-primary">Client Team</span>' +
+                            '<span class="team-capacity-indicator' + (capacity.atCapacity ? ' team-capacity-indicator--full' : '') + '" id="team-capacity-' + gid + '" title="' +
+                            escapeHtml(capacity.memberCount + ' active member(s), ' + capacity.pendingInviteCount + ' pending invitation(s)') + '">' +
+                            capacity.occupiedCount + ' / ' + capacity.membersAllowed + ' slots</span></div>' +
+                            '<p class="text-body-secondary small mb-0 mt-1">' + escapeHtml(group.description || 'Manage this team and its resource permissions.') + '</p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="team-group-actions">' +
+                        '<span class="team-capacity-action" data-capacity-group="' + gid + '" title="' + escapeHtml(limitMessage) + '">' +
+                        '<button class="btn btn-primary btn-sm invite-member-btn" data-group-id="' + gid + '" data-group-name="' + groupName + '" type="button"' + (capacity.atCapacity ? ' disabled' : '') + '><i class="bx bx-user-plus me-1"></i>Add Member</button></span>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="group-panel-members-' + gid + '" class="team-group-panel">' +
+                    '<div id="members-loading-' + gid + '" class="team-panel-loading portal-section-loader">' + teamSectionLoaderMarkup('Loading team roster...') + '</div>' +
+                    '<div class="team-table-wrap" id="members-list-wrap-' + gid + '" style="display:none;">' +
+                        '<table class="table team-table">' +
+                            '<thead><tr>' +
+                                '<th class="team-table-col team-table-col--member">Member</th>' +
+                                '<th class="team-table-col team-table-col--email">Email</th>' +
+                                '<th class="team-table-col team-table-col--role">Role</th>' +
+                                '<th class="team-table-col team-table-col--date">Joined / Invited</th>' +
+                                '<th class="team-table-col team-table-col--status">Status</th>' +
+                                '<th class="team-table-col team-table-col--actions">Actions</th>' +
+                            '</tr></thead>' +
+                            '<tbody id="members-list-' + gid + '"></tbody>' +
+                        '</table>' +
+                    '</div>' +
+                    '<div class="team-pagination" id="members-pagination-' + gid + '" style="display:none;"></div>' +
+                    '<div class="team-panel-empty" id="members-empty-' + gid + '" style="display:none;"><i class="bx bx-user-x"></i><span>No members in this team yet.</span></div>' +
+                    '<div class="team-panel-empty members-filter-empty" style="display:none;"><i class="bx bx-search-alt"></i><span>No members match your filters.</span></div>' +
+                '</div>' +
+            '</section>';
+        }).join('');
+
+        container.querySelectorAll('.invite-member-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                openInviteMemberModal(btn.getAttribute('data-group-id'), btn.getAttribute('data-group-name'));
+            });
+        });
+        container.querySelectorAll('[id^="members-loading-"]').forEach(function (loadingEl) {
+            if (!window.PortalTabLoader) return;
+            var ctrl = window.PortalTabLoader.bindSectionLoader(loadingEl);
+            if (ctrl) ctrl.setLoading(true, 'Loading team roster...');
+        });
+
+        // Fetch all groups' roster data in parallel
+        return Promise.all(uniqueGroups.map(function (group) {
+            return Promise.all([
+                fetchJson('/api/clients/' + encodeURIComponent(group.id) + '/members', { headers: headers }),
+                fetchJson('/api/clients/' + encodeURIComponent(group.id) + '/invites', { headers: headers })
+            ]).then(function (results) {
+                var membersRes = results[0];
+                var invitesRes = results[1];
+                var gid = String(group.id || '');
+                if (membersRes.ok && Array.isArray(membersRes.data)) {
+                    membersByGroup[gid] = membersRes.data.slice();
+                }
+                if (invitesRes.ok && Array.isArray(invitesRes.data)) {
+                    invitesByGroup[gid] = invitesRes.data.slice();
+                }
+                renderTeamRoster(group.id);
+            }).catch(function () {
+                var el = document.getElementById('members-loading-' + group.id);
+                if (el) setTeamPanelLoading(el, false);
+            });
+        })).then(function () {
+            if (teamLoader) {
+                teamLoader.setStep('roster', 'Building team roster', 88, 'Finalizing roster');
+            }
+            finishTeamLoader();
+        });
+    }
+
+    window.sidebarReady.then(function (ctx) {
+        modalInviteMember = document.getElementById('modal-invite-member');
+        modalMemberView = document.getElementById('modal-member-view');
+        modalMemberAccess = document.getElementById('modal-member-access');
+        modalEditMemberRole = document.getElementById('modal-edit-member-role');
+        var closeInviteBtn = document.getElementById('close-invite-member-modal');
+        var cancelInviteBtn = document.getElementById('cancel-invite-member');
+        var confirmInviteBtn = document.getElementById('confirm-invite-member');
+        var closeMemberViewBtn = document.getElementById('close-member-view-modal');
+        var dismissMemberViewBtn = document.getElementById('dismiss-member-view');
+        var closeMemberAccessBtn = document.getElementById('close-member-access-modal');
+        var cancelMemberAccessBtn = document.getElementById('cancel-member-access');
+        var confirmMemberAccessBtn = document.getElementById('confirm-member-access');
+        var closeEditRoleBtn = document.getElementById('close-edit-member-role-modal');
+        var cancelEditRoleBtn = document.getElementById('cancel-edit-member-role');
+        var confirmEditRoleBtn = document.getElementById('confirm-edit-member-role');
+        var menuSignout = document.getElementById('menu-signout');
+        var dropdownSignout = document.getElementById('dropdown-signout');
+
+        var profile = ctx.profile || {};
+        if (typeof window.configurePortalShell === 'function') {
+            window.configurePortalShell(profile, !!ctx.isBroker, !!(ctx.role === 'admin' || ctx.role === 'superadmin'), !!ctx.isClientAdmin);
+        }
+        var profileName = profile.name || profile.display_name || profile.email || 'User';
+        var profileRole = ctx.isClientAdmin ? 'Admin' : (roleLabels[normalizeMemberRole(ctx.role)] || ctx.role || 'Member');
+        var profileInitials = getInitials(profileName, profile.email);
+        var navbarName = document.getElementById('navbar-user-name');
+        var navbarRole = document.getElementById('navbar-user-role');
+        var navbarAvatar = document.getElementById('navbar-user-avatar');
+        var navbarAvatarTwo = document.getElementById('navbar-user-avatar-2');
+        if (navbarName) navbarName.textContent = profileName;
+        if (navbarRole) navbarRole.textContent = profileRole;
+        if (navbarAvatar) navbarAvatar.textContent = profileInitials;
+        if (navbarAvatarTwo) navbarAvatarTwo.textContent = profileInitials;
+
+        function signOutFromTeamPage(event) {
+            if (event) event.preventDefault();
+            try {
+                sessionStorage.removeItem('sidebar_cache_v2_client_admin');
+            } catch (e) {}
+            supabase.auth.signOut().finally(function () {
+                window.location.href = '/login';
+            });
+        }
+
+        if (closeInviteBtn) closeInviteBtn.addEventListener('click', function () { closeModal(modalInviteMember); });
+        if (cancelInviteBtn) cancelInviteBtn.addEventListener('click', function () { closeModal(modalInviteMember); });
+        if (confirmInviteBtn) confirmInviteBtn.addEventListener('click', doInviteMember);
+        if (modalInviteMember) modalInviteMember.addEventListener('click', function (e) { if (e.target === modalInviteMember) closeModal(modalInviteMember); });
+        if (closeMemberViewBtn) closeMemberViewBtn.addEventListener('click', function () { closeModal(modalMemberView); });
+        if (dismissMemberViewBtn) dismissMemberViewBtn.addEventListener('click', function () { closeModal(modalMemberView); });
+        if (modalMemberView) modalMemberView.addEventListener('click', function (e) { if (e.target === modalMemberView) closeModal(modalMemberView); });
+        if (closeMemberAccessBtn) closeMemberAccessBtn.addEventListener('click', function () { closeModal(modalMemberAccess); });
+        if (cancelMemberAccessBtn) cancelMemberAccessBtn.addEventListener('click', function () { closeModal(modalMemberAccess); });
+        if (confirmMemberAccessBtn) confirmMemberAccessBtn.addEventListener('click', grantMemberAccess);
+        if (modalMemberAccess) modalMemberAccess.addEventListener('click', function (e) { if (e.target === modalMemberAccess) closeModal(modalMemberAccess); });
+        if (closeEditRoleBtn) closeEditRoleBtn.addEventListener('click', function () { closeModal(modalEditMemberRole); });
+        if (cancelEditRoleBtn) cancelEditRoleBtn.addEventListener('click', function () { closeModal(modalEditMemberRole); });
+        if (confirmEditRoleBtn) confirmEditRoleBtn.addEventListener('click', doEditMemberRole);
+        if (modalEditMemberRole) modalEditMemberRole.addEventListener('click', function (e) { if (e.target === modalEditMemberRole) closeModal(modalEditMemberRole); });
+        if (menuSignout) menuSignout.addEventListener('click', signOutFromTeamPage);
+        if (dropdownSignout) dropdownSignout.addEventListener('click', signOutFromTeamPage);
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+            document.querySelectorAll('.team-modal-backdrop.visible').forEach(function (modal) {
+                closeModal(modal);
+            });
+        });
+
+        if ((ctx.role === 'admin' || ctx.role === 'superadmin') && !ctx.isClientAdmin) {
+            window.location.replace('/user-management');
+            return;
+        }
+        if (!ctx.isClientAdmin || ctx.isBroker) {
+            window.location.replace(ctx.isBroker ? '/customer-dashboard' : '/crm');
+            return;
+        }
+        try { if (window.applyOrgTheme) window.applyOrgTheme(); } catch (e) {}
+
+        if (teamLoader) {
+            teamLoader.setStep('teams', 'Fetching client teams', 34, 'Loading teams');
+        }
+        loadTeamData().then(function (results) {
+            var groupsRes = results[0];
+            var headers   = results[1];
+            if (!groupsRes.ok || !Array.isArray(groupsRes.data) || !groupsRes.data.length) {
+                showBanner(groupsRes.ok ? '' : 'Unable to load your client teams.');
+                var emptyEl = document.getElementById('groups-empty');
+                if (emptyEl) emptyEl.style.display = '';
+                var groupCountEl = document.getElementById('team-group-count');
+                if (groupCountEl) groupCountEl.textContent = 'No client teams';
+                finishTeamLoader();
+                return;
+            }
+            if (teamLoader) {
+                teamLoader.setStep('teams', 'Teams loaded', 52, 'Loading roster');
+            }
+            return renderGroups(groupsRes.data, headers);
+        }).catch(function () {
+            showBanner('Failed to load groups.');
+            finishTeamLoader();
+        });
+    });
+})();
+</script>
+</body>
+</html>
+

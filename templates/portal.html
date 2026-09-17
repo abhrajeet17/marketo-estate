@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block title %}Explore Properties – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/portal.css">
+{% endblock %}
+{% block content %}
+<div class="portal-page" id="portal-page">
+
+    <!-- ── Navbar ── -->
+    <nav class="portal-nav" id="portal-nav">
+        <a href="/" class="portal-nav-logo">
+            <img src="/static/Marketostate/Marketostate%20logo.png" alt="MarketoState">
+        </a>
+        <div class="portal-nav-links">
+            <a href="/explore" class="active">Explore</a>
+            <a href="#map-section" id="nav-map-link">Map View</a>
+        </div>
+        <div class="portal-nav-actions">
+            <a href="/login" class="portal-btn portal-btn--ghost">Log in</a>
+            <a href="/login" class="portal-btn portal-btn--primary">List Property</a>
+        </div>
+        <button class="portal-nav-hamburger" id="portal-hamburger" type="button" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- ── Hero / Search Section ── -->
+    <section class="portal-hero">
+        <div class="portal-hero-bg"></div>
+        <div class="portal-hero-content">
+            <h1>Find Your <span class="accent-text">Perfect Plot</span></h1>
+            <p class="portal-hero-sub">Browse immersive 360° property panoramas, compare plots, and connect with developers — all in one place.</p>
+            <div class="portal-search-bar" id="portal-search-bar">
+                <div class="portal-search-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <input type="text" id="portal-search-input" class="portal-search-input"
+                    placeholder="Search by project name, location, builder, RERA number..."
+                    autocomplete="off" spellcheck="false">
+                <button type="button" class="portal-search-btn" id="portal-search-btn">Search</button>
+            </div>
+            <div class="portal-quick-filters">
+                <button class="portal-chip active" data-type="">All</button>
+                <button class="portal-chip" data-type="residential">Residential</button>
+                <button class="portal-chip" data-type="plotted">Plotted</button>
+                <button class="portal-chip" data-type="commercial">Commercial</button>
+                <button class="portal-chip" data-type="villa">Villa</button>
+                <button class="portal-chip" data-type="farmland">Farm Land</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Stats Bar ── -->
+    <div class="portal-stats-bar" id="portal-stats-bar">
+        <div class="portal-stat">
+            <span class="portal-stat-num" id="stat-projects">0</span>
+            <span class="portal-stat-label">Projects</span>
+        </div>
+        <div class="portal-stat">
+            <span class="portal-stat-num" id="stat-plots">0</span>
+            <span class="portal-stat-label">Total Plots</span>
+        </div>
+        <div class="portal-stat">
+            <span class="portal-stat-num" id="stat-cities">0</span>
+            <span class="portal-stat-label">Cities</span>
+        </div>
+        <div class="portal-stat">
+            <span class="portal-stat-num" id="stat-available">0</span>
+            <span class="portal-stat-label">Available</span>
+        </div>
+    </div>
+
+    <!-- ── Toolbar ── -->
+    <div class="portal-toolbar" id="portal-toolbar">
+        <div class="portal-toolbar-left">
+            <h2 class="portal-results-title" id="portal-results-title">All Projects</h2>
+            <span class="portal-results-count" id="portal-results-count"></span>
+        </div>
+        <div class="portal-toolbar-right">
+            <select class="portal-select" id="filter-city">
+                <option value="">All Cities</option>
+            </select>
+            <select class="portal-select" id="filter-sort">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+            </select>
+            <div class="portal-view-toggle">
+                <button class="portal-view-btn active" id="view-grid" title="Grid View" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+                <button class="portal-view-btn" id="view-list" title="List View" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </button>
+                <button class="portal-view-btn" id="view-map" title="Map View" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Project Grid ── -->
+    <div class="portal-content">
+        <div class="portal-grid" id="portal-grid">
+            <!-- Skeleton cards for initial load -->
+            <div class="portal-skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div><div class="skeleton-line w90"></div></div></div>
+            <div class="portal-skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div><div class="skeleton-line w90"></div></div></div>
+            <div class="portal-skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div><div class="skeleton-line w90"></div></div></div>
+            <div class="portal-skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div><div class="skeleton-line w90"></div></div></div>
+            <div class="portal-skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div><div class="skeleton-line w90"></div></div></div>
+            <div class="portal-skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line w70"></div><div class="skeleton-line w40"></div><div class="skeleton-line w90"></div></div></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="portal-empty" id="portal-empty" hidden>
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <h3>No projects found</h3>
+            <p>Try adjusting your search or filters to find what you're looking for.</p>
+        </div>
+
+        <!-- Load More / Infinite Scroll Sentinel -->
+        <div class="portal-load-more" id="portal-load-more" hidden>
+            <div class="portal-load-spinner"></div>
+            <span>Loading more projects...</span>
+        </div>
+    </div>
+
+    <!-- ── Map Section ── -->
+    <section class="portal-map-section" id="map-section" hidden>
+        <div class="portal-map-header">
+            <h2>Map View</h2>
+            <button class="portal-btn portal-btn--ghost" id="close-map" type="button">Close Map</button>
+        </div>
+        <div class="portal-map-container" id="portal-map-container">
+            <div id="portal-map" class="portal-map"></div>
+            <div class="portal-map-sidebar" id="portal-map-sidebar">
+                <div class="portal-map-sidebar-title">Projects on Map</div>
+                <div class="portal-map-sidebar-list" id="portal-map-sidebar-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Footer ── -->
+    <footer class="portal-footer">
+        <div class="portal-footer-inner">
+            <div class="portal-footer-brand">
+                <img src="/static/Marketostate/Marketostate%20logo.png" alt="MarketoState">
+            </div>
+            <div class="portal-footer-links">
+                <a href="/">Home</a>
+                <a href="/explore">Explore</a>
+                <a href="/login">Login</a>
+            </div>
+            <div class="portal-footer-copy">Built with MarketoState</div>
+        </div>
+    </footer>
+
+    <!-- ── Project Detail Modal ── -->
+    <div class="portal-modal-backdrop" id="project-modal">
+        <div class="portal-modal">
+            <button class="portal-modal-close" id="project-modal-close" type="button">&times;</button>
+            <div class="portal-modal-body" id="project-modal-body">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/portal.js"></script>
+{% endblock %}

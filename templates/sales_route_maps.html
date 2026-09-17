@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% block title %}Sales Route Maps - MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<link rel="stylesheet" href="/static/css/sales_route_maps.css">
+{% endblock %}
+{% block content %}
+<div class="srm-page">
+    {% set active_page = 'floorplans' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="srm-main">
+        <div class="srm-header">
+            <div>
+                <div class="srm-eyebrow">Sales Tool</div>
+                <h1 class="srm-title">Route Map Builder</h1>
+                <p class="srm-subtitle">Upload a map image, place one main pointer and multiple normal pointers, then draw paths between them for customer view.</p>
+            </div>
+            <button class="btn btn-primary" id="srm-new-btn">New Route Map</button>
+        </div>
+
+        <div class="srm-toolbar">
+            <label for="srm-workspace-filter">Project</label>
+            <select id="srm-workspace-filter" class="srm-select">
+                <option value="">All projects</option>
+            </select>
+        </div>
+        <div class="srm-inline-status" id="srm-status" style="display:none;"></div>
+
+        <div class="srm-grid" id="srm-grid"></div>
+        <div class="srm-empty" id="srm-empty" style="display:none;">No route maps yet. Create your first one.</div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="srm-create-modal">
+    <div class="modal srm-modal">
+        <div class="modal-title">Create Sales Route Map</div>
+        <div class="srm-field">
+            <label>Project</label>
+            <select id="srm-create-workspace" class="srm-select">
+                <option value="">Select project</option>
+            </select>
+        </div>
+        <div class="srm-field">
+            <label>Map Name</label>
+            <input id="srm-create-name" class="srm-input" type="text" maxlength="200" value="Sales Route Map">
+        </div>
+        <div class="srm-field">
+            <label>Map Image</label>
+            <input id="srm-create-file" class="srm-input" type="file" accept="image/png,image/jpeg,image/webp,image/jpg">
+        </div>
+        <div class="srm-error" id="srm-create-error" style="display:none;"></div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="srm-create-cancel">Cancel</button>
+            <button class="btn btn-primary" id="srm-create-submit">Create</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    'use strict';
+
+    var maps = [];
+    var workspaces = [];
+    var activeProjectId = '';
+
+    function setStatus(message, kind) {
+        var el = document.getElementById('srm-status');
+        if (!el) return;
+        if (!message) {
+            el.style.display = 'none';
+            el.className = 'srm-inline-status';
+            el.textContent = '';
+            return;
+        }
+        el.style.display = '';
+        el.textContent = message;
+        el.className = 'srm-inline-status';
+        if (kind === 'warn') el.className += ' srm-inline-status--warn';
+        if (kind === 'error') el.className += ' srm-inline-status--error';
+    }
+
+    function authHeaders() {
+        if (!window._supabase) return Promise.resolve({});
+        return window._supabase.auth.getSession().then(function (r) {
+            var h = {};
+            if (r.data.session && r.data.session.access_token) {
+                h.Authorization = 'Bearer ' + r.data.session.access_token;
+            }
+            return h;
+        });
+    }
+
+    async function apiFetch(url, opts) {
+        if (window.pmApi && typeof window.pmApi.fetchJsonWithRetry === 'function') {
+            return window.pmApi.fetchJsonWithRetry(url, opts, {
+                retries: 2,
+                baseDelayMs: 220,
+                waitAttempts: 8,
+                waitDelayMs: 140
+            });
+        }
+        var headers = await authHeaders();
+        var response = await fetch(url, Object.assign({ headers: headers }, opts || {}));
+        var text = await response.text().catch(function () { return ''; });
+        var payload = null;
+        try { payload = text ? JSON.parse(text) : null; } catch (e) { payload = null; }
+        if (!response.ok) throw new Error((payload && payload.error) || text || response.statusText);
+        return payload;
+    }
+
+    function showModal(id) { document.getElementById(id).classList.add('visible'); }
+    function hideModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+    function escapeHtml(text) {
+        return String(text || '').replace(/[&<>"']/g, function (char) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+        });
+    }
+
+    function bindModalEvents() {
+        document.getElementById('srm-new-btn').addEventListener('click', function () {
+            document.getElementById('srm-create-error').style.display = 'none';
+            document.getElementById('srm-create-name').value = 'Sales Route Map';
+            document.getElementById('srm-create-file').value = '';
+            document.getElementById('srm-create-workspace').value = activeProjectId || '';
+            showModal('srm-create-modal');
+        });
+        document.getElementById('srm-create-cancel').addEventListener('click', function () {
+            hideModal('srm-create-modal');
+        });
+        document.getElementById('srm-create-modal').addEventListener('click', function (event) {
+            if (event.target === this) hideModal('srm-create-modal');
+        });
+        document.getElementById('srm-create-submit').addEventListener('click', onCreate);
+    }
+
+    async function onCreate() {
+        var name = document.getElementById('srm-create-name').value.trim() || 'Sales Route Map';
+        var workspaceId = document.getElementById('srm-create-workspace').value.trim();
+        var fileInput = document.getElementById('srm-create-file');
+        var file = fileInput.files && fileInput.files[0];
+        var errorEl = document.getElementById('srm-create-error');
+
+        if (!workspaceId) {
+            errorEl.textContent = 'Please select a project.';
+            errorEl.style.display = '';
+            return;
+        }
+        if (!file) {
+            errorEl.textContent = 'Please select a map image.';
+            errorEl.style.display = '';
+            return;
+        }
+
+        errorEl.style.display = 'none';
+        var submitBtn = document.getElementById('srm-create-submit');
+        submitBtn.disabled = true;
+
+        try {
+            var headers = await authHeaders();
+            var body = new FormData();
+            body.append('name', name);
+            body.append('workspace_id', workspaceId);
+            body.append('file', file);
+            var response = await fetch('/api/sales-maps', {
+                method: 'POST',
+                headers: headers,
+                body: body
+            });
+            var payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Failed to create route map');
+            }
+            hideModal('srm-create-modal');
+            await loadMaps();
+        } catch (error) {
+            errorEl.textContent = (error && error.message) ? error.message : 'Failed to create route map';
+            errorEl.style.display = '';
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+
+    function renderProjectOptions() {
+        var filter = document.getElementById('srm-workspace-filter');
+        var createSel = document.getElementById('srm-create-workspace');
+        while (filter.options.length > 1) filter.remove(1);
+        while (createSel.options.length > 1) createSel.remove(1);
+        workspaces.forEach(function (workspace) {
+            var optFilter = document.createElement('option');
+            optFilter.value = workspace.id;
+            optFilter.textContent = workspace.name;
+            filter.appendChild(optFilter);
+
+            var optCreate = document.createElement('option');
+            optCreate.value = workspace.id;
+            optCreate.textContent = workspace.name;
+            createSel.appendChild(optCreate);
+        });
+        filter.value = activeProjectId;
+    }
+
+    function mapCardHtml(mapItem) {
+        var badge = mapItem.has_main_marker ? '<span class="srm-badge ok">Main pointer set</span>' : '<span class="srm-badge warn">Main pointer missing</span>';
+        var preview = mapItem.image_url
+            ? '<img src="' + escapeHtml(mapItem.image_url) + '" alt="' + escapeHtml(mapItem.name) + '" class="srm-thumb">'
+            : '<div class="srm-thumb srm-thumb-empty">No image</div>';
+
+        return [
+            '<div class="srm-card" data-id="' + mapItem.id + '">',
+            preview,
+            '<div class="srm-card-body">',
+            '<div class="srm-card-top">',
+            '<div class="srm-name">' + escapeHtml(mapItem.name) + '</div>',
+            badge,
+            '</div>',
+            '<div class="srm-meta">',
+            '<span>' + (mapItem.marker_count || 0) + ' pointers</span>',
+            '<span>' + (mapItem.route_count || 0) + ' routes</span>',
+            '</div>',
+            '<div class="srm-actions">',
+            '<a class="btn btn-secondary btn-sm" href="/sales-route-maps/editor/' + encodeURIComponent(mapItem.id) + '">Edit</a>',
+            '<a class="btn btn-secondary btn-sm" href="' + escapeHtml(mapItem.share_url || '#') + '" target="_blank" rel="noopener">Preview</a>',
+            '<button class="btn btn-secondary btn-sm srm-copy-btn" data-url="' + escapeHtml(mapItem.share_url || '') + '">Copy Link</button>',
+            '<button class="btn btn-danger btn-sm srm-delete-btn" data-id="' + mapItem.id + '" data-name="' + escapeHtml(mapItem.name) + '">Delete</button>',
+            '</div>',
+            '</div>',
+            '</div>',
+            '</div>'
+        ].join('');
+    }
+
+    function bindCardActions() {
+        document.querySelectorAll('.srm-copy-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var url = btn.dataset.url || '';
+                if (!url) return;
+                navigator.clipboard.writeText(url).then(function () {
+                    var original = btn.textContent;
+                    btn.textContent = 'Copied';
+                    setTimeout(function () { btn.textContent = original; }, 1200);
+                });
+            });
+        });
+
+        document.querySelectorAll('.srm-delete-btn').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                var mapId = btn.dataset.id;
+                var name = btn.dataset.name || 'this map';
+                if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+                btn.disabled = true;
+                try {
+                    await apiFetch('/api/sales-maps/' + encodeURIComponent(mapId), { method: 'DELETE' });
+                    await loadMaps();
+                } catch (error) {
+                    alert((error && error.message) ? error.message : 'Failed to delete');
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+    }
+
+    function renderMaps() {
+        var grid = document.getElementById('srm-grid');
+        var empty = document.getElementById('srm-empty');
+        if (!maps.length) {
+            grid.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+        grid.innerHTML = maps.map(mapCardHtml).join('');
+        bindCardActions();
+    }
+
+    async function loadProjects() {
+        setStatus('Loading projects…');
+        var response = await apiFetch('/api/workspaces');
+        workspaces = response.workspaces || response || [];
+        renderProjectOptions();
+        setStatus('');
+    }
+
+    async function loadMaps() {
+        setStatus('Loading route maps…');
+        var query = activeProjectId ? ('?workspace_id=' + encodeURIComponent(activeProjectId)) : '';
+        maps = await apiFetch('/api/sales-maps' + query);
+        renderMaps();
+        setStatus('');
+    }
+
+    function bindProjectFilter() {
+        document.getElementById('srm-workspace-filter').addEventListener('change', async function () {
+            activeProjectId = this.value || '';
+            await loadMaps();
+        });
+    }
+
+    async function init() {
+        bindModalEvents();
+        bindProjectFilter();
+        try {
+            await loadProjects();
+            await loadMaps();
+        } catch (error) {
+            maps = [];
+            renderMaps();
+            setStatus((error && error.message) ? error.message : 'Unable to load route maps right now.', 'error');
+        }
+    }
+
+    window.__srmInit = init;
+})();
+</script>
+<script>
+    window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+    window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+</script>
+<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
+<script>
+    window.sidebarReady.then(function () {
+        if (window.__srmInit) window.__srmInit();
+    });
+</script>
+{% endblock %}

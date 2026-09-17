@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage project access - MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/components/layout.css">
+    <script src="/static/js/supabase.min.js"></script>
+    <style>
+        .header {
+            padding: 2rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .nav a {
+            color: var(--color-text-dim);
+            text-decoration: none;
+            margin-left: 1rem;
+        }
+
+        .nav a:hover {
+            color: var(--color-accent);
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h1 {
+            font-family: var(--font-display);
+            font-size: 1.65rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: var(--color-text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--color-text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        select.form-input,
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            color: var(--color-text);
+            font-family: var(--font-body);
+        }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-danger);
+        }
+
+        .list {
+            list-style: none;
+        }
+
+        .list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--color-border);
+            gap: 0.75rem;
+        }
+
+        .list li:last-child {
+            border-bottom: none;
+        }
+
+        .msg {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .msg.error {
+            color: var(--color-danger);
+        }
+
+        .msg.success {
+            color: #22c55e;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 0.7rem;
+            color: var(--color-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 760px) {
+            .header {
+                padding: 1.25rem 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="/dashboard">Plotted Development</a>
+        </nav>
+    </header>
+    <main class="container">
+        <div class="card">
+            <h1>Folder access</h1>
+            <p>Grant client, broker, or viewer access for all panoramas inside this project.</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">User</label>
+                    <select id="user-select" class="form-input">
+                        <option value="">Select user...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Access</label>
+                    <select id="access-type" class="form-input">
+                        <option value="client">Client</option>
+                        <option value="broker">Broker</option>
+                        <option value="viewer">Viewer</option>
+                    </select>
+                </div>
+                <button type="button" class="btn" id="btn-grant">Grant</button>
+            </div>
+            <div id="grant-error" class="msg error hidden"></div>
+            <div id="grant-success" class="msg success hidden"></div>
+        </div>
+        <div class="card">
+            <h2 style="font-size:1.1rem; margin-bottom:0.75rem;">Current project access</h2>
+            <ul class="list" id="access-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+    </main>
+    <script>
+        (function () {
+            var workspaceId = {{ workspace_id | tojson }};
+            var supabaseUrl = {{ (supabase_url or '') | tojson }};
+            var supabaseAnonKey = {{ (supabase_anon_key or '') | tojson }};
+            if (!supabaseUrl || !supabaseAnonKey || !window.supabase) {
+                document.getElementById('access-list').innerHTML = '<li>Auth not configured</li>';
+                return;
+            }
+            var supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+            window._supabase = supabase;
+            try { if (window.applyOrgTheme) window.applyOrgTheme(); } catch (e) { }
+
+            function getToken() {
+                return new Promise(function (resolve) {
+                    supabase.auth.getSession().then(function (r) {
+                        resolve(r.data.session ? r.data.session.access_token : null);
+                    });
+                });
+            }
+
+            function authHeaders() {
+                return getToken().then(function (t) {
+                    var h = { 'Content-Type': 'application/json' };
+                    if (t) h['Authorization'] = 'Bearer ' + t;
+                    return h;
+                });
+            }
+
+            function loadProfiles() {
+                return authHeaders().then(function (h) {
+                    return fetch('/api/profiles', { headers: h });
+                }).then(function (r) {
+                    if (!r.ok) return [];
+                    return r.json();
+                });
+            }
+
+            function loadAccess() {
+                return authHeaders().then(function (h) {
+                    return fetch('/api/workspaces/' + workspaceId + '/access', { headers: h });
+                }).then(function (r) {
+                    if (!r.ok) return [];
+                    return r.json();
+                });
+            }
+
+            function grant(userId, accessType) {
+                return authHeaders().then(function (h) {
+                    return fetch('/api/workspaces/' + workspaceId + '/access', {
+                        method: 'POST',
+                        headers: h,
+                        body: JSON.stringify({ user_id: userId, access_type: accessType })
+                    });
+                });
+            }
+
+            function revoke(userId) {
+                return authHeaders().then(function (h) {
+                    return fetch('/api/workspaces/' + workspaceId + '/access/' + encodeURIComponent(userId), {
+                        method: 'DELETE',
+                        headers: h
+                    });
+                });
+            }
+
+            function text(row) {
+                var name = row.display_name || '';
+                var email = row.email || '';
+                return (name ? name + ' - ' : '') + (email || row.user_id);
+            }
+
+            function setMessage(type, msg) {
+                var e = document.getElementById('grant-error');
+                var s = document.getElementById('grant-success');
+                e.classList.add('hidden');
+                s.classList.add('hidden');
+                if (!msg) return;
+                if (type === 'error') {
+                    e.textContent = msg;
+                    e.classList.remove('hidden');
+                } else {
+                    s.textContent = msg;
+                    s.classList.remove('hidden');
+                }
+            }
+
+            function render(users, accessRows) {
+                var select = document.getElementById('user-select');
+                var list = document.getElementById('access-list');
+                var byId = {};
+                users.forEach(function (u) { byId[u.user_id] = u; });
+
+                select.innerHTML = '<option value="">Select user...</option>';
+                users.forEach(function (u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.user_id;
+                    opt.textContent = text(u);
+                    select.appendChild(opt);
+                });
+
+                if (!accessRows || accessRows.length === 0) {
+                    list.innerHTML = '<li>No users have project access yet.</li>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                accessRows.forEach(function (a) {
+                    var li = document.createElement('li');
+                    var user = byId[a.user_id] || { user_id: a.user_id };
+                    var left = document.createElement('div');
+                    left.innerHTML = '<div>' + (text(user)) + '</div><div class="pill">' + a.access_type + '</div>';
+
+                    var btn = document.createElement('button');
+                    btn.className = 'btn btn-danger';
+                    btn.textContent = 'Revoke';
+                    btn.onclick = function () {
+                        revoke(a.user_id).then(function (r) {
+                            if (r.ok) {
+                                setMessage('success', 'Access revoked');
+                                init();
+                            } else {
+                                r.json().then(function (e) { setMessage('error', (e && e.error) || 'Failed to revoke access'); }).catch(function () { setMessage('error', 'Failed to revoke access'); });
+                            }
+                        }).catch(function () { setMessage('error', 'Failed to revoke access'); });
+                    };
+
+                    li.appendChild(left);
+                    li.appendChild(btn);
+                    list.appendChild(li);
+                });
+            }
+
+            function init() {
+                return Promise.all([loadProfiles(), loadAccess()]).then(function (arr) {
+                    render(arr[0] || [], arr[1] || []);
+                }).catch(function () {
+                    document.getElementById('access-list').innerHTML = '<li>Failed to load access data.</li>';
+                });
+            }
+
+            document.getElementById('btn-grant').addEventListener('click', function () {
+                var userId = document.getElementById('user-select').value;
+                var accessType = document.getElementById('access-type').value;
+                if (!userId) {
+                    setMessage('error', 'Please select a user');
+                    return;
+                }
+                setMessage('', '');
+                grant(userId, accessType).then(function (r) {
+                    if (r.ok) {
+                        setMessage('success', 'Access granted');
+                        init();
+                    } else {
+                        r.json().then(function (e) { setMessage('error', (e && e.error) || 'Failed to grant access'); }).catch(function () { setMessage('error', 'Failed to grant access'); });
+                    }
+                }).catch(function () { setMessage('error', 'Failed to grant access'); });
+            });
+
+            supabase.auth.getSession().then(function (r) {
+                if (!r.data.session) {
+                    window.location.replace('/login');
+                    return;
+                }
+                init();
+            });
+        })();
+    </script>
+</body>
+
+</html>

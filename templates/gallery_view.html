@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ gallery.name or 'Gallery' }} – MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.css">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/plugins/markers.css">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/gallery_view.css">
+    <script src="/static/vendor/uevent/browser.js"></script>
+    <script src="/static/vendor/three/three.min.js"></script>
+    <script src="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.js"></script>
+    <script src="/static/vendor/photo-sphere-viewer/plugins/markers.js"></script>
+</head>
+<body>
+<div class="gv-page" id="gv-page">
+    <!-- Media display area -->
+    <div class="gv-media-area" id="gv-media-area">
+        <div class="gv-media-wrap" id="gv-media-wrap">
+            <img class="gv-image" id="gv-image" src="" alt="Gallery" draggable="false" style="display:none;">
+            <div class="gv-video-bg" id="gv-video-bg" style="display:none;">
+                <video class="gv-video" id="gv-video" autoplay loop muted playsinline></video>
+            </div>
+            <div class="gv-psv" id="gv-psv" style="display:none;"></div>
+        </div>
+
+        <!-- Unmute overlay -->
+        <button class="gv-unmute-btn" id="gv-unmute" style="display:none;" title="Tap to unmute">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            <span>Tap to unmute</span>
+        </button>
+
+        <!-- Zoom controls -->
+        <div class="gv-zoom-controls">
+            <button class="gv-mode-btn gv-autoplay-btn" id="gv-autoplay-toggle" type="button" title="Pause autoplay" aria-label="Pause autoplay" style="display:none;">
+                <span class="gv-autoplay-icon gv-autoplay-icon-pause" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor" focusable="false">
+                        <rect x="6" y="5" width="4" height="14" rx="1.4"></rect>
+                        <rect x="14" y="5" width="4" height="14" rx="1.4"></rect>
+                    </svg>
+                </span>
+                <span class="gv-autoplay-icon gv-autoplay-icon-play" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor" focusable="false">
+                        <path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"></path>
+                    </svg>
+                </span>
+            </button>
+        </div>
+
+        <div class="gv-watermark">{{ gallery.name or 'MarketoState' }}</div>
+    </div>
+
+    {% if items|length > 1 %}
+    <!-- Counter -->
+    <div class="gv-counter" id="gv-counter">1 / {{ items|length }}</div>
+
+    <!-- Navigation arrows -->
+    <button class="gv-nav-btn gv-nav-prev" id="gv-prev" title="Previous">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="gv-nav-btn gv-nav-next" id="gv-next" title="Next">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <!-- Selector panel -->
+    <div class="gv-panel" id="gv-panel">
+        <div class="gv-panel-header">
+            <h2 class="gv-panel-title">{{ gallery.name or 'Gallery' }}</h2>
+            <button class="gv-panel-collapse" id="gv-panel-collapse" title="Collapse" aria-label="Collapse gallery" aria-expanded="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+        </div>
+        <div class="gv-panel-list" id="gv-panel-list">
+            {% for item in items %}
+            <button class="gv-panel-item{% if loop.first %} active{% endif %}"
+                    data-idx="{{ loop.index0 }}"
+                    data-url="{{ item.media_url }}"
+                    data-type="{{ item.media_type }}">
+                <span class="gv-panel-item-icon">
+                    {% if item.media_type == 'video' %}&#9654;{% else %}&#9632;{% endif %}
+                </span>
+                {{ item.name }}
+            </button>
+            {% endfor %}
+        </div>
+        <button class="gv-panel-expand" id="gv-panel-expand" type="button" aria-label="Expand gallery" aria-expanded="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Gallery
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+(function() {
+    var INITIAL_STYLE = {{ (fv_style or {}) | tojson }};
+    var DEFAULT_MODAL = {
+        bg: '#1e1e1e',
+        bg_opacity_pct: 82,
+        backdrop_blur_px: 18,
+        border: '#d6dee6',
+        glow_color: '#a4c1ea',
+        glow_opacity_pct: 34,
+        title_text: '#ffffff',
+        item_text: '#f2f6ff',
+        item_active_bg: '#3e567f',
+        item_active_border: '#a4c1ea',
+        modal_padding_pct: 100,
+        width: 260,
+        max_height_vh: 72,
+        right_offset: 112,
+        bottom_offset: 24,
+        title_font_family: 'Syne',
+        item_font_family: 'Syne',
+        title_font_size_px: 13,
+        item_font_size_px: 12
+    };
+    var FONT_FAMILIES = ['Syne', 'Inter', 'Poppins', 'Montserrat', 'Lora', 'Merriweather', 'Oswald'];
+
+    function clampInt(value, min, max, fallback) {
+        var n = parseInt(value, 10);
+        if (Number.isNaN(n)) return fallback;
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+    }
+
+    function sanitizeHex(value, fallback) {
+        var s = String(value || '').trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+        if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+            return '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+        }
+        return fallback;
+    }
+
+    function sanitizeFontFamily(value, fallback) {
+        var v = String(value || '').trim();
+        if (!v) return fallback;
+        for (var i = 0; i < FONT_FAMILIES.length; i++) {
+            if (FONT_FAMILIES[i].toLowerCase() === v.toLowerCase()) return FONT_FAMILIES[i];
+        }
+        return fallback;
+    }
+
+    function hexToRgba(hex, alpha) {
+        var clean = sanitizeHex(hex, '#000000').replace('#', '');
+        var r = parseInt(clean.slice(0, 2), 16);
+        var g = parseInt(clean.slice(2, 4), 16);
+        var b = parseInt(clean.slice(4, 6), 16);
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+    }
+
+    function currentStyleMode(mode) {
+        var explicit = String(mode || '').trim().toLowerCase();
+        if (explicit === 'mobile' || explicit === 'desktop') return explicit;
+        try {
+            var preview = new URL(window.location.href).searchParams.get('preview');
+            if (String(preview || '').toLowerCase() === 'mobile') return 'mobile';
+        } catch (e) { }
+        try {
+            if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return 'mobile';
+        } catch (e) { }
+        return 'desktop';
+    }
+
+    function styleForMode(raw, mode) {
+        var style = raw && typeof raw === 'object' ? raw : {};
+        var key = currentStyleMode(mode);
+        if (style[key] && typeof style[key] === 'object') return style[key];
+        return style;
+    }
+
+    function normalizeModalStyle(raw, mode) {
+        raw = styleForMode(raw, mode);
+        var modal = {};
+        if (raw && raw.modal_gallery && typeof raw.modal_gallery === 'object') {
+            modal = raw.modal_gallery;
+        } else if (raw && raw.modal && typeof raw.modal === 'object') {
+            modal = raw.modal;
+        }
+        return {
+            bg: sanitizeHex(modal.bg, DEFAULT_MODAL.bg),
+            bg_opacity_pct: clampInt(modal.bg_opacity_pct, 0, 100, DEFAULT_MODAL.bg_opacity_pct),
+            backdrop_blur_px: clampInt(modal.backdrop_blur_px, 0, 40, DEFAULT_MODAL.backdrop_blur_px),
+            border: sanitizeHex(modal.border, DEFAULT_MODAL.border),
+            glow_color: sanitizeHex(modal.glow_color, modal.item_active_border || DEFAULT_MODAL.glow_color),
+            glow_opacity_pct: clampInt(modal.glow_opacity_pct, 0, 100, DEFAULT_MODAL.glow_opacity_pct),
+            title_text: sanitizeHex(modal.title_text, DEFAULT_MODAL.title_text),
+            item_text: sanitizeHex(modal.item_text, DEFAULT_MODAL.item_text),
+            item_active_bg: sanitizeHex(modal.item_active_bg, DEFAULT_MODAL.item_active_bg),
+            item_active_border: sanitizeHex(modal.item_active_border, DEFAULT_MODAL.item_active_border),
+            modal_padding_pct: clampInt(modal.modal_padding_pct, 60, 160, DEFAULT_MODAL.modal_padding_pct),
+            width: clampInt(modal.width, 220, 2200, DEFAULT_MODAL.width),
+            max_height_vh: clampInt(modal.max_height_vh, 20, 100, DEFAULT_MODAL.max_height_vh),
+            right_offset: clampInt(modal.right_offset, 0, 280, DEFAULT_MODAL.right_offset),
+            bottom_offset: clampInt(modal.bottom_offset, 0, 240, DEFAULT_MODAL.bottom_offset),
+            title_font_family: sanitizeFontFamily(modal.title_font_family, DEFAULT_MODAL.title_font_family),
+            item_font_family: sanitizeFontFamily(modal.item_font_family, DEFAULT_MODAL.item_font_family),
+            title_font_size_px: clampInt(modal.title_font_size_px, 11, 24, DEFAULT_MODAL.title_font_size_px),
+            item_font_size_px: clampInt(modal.item_font_size_px, 10, 22, DEFAULT_MODAL.item_font_size_px)
+        };
+    }
+
+    function setCssVar(name, value) {
+        document.documentElement.style.setProperty(name, value);
+    }
+
+    function applyModalStyle(raw, mode) {
+        var m = normalizeModalStyle(raw, mode);
+        var bgAlpha = m.bg_opacity_pct / 100;
+        var borderAlpha = Math.min(0.38, Math.max(0.10, 0.10 + (bgAlpha * 0.28)));
+        var shadowAlpha = Math.min(0.35, Math.max(0.08, 0.06 + (bgAlpha * 0.29)));
+        setCssVar('--fv-modal-bg', hexToRgba(m.bg, bgAlpha));
+        setCssVar('--fv-modal-border', hexToRgba(m.border, borderAlpha));
+        setCssVar('--fv-modal-backdrop-blur', m.backdrop_blur_px + 'px');
+        setCssVar('--fv-modal-glow', hexToRgba(m.glow_color, m.glow_opacity_pct / 100));
+        setCssVar('--fv-modal-shadow', 'rgba(0, 0, 0, ' + shadowAlpha.toFixed(3) + ')');
+        setCssVar('--fv-modal-title', m.title_text);
+        setCssVar('--fv-modal-item-text', hexToRgba(m.item_text, 0.9));
+        setCssVar('--fv-modal-item-active-bg', hexToRgba(m.item_active_bg, 0.35));
+        setCssVar('--fv-modal-item-active-border', hexToRgba(m.item_active_border, 0.62));
+        setCssVar('--fv-modal-padding-scale', String(m.modal_padding_pct / 100));
+        setCssVar('--fv-modal-width', m.width + 'px');
+        setCssVar('--fv-modal-height', m.max_height_vh + 'vh');
+        setCssVar('--fv-modal-max-height', m.max_height_vh + 'vh');
+        setCssVar('--fv-modal-right', m.right_offset + 'px');
+        setCssVar('--fv-modal-bottom', m.bottom_offset + 'px');
+        setCssVar('--fv-modal-title-font-family', "'" + m.title_font_family + "', sans-serif");
+        setCssVar('--fv-modal-item-font-family', "'" + m.item_font_family + "', sans-serif");
+        setCssVar('--fv-modal-title-font-size', m.title_font_size_px + 'px');
+        setCssVar('--fv-modal-item-font-size', m.item_font_size_px + 'px');
+    }
+
+    applyModalStyle(INITIAL_STYLE);
+
+    window.addEventListener('message', function (evt) {
+        if (evt.origin !== window.location.origin) return;
+        var data = evt.data || {};
+        if (data.type === 'fv-style-preview' && data.style && typeof data.style === 'object') {
+            applyModalStyle(data.style, data.mode);
+            return;
+        }
+        if (data.type === 'fv-gallery-autoplay-query') {
+            syncAutoRotateToggleUi();
+            return;
+        }
+        if (data.type === 'fv-gallery-autoplay-control') {
+            var action = String(data.action || 'toggle').trim().toLowerCase();
+            if (action === 'pause') {
+                setAutoRotatePaused(true);
+            } else if (action === 'play') {
+                setAutoRotatePaused(false);
+            } else {
+                setAutoRotatePaused(!autoRotateManuallyPaused);
+            }
+        }
+    });
+
+    var ITEMS = [
+        {% for item in items %}
+        {
+            url: {{ item.media_url|tojson }},
+            type: {{ item.media_type|tojson }},
+            name: {{ item.name|tojson }},
+            is_360: {{ item.get('is_360')|tojson }},
+            media_width: {{ (item.media_width or 0)|int }},
+            media_height: {{ (item.media_height or 0)|int }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    var imgEl = document.getElementById('gv-image');
+    var vidEl = document.getElementById('gv-video');
+    var vidBg = document.getElementById('gv-video-bg');
+    var psvEl = document.getElementById('gv-psv');
+    var currentIdx = 0;
+    var scale = 1, panX = 0, panY = 0;
+    var isDragging = false, dragStartX, dragStartY, startPanX, startPanY;
+    var itemLoadToken = 0;
+    var psvViewer = null;
+    var AUTO_ROTATE_BOOT_DELAY_MS = 1200;
+    var AUTO_ROTATE_RESUME_DELAY_MS = 4200;
+    var autoRotateResumeTimer = null;
+    var autoRotateManuallyPaused = false;
+    var singleItem = ITEMS.length <= 1;
+    var pageEl = document.getElementById('gv-page');
+    var panel = document.getElementById('gv-panel');
+    var panelCollapseBtn = document.getElementById('gv-panel-collapse');
+    var panelExpandBtn = document.getElementById('gv-panel-expand');
+    var controlsEl = document.querySelector('.gv-zoom-controls');
+    var autoRotateToggleBtn = document.getElementById('gv-autoplay-toggle');
+    var isEmbeddedView = window.parent && window.parent !== window;
+
+    // Preload images
+    ITEMS.forEach(function(item) {
+        if (item.type === 'image' && item.url) {
+            var img = new Image();
+            img.src = item.url;
+        }
+    });
+
+    var userUnmuted = false;
+    var unmuteBtn = document.getElementById('gv-unmute');
+
+    // Show first item after all control refs are ready.
+    if (ITEMS.length > 0) {
+        showItem(0, false);
+    }
+
+    function notifyParentAutoplayState() {
+        if (!isEmbeddedView || !window.parent) return;
+        window.parent.postMessage({
+            type: 'fv-gallery-autoplay-state',
+            available: isEquirectActive() && supportsPsv(),
+            paused: Boolean(autoRotateManuallyPaused)
+        }, window.location.origin);
+    }
+
+    function setAutoRotatePaused(paused) {
+        autoRotateManuallyPaused = !!paused;
+        if (!isEquirectActive()) {
+            syncAutoRotateToggleUi();
+            return;
+        }
+        if (autoRotateManuallyPaused) {
+            stopAutoRotate();
+        } else {
+            scheduleAutoRotateResume(0);
+        }
+        syncAutoRotateToggleUi();
+    }
+
+    function supportsPsv() {
+        return !!(window.PhotoSphereViewer && window.PhotoSphereViewer.Viewer && psvEl);
+    }
+
+    function isEquirectActive() {
+        return pageEl.classList.contains('gv-active-equirect');
+    }
+
+    function clearAutoRotateResumeTimer() {
+        if (!autoRotateResumeTimer) return;
+        clearTimeout(autoRotateResumeTimer);
+        autoRotateResumeTimer = null;
+    }
+
+    function stopAutoRotate() {
+        clearAutoRotateResumeTimer();
+        if (!psvViewer || typeof psvViewer.stopAutorotate !== 'function') return;
+        if (typeof psvViewer.isAutorotateEnabled === 'function' && !psvViewer.isAutorotateEnabled()) return;
+        try { psvViewer.stopAutorotate(); } catch (e) {}
+    }
+
+    function startAutoRotate() {
+        if (!psvViewer || typeof psvViewer.startAutorotate !== 'function') return;
+        if (typeof psvViewer.isAutorotateEnabled === 'function' && psvViewer.isAutorotateEnabled()) return;
+        try { psvViewer.startAutorotate(); } catch (e) {}
+    }
+
+    function scheduleAutoRotateResume(delayMs) {
+        if (!isEquirectActive()) return;
+        if (autoRotateManuallyPaused) return;
+        if (!psvViewer || typeof psvViewer.startAutorotate !== 'function') return;
+        clearAutoRotateResumeTimer();
+        autoRotateResumeTimer = setTimeout(function() {
+            autoRotateResumeTimer = null;
+            if (!isEquirectActive() || autoRotateManuallyPaused) return;
+            startAutoRotate();
+        }, typeof delayMs === 'number' ? delayMs : AUTO_ROTATE_RESUME_DELAY_MS);
+    }
+
+    function pauseAutoRotateForInteraction() {
+        if (!isEquirectActive()) return;
+        stopAutoRotate();
+        scheduleAutoRotateResume(AUTO_ROTATE_RESUME_DELAY_MS);
+    }
+
+    function syncAutoRotateToggleUi() {
+        if (!autoRotateToggleBtn) return;
+        var show = isEquirectActive() && supportsPsv();
+        if (controlsEl) controlsEl.style.display = (show && !isEmbeddedView) ? 'flex' : 'none';
+        autoRotateToggleBtn.style.display = (show && !isEmbeddedView) ? '' : 'none';
+        var paused = Boolean(autoRotateManuallyPaused);
+        autoRotateToggleBtn.classList.toggle('is-paused', paused);
+        var label = paused ? 'Play autoplay' : 'Pause autoplay';
+        autoRotateToggleBtn.title = label;
+        autoRotateToggleBtn.setAttribute('aria-label', label);
+        notifyParentAutoplayState();
+    }
+
+    function syncAutoRotateAfterMediaChange(delayMs) {
+        if (!isEquirectActive()) {
+            stopAutoRotate();
+            syncAutoRotateToggleUi();
+            return;
+        }
+        if (autoRotateManuallyPaused) {
+            stopAutoRotate();
+        } else {
+            scheduleAutoRotateResume(typeof delayMs === 'number' ? delayMs : AUTO_ROTATE_BOOT_DELAY_MS);
+        }
+        syncAutoRotateToggleUi();
+    }
+
+    function syncControlsForMedia() {
+        syncAutoRotateToggleUi();
+    }
+
+    function isMobilePanelViewport() {
+        return window.matchMedia ? window.matchMedia('(max-width: 768px)').matches : window.innerWidth <= 768;
+    }
+
+    function setPanelCollapsed(collapsed) {
+        if (!panel) return;
+        var next = !!collapsed;
+        panel.classList.toggle('collapsed', next);
+        if (panelCollapseBtn) panelCollapseBtn.setAttribute('aria-expanded', next ? 'false' : 'true');
+        if (panelExpandBtn) panelExpandBtn.setAttribute('aria-expanded', next ? 'false' : 'true');
+    }
+
+    function applyMobileDefaultPanelState() {
+        if (!panel || panel.dataset.mobileDefaultApplied === '1' || !isMobilePanelViewport()) return;
+        panel.dataset.mobileDefaultApplied = '1';
+        setPanelCollapsed(true);
+    }
+
+    function resolveEquirectangular(item) {
+        if (!supportsPsv() || !item || item.type !== 'image' || !item.url) {
+            return Promise.resolve(false);
+        }
+
+        if (typeof item.is_360 === 'boolean') {
+            item._equirectKnown = true;
+            item._isEquirect = item.is_360;
+            return Promise.resolve(item.is_360);
+        }
+        return Promise.resolve(false);
+    }
+
+    function destroyPsvViewer() {
+        clearAutoRotateResumeTimer();
+        if (!psvViewer) return;
+        try { psvViewer.destroy(); } catch (e) {}
+        psvViewer = null;
+    }
+
+    function hideVideoLayer() {
+        vidBg.style.display = 'none';
+        vidBg.classList.remove('loaded', 'fade-out');
+        try { vidEl.pause(); } catch (e) {}
+        vidEl.removeAttribute('src');
+    }
+
+    function showImageItem(item) {
+        pageEl.classList.remove('gv-active-equirect');
+        pageEl.classList.remove('gv-active-video');
+        hideVideoLayer();
+        if (psvEl) psvEl.style.display = 'none';
+        imgEl.style.display = '';
+        imgEl.classList.remove('fade-out');
+        imgEl.src = item.url;
+        imgEl.onload = function() {
+            imgEl.classList.add('loaded');
+        };
+        if (unmuteBtn) unmuteBtn.style.display = 'none';
+        syncAutoRotateAfterMediaChange();
+        syncControlsForMedia();
+    }
+
+    function showVideoItem(item) {
+        pageEl.classList.remove('gv-active-equirect');
+        pageEl.classList.add('gv-active-video');
+        imgEl.style.display = 'none';
+        imgEl.classList.remove('loaded', 'fade-out');
+        if (psvEl) psvEl.style.display = 'none';
+        vidBg.style.display = '';
+        vidBg.classList.remove('fade-out');
+        vidEl.src = item.url;
+        vidEl.muted = !userUnmuted;
+        vidEl.setAttribute('autoplay', '');
+        vidEl.load();
+        vidEl.play().then(function() {
+            vidBg.classList.add('loaded');
+        }).catch(function() {
+            vidEl.muted = true;
+            vidEl.play().then(function() {
+                vidBg.classList.add('loaded');
+            }).catch(function() {});
+        });
+        vidEl.onloadeddata = function() {
+            vidBg.classList.add('loaded');
+        };
+        if (unmuteBtn && !userUnmuted) {
+            unmuteBtn.style.display = '';
+        } else if (unmuteBtn) {
+            unmuteBtn.style.display = 'none';
+        }
+        syncAutoRotateAfterMediaChange();
+        syncControlsForMedia();
+    }
+
+    function showEquirectItem(item) {
+        pageEl.classList.add('gv-active-equirect');
+        pageEl.classList.remove('gv-active-video');
+        hideVideoLayer();
+        imgEl.style.display = 'none';
+        imgEl.classList.remove('loaded', 'fade-out');
+        if (unmuteBtn) unmuteBtn.style.display = 'none';
+        if (!supportsPsv()) {
+            showImageItem(item);
+            return;
+        }
+        psvEl.style.display = '';
+        var psvPlugins = [];
+        if (window.PhotoSphereViewer && window.PhotoSphereViewer.MarkersPlugin) {
+            psvPlugins.push([PhotoSphereViewer.MarkersPlugin, {}]);
+        }
+        var options = {
+            container: psvEl,
+            panorama: item.url,
+            navbar: false,
+            mousewheel: true,
+            mousemove: true,
+            touchmoveTwoFingers: false,
+            autorotateDelay: null,
+            autorotateSpeed: '1.1rpm',
+            autorotateLat: '5deg',
+            loadingTxt: '',
+            defaultZoomLvl: 25,
+            defaultLong: 0,
+            defaultLat: 0,
+            maxFov: 100,
+            plugins: psvPlugins
+        };
+        if (psvViewer && typeof psvViewer.setPanorama === 'function') {
+            psvViewer.setPanorama(item.url, { showLoader: false, transition: 900 }).then(function() {
+                if (typeof psvViewer.resize === 'function') psvViewer.resize();
+                syncAutoRotateAfterMediaChange(AUTO_ROTATE_BOOT_DELAY_MS);
+            }).catch(function() {
+                showImageItem(item);
+            });
+        } else {
+            destroyPsvViewer();
+            try {
+                psvViewer = new PhotoSphereViewer.Viewer(options);
+                if (psvViewer && typeof psvViewer.on === 'function') {
+                    psvViewer.on('ready', function() {
+                        if (typeof psvViewer.resize === 'function') psvViewer.resize();
+                        syncAutoRotateAfterMediaChange(AUTO_ROTATE_BOOT_DELAY_MS);
+                    });
+                } else {
+                    syncAutoRotateAfterMediaChange(AUTO_ROTATE_BOOT_DELAY_MS);
+                }
+            } catch (e) {
+                showImageItem(item);
+                return;
+            }
+        }
+        syncControlsForMedia();
+    }
+
+    function showItem(idx, animate) {
+        var item = ITEMS[idx];
+        if (!item) return;
+        currentIdx = idx;
+        var token = ++itemLoadToken;
+
+        if (animate) {
+            // Fade out current
+            imgEl.classList.add('fade-out');
+            imgEl.classList.remove('loaded');
+            vidBg.classList.add('fade-out');
+            vidBg.classList.remove('loaded');
+            setTimeout(function() { loadItem(item, token); }, 250);
+        } else {
+            loadItem(item, token);
+        }
+
+        // Update panel selection
+        if (!singleItem) {
+            document.querySelectorAll('.gv-panel-item').forEach(function(b) { b.classList.remove('active'); });
+            var active = document.querySelector('.gv-panel-item[data-idx="' + idx + '"]');
+            if (active) {
+                active.classList.add('active');
+                active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            var counter = document.getElementById('gv-counter');
+            if (counter) counter.textContent = (idx + 1) + ' / ' + ITEMS.length;
+        }
+    }
+
+    function loadItem(item, token) {
+        resetTransform();
+        if (item.type === 'video') {
+            showVideoItem(item);
+            return;
+        }
+
+        resolveEquirectangular(item).then(function(isEquirect) {
+            if (token !== itemLoadToken) return;
+            if (isEquirect) {
+                showEquirectItem(item);
+            } else {
+                showImageItem(item);
+            }
+        });
+    }
+
+    // Unmute on button click
+    if (unmuteBtn) {
+        unmuteBtn.addEventListener('click', function() {
+            userUnmuted = true;
+            vidEl.muted = false;
+            unmuteBtn.style.display = 'none';
+        });
+    }
+
+    // Also unmute on any click on the media area (user gesture)
+    document.getElementById('gv-media-area').addEventListener('click', function(e) {
+        if (!userUnmuted && vidBg.style.display !== 'none') {
+            userUnmuted = true;
+            vidEl.muted = false;
+            if (unmuteBtn) unmuteBtn.style.display = 'none';
+        }
+    });
+
+    // Panel click handlers
+    if (!singleItem) {
+        document.querySelectorAll('.gv-panel-item').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(btn.dataset.idx);
+                if (idx === currentIdx) return;
+                showItem(idx, true);
+            });
+        });
+
+        // Panel collapse/expand
+        if (panelCollapseBtn) {
+            panelCollapseBtn.addEventListener('click', function() {
+                setPanelCollapsed(true);
+            });
+        }
+        if (panelExpandBtn) {
+            panelExpandBtn.addEventListener('click', function() {
+                setPanelCollapsed(false);
+            });
+        }
+        applyMobileDefaultPanelState();
+
+        // Nav buttons
+        document.getElementById('gv-prev').addEventListener('click', function() {
+            showItem((currentIdx - 1 + ITEMS.length) % ITEMS.length, true);
+        });
+        document.getElementById('gv-next').addEventListener('click', function() {
+            showItem((currentIdx + 1) % ITEMS.length, true);
+        });
+    }
+
+    // -- Zoom & Pan --
+
+    function resetTransform() {
+        scale = 1; panX = 0; panY = 0;
+        applyTransform();
+    }
+
+    function activeEl() {
+        if (isEquirectActive()) return null;
+        return imgEl.style.display !== 'none' ? imgEl : vidBg;
+    }
+
+    function applyTransform() {
+        var el = activeEl();
+        if (!el) return;
+        el.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+    }
+
+    if (psvEl) {
+        ['pointerdown', 'wheel', 'touchstart'].forEach(function(eventName) {
+            psvEl.addEventListener(eventName, pauseAutoRotateForInteraction, { passive: true });
+        });
+    }
+
+    if (autoRotateToggleBtn) {
+        autoRotateToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!isEquirectActive()) return;
+            setAutoRotatePaused(!autoRotateManuallyPaused);
+        });
+    }
+
+    var mediaArea = document.getElementById('gv-media-area');
+
+    // Mouse wheel zoom
+    mediaArea.addEventListener('wheel', function(e) {
+        if (isEquirectActive()) return;
+        e.preventDefault();
+        var delta = e.deltaY > 0 ? 0.9 : 1.1;
+        scale = Math.max(0.5, Math.min(5, scale * delta));
+        applyTransform();
+    }, { passive: false });
+
+    // Pan with mouse drag
+    mediaArea.addEventListener('mousedown', function(e) {
+        if (isEquirectActive()) return;
+        if (scale <= 1) return;
+        isDragging = true;
+        dragStartX = e.clientX; dragStartY = e.clientY;
+        startPanX = panX; startPanY = panY;
+        mediaArea.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        panX = startPanX + (e.clientX - dragStartX);
+        panY = startPanY + (e.clientY - dragStartY);
+        applyTransform();
+    });
+    window.addEventListener('mouseup', function() {
+        if (isDragging) { isDragging = false; mediaArea.style.cursor = ''; }
+    });
+
+    // Touch support
+    var touchStartDist = 0, touchStartScale = 1;
+    mediaArea.addEventListener('touchstart', function(e) {
+        if (isEquirectActive()) return;
+        if (e.touches.length === 2) {
+            touchStartDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            touchStartScale = scale;
+        } else if (e.touches.length === 1 && scale > 1) {
+            isDragging = true;
+            dragStartX = e.touches[0].clientX;
+            dragStartY = e.touches[0].clientY;
+            startPanX = panX; startPanY = panY;
+        }
+    }, { passive: true });
+
+    mediaArea.addEventListener('touchmove', function(e) {
+        if (isEquirectActive()) return;
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            var dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            scale = Math.max(0.5, Math.min(5, touchStartScale * (dist / touchStartDist)));
+            applyTransform();
+        } else if (isDragging && e.touches.length === 1) {
+            panX = startPanX + (e.touches[0].clientX - dragStartX);
+            panY = startPanY + (e.touches[0].clientY - dragStartY);
+            applyTransform();
+        }
+    }, { passive: false });
+
+    mediaArea.addEventListener('touchend', function() { isDragging = false; });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (singleItem) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            showItem((currentIdx + 1) % ITEMS.length, true);
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            showItem((currentIdx - 1 + ITEMS.length) % ITEMS.length, true);
+        }
+    });
+
+    window.addEventListener('resize', function() {
+        if (psvViewer && typeof psvViewer.resize === 'function') psvViewer.resize();
+        applyMobileDefaultPanelState();
+    });
+
+    window.addEventListener('beforeunload', destroyPsvViewer);
+    syncAutoRotateToggleUi();
+})();
+</script>
+</body>
+</html>

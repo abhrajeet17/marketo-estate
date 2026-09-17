@@ -1,0 +1,159 @@
+{% set page_title = 'Invites - MarketoState' %}
+{% set active_nav = 'invites' %}
+{% set use_marketostate_brand_theme = true %}
+{% set portal_extra_css = '/static/css/customer_dashboard_portal.css?v=20260623-1' %}
+{% include 'components/portal_shell_start.html' %}
+
+<div class="dashboard-page max-w-7xl mx-auto space-y-6">
+  <div class="dash-card p-5">
+    <h2 class="text-xl font-bold text-ms-primary mb-1">Invites</h2>
+    <p class="text-gray-500 mb-0">Review client invites and join the teams you want to work with.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="crm-invite-list"></div>
+
+  <div class="dash-card p-8 text-center" id="crm-invite-empty" style="display:none;">
+    <div class="dash-kpi-icon secondary mx-auto mb-4">
+      <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+    </div>
+    <h3 class="font-semibold mb-1">No pending invites</h3>
+    <p class="text-gray-500 mb-4">When a client invites you, it will show up here.</p>
+    <a href="/customer-dashboard" class="py-2 px-3 inline-flex text-sm font-medium rounded-lg border border-ms-primary text-ms-primary hover:bg-orange-50">Back to Dashboard</a>
+  </div>
+</div>
+
+{% include 'components/portal_shell_end.html' %}
+<script>
+  window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+  window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+</script>
+<script>
+(function () {
+  var url = window.__SUPABASE_URL__;
+  var key = window.__SUPABASE_ANON_KEY__;
+  if (!url || !key || !window.supabase) {
+    window.location.replace('/login');
+    return;
+  }
+  if (!window._supabase) {
+    window._supabase = window.supabase.createClient(url, key);
+  }
+
+  function waitForAuthSession(maxAttempts, delayMs) {
+    var sb = window._supabase;
+    var remaining = Number(maxAttempts || 0);
+    function step() {
+      return sb.auth.getSession().then(function (r) {
+        var session = (r && r.data && r.data.session) ? r.data.session : null;
+        if (session || remaining <= 0) return session;
+        remaining -= 1;
+        return new Promise(function (resolve) { setTimeout(resolve, Number(delayMs || 220)); }).then(step);
+      });
+    }
+    return step();
+  }
+
+  function api(path, opts) {
+    return waitForAuthSession(12, 220).then(function (session) {
+      if (!session || !session.access_token) throw new Error('Not authenticated');
+      var headers = { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' };
+      var merged = Object.assign({ headers: headers }, opts || {});
+      merged.headers = Object.assign({}, headers, (opts && opts.headers) || {});
+      return fetch(path, merged);
+    });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function initials(name) {
+    var text = String(name || '').trim();
+    if (!text) return '--';
+    var parts = text.split(/\s+/).filter(Boolean);
+    return (((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || (parts[0] || '')[1] || '')).toUpperCase();
+  }
+
+  function showToast(message, type) {
+    if (window.showToast) { window.showToast(message, type); return; }
+    if (type === 'error') console.error(message);
+    else console.log(message);
+  }
+
+  function renderInvites(items) {
+    var list = document.getElementById('crm-invite-list');
+    var empty = document.getElementById('crm-invite-empty');
+    if (!list || !empty) return;
+    if (!items || !items.length) {
+      list.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = items.map(function (inv) {
+      var clientName = inv.client_name || 'Client Group';
+      var inviter = inv.inviter_name ? ('Invited by ' + inv.inviter_name) : 'Pending invitation';
+      return '<div class="dash-card p-5 broker-invite-card h-full" data-invite-id="' + esc(inv.id) + '" data-token="' + esc(inv.invite_token || '') + '">' +
+        '<div class="flex items-center gap-3 mb-4">' +
+          '<span class="dash-avatar">' + esc(initials(clientName)) + '</span>' +
+          '<div><h4 class="font-semibold">' + esc(clientName) + '</h4><p class="text-sm text-gray-500">' + esc(inviter) + '</p></div>' +
+        '</div>' +
+        '<span class="dash-badge mb-4">Broker</span>' +
+        '<div class="flex gap-2">' +
+          '<button class="flex-1 py-2 px-3 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50" type="button" data-invite-action="reject">Reject</button>' +
+          '<button class="flex-1 py-2 px-3 text-sm font-semibold rounded-lg bg-ms-primary text-white hover:bg-ms-primary-dark" type="button" data-invite-action="accept">Accept</button>' +
+        '</div></div>';
+    }).join('');
+    list.querySelectorAll('[data-invite-action]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var card = btn.closest('.broker-invite-card');
+        var action = btn.getAttribute('data-invite-action');
+        if (!card || !action) return;
+        var inviteId = card.getAttribute('data-invite-id');
+        var token = card.getAttribute('data-token');
+        btn.disabled = true;
+        var request = action === 'accept'
+          ? api('/api/client-team-invites/accept', { method: 'POST', body: JSON.stringify({ invite_token: token }) })
+          : api('/api/client-team-invites/' + encodeURIComponent(inviteId) + '/reject', { method: 'POST' });
+        request.then(function (response) {
+          return response.json().catch(function () { return {}; }).then(function (data) {
+            if (!response.ok) throw new Error(data.error || 'Invite update failed');
+            showToast(action === 'accept' ? 'Invite accepted.' : 'Invite rejected.', 'success');
+            return loadInvites();
+          });
+        }).catch(function (e) {
+          showToast((e && e.message) ? e.message : 'Invite update failed', 'error');
+        }).finally(function () { btn.disabled = false; });
+      });
+    });
+  }
+
+  function loadInvites() {
+    return api('/api/client-team-invites/mine').then(function (response) {
+      return response.json().catch(function () { return []; }).then(function (data) {
+        if (!response.ok) throw new Error((data && data.error) || 'Failed to load invites');
+        renderInvites(Array.isArray(data) ? data : []);
+      });
+    }).catch(function (e) {
+      renderInvites([]);
+      showToast((e && e.message) ? e.message : 'Failed to load invites', 'error');
+    });
+  }
+
+  api('/api/crm/me').then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) throw new Error((data && data.error) || 'Failed to load profile');
+      var isBrokerUser = !!(data && (data.is_broker || String(data.role || '') === 'broker'));
+      try { window.localStorage.setItem('portal_is_broker', isBrokerUser ? '1' : '0'); } catch (e) {}
+      if (!isBrokerUser) {
+        window.location.replace('/crm');
+        return;
+      }
+      if (typeof window.configurePortalShell === 'function') {
+        window.configurePortalShell(data, true, false, false);
+      }
+      return loadInvites();
+    });
+  }).catch(function () { window.location.replace('/login'); });
+})();
+</script>

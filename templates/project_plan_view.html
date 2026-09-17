@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ plan.name or 'Project Plan' }} – MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/project_plan_view.css">
+</head>
+<body>
+<div class="ppv-page" id="ppv-page">
+    <!-- Full-screen image area -->
+    <div class="ppv-container" id="ppv-container">
+        <div class="ppv-image-wrap" id="ppv-image-wrap">
+            <img class="ppv-image" id="ppv-image" src="" alt="" draggable="false">
+            <canvas class="ppv-canvas" id="ppv-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Zoom controls (top-right) -->
+    <div class="ppv-zoom-controls">
+        <button class="ppv-zoom-btn" id="ppv-zoom-in" title="Zoom in">+</button>
+        <button class="ppv-zoom-btn" id="ppv-zoom-out" title="Zoom out">&minus;</button>
+        <button class="ppv-zoom-btn" id="ppv-zoom-reset" title="Reset" style="font-size:0.72rem;">&#8634;</button>
+    </div>
+
+    {% if buildings|length > 1 %}
+    <!-- Buildings panel (bottom-left, floating, movable, collapsable) -->
+    <div class="ppv-floating-panel ppv-buildings-panel" id="ppv-buildings-panel">
+        <div class="ppv-panel-header" id="ppv-buildings-header">
+            <span class="ppv-panel-title">Buildings</span>
+            <button class="ppv-panel-toggle" id="ppv-buildings-toggle">&minus;</button>
+        </div>
+        <div class="ppv-panel-body" id="ppv-buildings-list"></div>
+    </div>
+    {% endif %}
+
+    <!-- Floors panel (right, thin, floating, movable, collapsable) -->
+    <div class="ppv-floating-panel ppv-floors-panel" id="ppv-floors-panel">
+        <div class="ppv-panel-header" id="ppv-floors-header">
+            <span class="ppv-panel-title">Floors</span>
+            <button class="ppv-panel-toggle" id="ppv-floors-toggle">&minus;</button>
+        </div>
+        <div class="ppv-panel-body" id="ppv-floors-list"></div>
+    </div>
+
+    <!-- Floor plan modal -->
+    <div class="ppv-fp-modal-backdrop" id="ppv-fp-modal">
+        <div class="ppv-fp-modal">
+            <div class="ppv-fp-modal-header">
+                <h3 class="ppv-fp-modal-title" id="ppv-fp-modal-title">Floor Plan</h3>
+                <button class="ppv-fp-modal-close" id="ppv-fp-modal-close">&times;</button>
+            </div>
+            <div class="ppv-fp-modal-body">
+                <img class="ppv-fp-modal-img" id="ppv-fp-modal-img" src="" alt="Floor Plan">
+            </div>
+        </div>
+    </div>
+
+    <!-- Watermark -->
+    <div class="ppv-watermark">MarketoState</div>
+</div>
+
+<script>
+(function() {
+    // ── Data from server ──
+    var INITIAL_STYLE = {{ (fv_style or {}) | tojson }};
+    var DEFAULT_STYLE = {
+        modal_padding_pct: 100
+    };
+    var BUILDINGS = {{ buildings|tojson }};
+    var currentBuildingIndex = 0;
+
+    function clampInt(value, min, max, fallback) {
+        var n = parseInt(value, 10);
+        if (Number.isNaN(n)) return fallback;
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+    }
+
+    function currentStyleMode(mode) {
+        var explicit = String(mode || '').trim().toLowerCase();
+        if (explicit === 'mobile' || explicit === 'desktop') return explicit;
+        try {
+            var preview = new URL(window.location.href).searchParams.get('preview');
+            if (String(preview || '').toLowerCase() === 'mobile') return 'mobile';
+        } catch (e) { }
+        try {
+            if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return 'mobile';
+        } catch (e) { }
+        return 'desktop';
+    }
+
+    function styleForMode(raw, mode) {
+        var style = raw && typeof raw === 'object' ? raw : {};
+        var key = currentStyleMode(mode);
+        if (style[key] && typeof style[key] === 'object') return style[key];
+        return style;
+    }
+
+    function normalizeStyle(raw, mode) {
+        var style = styleForMode(raw, mode);
+        return {
+            modal_padding_pct: clampInt(style.modal_padding_pct, 60, 160, DEFAULT_STYLE.modal_padding_pct)
+        };
+    }
+
+    function setCssVar(name, value) {
+        document.documentElement.style.setProperty(name, value);
+    }
+
+    function applyStyle(raw, mode) {
+        var s = normalizeStyle(raw, mode);
+        setCssVar('--fv-modal-padding-scale', String(s.modal_padding_pct / 100));
+    }
+
+    applyStyle(INITIAL_STYLE);
+
+    window.addEventListener('message', function (evt) {
+        if (evt.origin !== window.location.origin) return;
+        var data = evt.data || {};
+        if (data.type === 'fv-style-preview' && data.style && typeof data.style === 'object') {
+            applyStyle(data.style, data.mode);
+        }
+    });
+
+    // Parse zone points
+    BUILDINGS.forEach(function(bm) {
+        (bm.zones || []).forEach(function(z) {
+            if (typeof z.points === 'string') z.points = JSON.parse(z.points);
+        });
+    });
+
+    // ── Preload all images (building images + floor plan images) ──
+    (function preload() {
+        var seen = {};
+        BUILDINGS.forEach(function(bm) {
+            // Preload building image
+            if (bm.image_url && !seen[bm.image_url]) {
+                seen[bm.image_url] = true;
+                new Image().src = bm.image_url;
+            }
+            // Preload linked floor plan images
+            (bm.zones || []).forEach(function(z) {
+                var url = z.linked_floor_plan_image_url;
+                if (url && !seen[url]) {
+                    seen[url] = true;
+                    new Image().src = url;
+                }
+            });
+        });
+    })();
+
+    // ── Color map ──
+    var COLOR_MAP = {
+        green:  { stroke: 'rgba(34,197,94,0.6)',  fill: 'rgba(34,197,94,0.10)',  fillHover: 'rgba(34,197,94,0.25)' },
+        orange: { stroke: 'rgba(249,115,22,0.6)', fill: 'rgba(249,115,22,0.10)', fillHover: 'rgba(249,115,22,0.25)' },
+        red:    { stroke: 'rgba(239,68,68,0.6)',  fill: 'rgba(239,68,68,0.10)',  fillHover: 'rgba(239,68,68,0.25)' },
+        blue:   { stroke: 'rgba(59,130,246,0.6)', fill: 'rgba(59,130,246,0.10)', fillHover: 'rgba(59,130,246,0.25)' },
+        purple: { stroke: 'rgba(168,85,247,0.6)', fill: 'rgba(168,85,247,0.10)', fillHover: 'rgba(168,85,247,0.25)' }
+    };
+
+    // ── DOM refs ──
+    var container = document.getElementById('ppv-container');
+    var imageWrap = document.getElementById('ppv-image-wrap');
+    var imgEl = document.getElementById('ppv-image');
+    var canvas = document.getElementById('ppv-canvas');
+    var ctx = canvas.getContext('2d');
+    var floorsList = document.getElementById('ppv-floors-list');
+
+    var imgNatW = 0, imgNatH = 0;
+    var scale = 1, panX = 0, panY = 0;
+    var isDragging = false, dragStartX, dragStartY, startPanX, startPanY;
+    var highlightedFloor = null;
+    var highlightedZoneId = null;
+
+    // ── Current building helpers ──
+    function currentBuilding() { return BUILDINGS[currentBuildingIndex] || null; }
+    function currentZones() { return (currentBuilding() || {}).zones || []; }
+
+    // ── Init ──
+    imgEl.onload = function() {
+        imgNatW = imgEl.naturalWidth;
+        imgNatH = imgEl.naturalHeight;
+        canvas.width = imgNatW;
+        canvas.height = imgNatH;
+        resetTransform();
+        buildFloorsList();
+        renderZones();
+    };
+
+    // Load first building
+    function loadBuilding(index) {
+        if (index < 0 || index >= BUILDINGS.length) return;
+        currentBuildingIndex = index;
+        var bm = currentBuilding();
+        if (!bm) return;
+        imgEl.src = bm.image_url || '';
+        highlightedFloor = null;
+        highlightedZoneId = null;
+        updateBuildingsList();
+        // imgEl.onload will handle the rest
+    }
+
+    // ── Buildings list ──
+    function buildBuildingsList() {
+        var listEl = document.getElementById('ppv-buildings-list');
+        if (!listEl || BUILDINGS.length <= 1) return;
+        updateBuildingsList();
+    }
+
+    function updateBuildingsList() {
+        var listEl = document.getElementById('ppv-buildings-list');
+        if (!listEl) return;
+        listEl.innerHTML = BUILDINGS.map(function(bm, idx) {
+            var imgUrl = bm.image_url || '';
+            return '<button class="ppv-building-btn' + (idx === currentBuildingIndex ? ' active' : '') + '" data-idx="' + idx + '">' +
+                (imgUrl ? '<img src="' + imgUrl + '" alt="" class="ppv-building-thumb">' : '') +
+                '<span class="ppv-building-name">' + (bm.name || 'Building') + '</span>' +
+            '</button>';
+        }).join('');
+
+        listEl.querySelectorAll('.ppv-building-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                loadBuilding(parseInt(btn.dataset.idx));
+            });
+        });
+    }
+
+    // ── Floors list ──
+    function buildFloorsList() {
+        var zones = currentZones();
+        var floors = [];
+        zones.forEach(function(z) {
+            var f = z.floor_number || 0;
+            if (floors.indexOf(f) === -1) floors.push(f);
+        });
+        floors.sort(function(a, b) { return b - a; });
+
+        floorsList.innerHTML = floors.map(function(f) {
+            var zoneCount = zones.filter(function(z) { return z.floor_number === f; }).length;
+            return '<button class="ppv-floor-btn" data-floor="' + f + '">' +
+                '<span class="ppv-floor-num">F' + f + '</span>' +
+                '<span class="ppv-floor-count">' + zoneCount + '</span>' +
+            '</button>';
+        }).join('');
+
+        floorsList.querySelectorAll('.ppv-floor-btn').forEach(function(btn) {
+            btn.addEventListener('mouseenter', function() {
+                highlightedFloor = parseInt(btn.dataset.floor);
+                highlightedZoneId = null;
+                renderZones();
+                btn.classList.add('hover');
+            });
+            btn.addEventListener('mouseleave', function() {
+                highlightedFloor = null;
+                renderZones();
+                btn.classList.remove('hover');
+            });
+            btn.addEventListener('click', function() {
+                highlightedFloor = parseInt(btn.dataset.floor);
+                highlightedZoneId = null;
+                renderZones();
+                floorsList.querySelectorAll('.ppv-floor-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+            });
+        });
+    }
+
+    // ── Render zones ──
+    // Zones are hidden by default; only shown on floor hover/click or zone hover
+    function renderZones() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (highlightedFloor === null && highlightedZoneId === null) return;
+
+        var zones = currentZones();
+
+        // Pass 1: fills only
+        zones.forEach(function(z) {
+            var pts = z.points;
+            if (!pts || pts.length < 3) return;
+            var isVisible = (highlightedFloor !== null && z.floor_number === highlightedFloor) ||
+                            (highlightedZoneId !== null && z.id === highlightedZoneId);
+            if (!isVisible) return;
+            var c = COLOR_MAP[z.color] || COLOR_MAP.green;
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.closePath();
+            ctx.fillStyle = c.fillHover;
+            ctx.fill();
+        });
+
+        // Pass 2: thin strokes
+        zones.forEach(function(z) {
+            var pts = z.points;
+            if (!pts || pts.length < 3) return;
+            var isVisible = (highlightedFloor !== null && z.floor_number === highlightedFloor) ||
+                            (highlightedZoneId !== null && z.id === highlightedZoneId);
+            if (!isVisible) return;
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.closePath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        });
+
+        // Pass 3: labels
+        zones.forEach(function(z) {
+            var pts = z.points;
+            if (!pts || pts.length < 3) return;
+            var isVisible = (highlightedFloor !== null && z.floor_number === highlightedFloor) ||
+                            (highlightedZoneId !== null && z.id === highlightedZoneId);
+            if (!isVisible) return;
+            var cx = 0, cy = 0;
+            pts.forEach(function(p) { cx += p.x; cy += p.y; });
+            cx /= pts.length; cy /= pts.length;
+            ctx.font = 'bold 13px Syne, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(z.name, cx, cy);
+            ctx.fillText(z.name, cx, cy);
+        });
+    }
+
+    // ── Zoom & Pan ──
+    function resetTransform() {
+        if (!imgNatW || !imgNatH) return;
+        var cw = container.clientWidth;
+        var ch = container.clientHeight;
+        scale = Math.min(cw / imgNatW, ch / imgNatH, 1);
+        panX = (cw - imgNatW * scale) / 2;
+        panY = (ch - imgNatH * scale) / 2;
+        applyTransform();
+    }
+
+    function applyTransform() {
+        imageWrap.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+    }
+
+    document.getElementById('ppv-zoom-in').addEventListener('click', function() {
+        scale = Math.min(scale * 1.3, 5); applyTransform();
+    });
+    document.getElementById('ppv-zoom-out').addEventListener('click', function() {
+        scale = Math.max(scale / 1.3, 0.1); applyTransform();
+    });
+    document.getElementById('ppv-zoom-reset').addEventListener('click', resetTransform);
+
+    container.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var factor = e.deltaY > 0 ? 0.9 : 1.1;
+        var rect = container.getBoundingClientRect();
+        var mx = e.clientX - rect.left;
+        var my = e.clientY - rect.top;
+        var newScale = Math.max(0.1, Math.min(5, scale * factor));
+        panX = mx - (mx - panX) * (newScale / scale);
+        panY = my - (my - panY) * (newScale / scale);
+        scale = newScale;
+        applyTransform();
+    }, { passive: false });
+
+    container.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        dragStartX = e.clientX; dragStartY = e.clientY;
+        startPanX = panX; startPanY = panY;
+        container.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        panX = startPanX + (e.clientX - dragStartX);
+        panY = startPanY + (e.clientY - dragStartY);
+        applyTransform();
+    });
+    window.addEventListener('mouseup', function() {
+        if (isDragging) { isDragging = false; container.style.cursor = ''; }
+    });
+
+    // Touch
+    var touchStartDist = 0, touchStartScale = 1;
+    container.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            touchStartScale = scale;
+        } else if (e.touches.length === 1) {
+            isDragging = true;
+            dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
+            startPanX = panX; startPanY = panY;
+        }
+    }, { passive: true });
+    container.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            scale = Math.max(0.1, Math.min(5, touchStartScale * (dist / touchStartDist)));
+            applyTransform();
+        } else if (isDragging && e.touches.length === 1) {
+            panX = startPanX + (e.touches[0].clientX - dragStartX);
+            panY = startPanY + (e.touches[0].clientY - dragStartY);
+            applyTransform();
+        }
+    }, { passive: false });
+    container.addEventListener('touchend', function() { isDragging = false; });
+
+    // ── Coordinate conversion ──
+    function clientToImageCoords(clientX, clientY) {
+        var rect = container.getBoundingClientRect();
+        return {
+            x: (clientX - rect.left - panX) / scale,
+            y: (clientY - rect.top - panY) / scale
+        };
+    }
+
+    function pointInPolygon(point, polygon) {
+        var x = point.x, y = point.y, inside = false;
+        for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            var xi = polygon[i].x, yi = polygon[i].y;
+            var xj = polygon[j].x, yj = polygon[j].y;
+            var intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // ── Hover highlight ──
+    container.addEventListener('mousemove', function(e) {
+        if (isDragging) return;
+        var coords = clientToImageCoords(e.clientX, e.clientY);
+        var zones = currentZones();
+        var found = null;
+        for (var i = zones.length - 1; i >= 0; i--) {
+            if (zones[i].points && zones[i].points.length >= 3 && pointInPolygon(coords, zones[i].points)) {
+                found = zones[i];
+                break;
+            }
+        }
+        if (found) {
+            highlightedZoneId = found.id;
+            highlightedFloor = null;
+            container.style.cursor = 'pointer';
+        } else {
+            if (highlightedZoneId !== null) {
+                highlightedZoneId = null;
+                container.style.cursor = 'grab';
+            }
+        }
+        renderZones();
+    });
+
+    // ── Click on zone ──
+    container.addEventListener('click', function(e) {
+        if (isDragging) return;
+        var coords = clientToImageCoords(e.clientX, e.clientY);
+        var zones = currentZones();
+        for (var i = zones.length - 1; i >= 0; i--) {
+            var z = zones[i];
+            if (z.points && z.points.length >= 3 && pointInPolygon(coords, z.points)) {
+                handleZoneClick(z);
+                return;
+            }
+        }
+    });
+
+    function handleZoneClick(zone) {
+        if (zone.linked_panorama_id) {
+            window.location.href = '/customer/' + zone.linked_panorama_id;
+        } else if (zone.linked_floor_plan_image_url) {
+            showFloorPlanModal(zone.linked_floor_plan_name || zone.name, zone.linked_floor_plan_image_url);
+        }
+    }
+
+    // ── Floor plan modal ──
+    function showFloorPlanModal(title, imgUrl) {
+        document.getElementById('ppv-fp-modal-title').textContent = title;
+        document.getElementById('ppv-fp-modal-img').src = imgUrl;
+        document.getElementById('ppv-fp-modal').classList.add('visible');
+    }
+
+    document.getElementById('ppv-fp-modal-close').addEventListener('click', function() {
+        document.getElementById('ppv-fp-modal').classList.remove('visible');
+    });
+    document.getElementById('ppv-fp-modal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('visible');
+    });
+
+    // ── Draggable panels ──
+    function makeDraggable(panelEl, headerEl) {
+        var dragging = false, startX, startY, startLeft, startTop;
+
+        headerEl.addEventListener('pointerdown', function(e) {
+            if (e.target.closest('.ppv-panel-toggle')) return;
+            dragging = true;
+            var rect = panelEl.getBoundingClientRect();
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = rect.left;
+            startTop = rect.top;
+            panelEl.style.transition = 'none';
+            e.preventDefault();
+        });
+
+        window.addEventListener('pointermove', function(e) {
+            if (!dragging) return;
+            var dx = e.clientX - startX;
+            var dy = e.clientY - startY;
+            var newLeft = startLeft + dx;
+            var newTop = startTop + dy;
+            // Clamp to viewport
+            newLeft = Math.max(0, Math.min(window.innerWidth - panelEl.offsetWidth, newLeft));
+            newTop = Math.max(0, Math.min(window.innerHeight - panelEl.offsetHeight, newTop));
+            panelEl.style.left = newLeft + 'px';
+            panelEl.style.top = newTop + 'px';
+            panelEl.style.right = 'auto';
+            panelEl.style.bottom = 'auto';
+            panelEl.style.transform = 'none';
+        });
+
+        window.addEventListener('pointerup', function() {
+            if (dragging) {
+                dragging = false;
+                panelEl.style.transition = '';
+            }
+        });
+    }
+
+    // ── Collapsible panels ──
+    function makeCollapsible(panelEl, toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            panelEl.classList.toggle('collapsed');
+            toggleBtn.textContent = panelEl.classList.contains('collapsed') ? '+' : '\u2212';
+        });
+    }
+
+    // Setup buildings panel
+    var buildingsPanel = document.getElementById('ppv-buildings-panel');
+    var buildingsHeader = document.getElementById('ppv-buildings-header');
+    var buildingsToggle = document.getElementById('ppv-buildings-toggle');
+    if (buildingsPanel && buildingsHeader) {
+        makeDraggable(buildingsPanel, buildingsHeader);
+        makeCollapsible(buildingsPanel, buildingsToggle);
+        // Collapse by default on mobile
+        if (window.innerWidth <= 768) {
+            buildingsPanel.classList.add('collapsed');
+            buildingsToggle.textContent = '+';
+        }
+    }
+
+    // Setup floors panel
+    var floorsPanel = document.getElementById('ppv-floors-panel');
+    var floorsHeader = document.getElementById('ppv-floors-header');
+    var floorsToggle = document.getElementById('ppv-floors-toggle');
+    if (floorsPanel && floorsHeader) {
+        makeDraggable(floorsPanel, floorsHeader);
+        makeCollapsible(floorsPanel, floorsToggle);
+    }
+
+    // ── Window resize ──
+    window.addEventListener('resize', resetTransform);
+
+    // ── Boot ──
+    buildBuildingsList();
+    if (BUILDINGS.length > 0) {
+        loadBuilding(0);
+    }
+})();
+</script>
+</body>
+</html>

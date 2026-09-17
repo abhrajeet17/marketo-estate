@@ -1,0 +1,22 @@
+<div class="dashboard-plot-search-wrap max-w-md w-full" id="dashboard-search-wrap">
+  <div class="relative">
+    <div class="absolute inset-y-0 start-0 flex items-center pointer-events-none ps-3">
+      <svg class="size-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </div>
+    <input
+      type="search"
+      class="py-2 ps-10 pe-3 block w-full border border-gray-200 rounded-lg text-sm focus:border-ms-primary focus:ring-ms-primary"
+      placeholder="Search plots..."
+      aria-label="Search plots..."
+      id="navbar-client-search"
+      autocomplete="off"
+      aria-autocomplete="list"
+      aria-controls="navbar-plot-search-list"
+      aria-expanded="false"
+    />
+    <div class="dashboard-plot-search-dropdown" id="navbar-plot-search-dropdown" hidden>
+      <div class="dashboard-plot-search-list" id="navbar-plot-search-list" role="listbox"></div>
+      <div class="dashboard-plot-search-empty p-3 text-sm text-gray-500" id="navbar-plot-search-empty" hidden>No plots found</div>
+    </div>
+  </div>
+</div>

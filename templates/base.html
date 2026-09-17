@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MarketoState{% endblock %}</title>
+    <link rel="icon" href="/static/Marketostate/Marketostate%20Favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/components/buttons.css">
+    <link rel="stylesheet" href="/static/css/components/cards.css">
+    <link rel="stylesheet" href="/static/css/components/tables.css?v=20260622-1">
+    <link rel="stylesheet" href="/static/css/components/modals.css">
+    <link rel="stylesheet" href="/static/css/components/forms.css">
+    <link rel="stylesheet" href="/static/css/components/layout.css">
+    {% block head_css %}{% endblock %}
+</head>
+<body>
+    {% block header %}{% endblock %}
+    {% block nav %}{% endblock %}
+    <main id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="/static/js/supabase.min.js"></script>
+    {% block body_scripts %}{% endblock %}
+    {% block scripts %}{% endblock %}
+    <script>
+      window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || {{ (supabase_url|default(''))|tojson }};
+      window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || {{ (supabase_anon_key|default(''))|tojson }};
+    </script>
+    <script src="/static/js/broker-guard.js"></script>
+</body>
+</html>

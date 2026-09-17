@@ -1,0 +1,81 @@
+/**
+ * Unified theme – minimal, modern presentation style.
+ * Palette: off-white bg, dark text, soft beige accent.
+ * Typography: Syne (bold display + regular body).
+ */
+
+:root {
+    --color-bg: #f5f5f0;
+    --color-text: #162338;
+    --color-text-dim: #4a5568;
+    --color-accent: #e8e8e3;
+    --color-accent-strong: #dfdcd7;
+    --color-surface: #e8e8e3;
+    --color-surface-strong: #eeedeb;
+    --color-muted: #6b7280;
+    --color-available: #22c55e;
+    --color-hold: #f97316;
+    --color-sold: #ef4444;
+    --color-danger: #ef4444;
+    --color-success: #22c55e;
+    --color-border: rgba(22, 35, 56, 0.08);
+    --color-accent-hover: #dddcd8;
+    --color-bg-card: var(--color-surface-strong);
+    --color-bg-elevated: #fafaf8;
+    --color-brand-pill-bg: #162338;
+    --color-brand-pill-text: #fff;
+    /* Aliases for CRM and other pages */
+    --bg: var(--color-bg);
+    --text: var(--color-text);
+    --muted: var(--color-muted);
+    --border: var(--color-border);
+    --accent: var(--color-accent-strong);
+    --bg-elev-1: rgba(22, 35, 56, 0.03);
+    --bg-elev-2: var(--color-surface-strong);
+    --shadow: 0 4px 24px rgba(22, 35, 56, 0.06);
+    --border-strong: rgba(22, 35, 56, 0.12);
+    --muted-2: rgba(22, 35, 56, 0.5);
+    --warning: #f59e0b;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Syne', sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --space-unit: 1rem;
+    --content-max-width: 1200px;
+    /* Marker / panel (3D – keep for viewer) */
+    --marker-size: 30px;
+    --marker-blur: 7px;
+    --marker-ring: rgba(255, 255, 255, 0.92);
+    --marker-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    --marker-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    --marker-available-rgb: 132, 146, 166;
+    --marker-sold-rgb: 132, 146, 166;
+    --marker-reserved-rgb: 132, 146, 166;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+::selection {
+    background-color: #162338;
+    color: #fff;
+}
+
+::-moz-selection {
+    background-color: #162338;
+    color: #fff;
+}
+
+html,
+body {
+    min-height: 100vh;
+    font-family: var(--font-body);
+    font-weight: 400;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,448 @@
+/* Building Map – Customer View */
+
+html, body { height: 100%; overflow: hidden; touch-action: none; margin: 0; padding: 0; }
+
+.bmv-page { position: relative; width: 100vw; height: 100vh; background: var(--color-bg); }
+
+/* Container */
+.bmv-container {
+    position: fixed; inset: 0;
+    overflow: hidden;
+    cursor: grab;
+    background: var(--color-bg);
+}
+
+.bmv-image-wrap {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+.bmv-image {
+    display: block;
+    max-width: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+.bmv-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+}
+
+/* Zoom controls */
+.bmv-zoom-controls {
+    position: fixed;
+    top: 1.25rem; right: 1.5rem;
+    display: flex; flex-direction: column; gap: 0.35rem;
+    pointer-events: auto;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    padding: 0.5rem; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(22,35,56,0.08);
+    z-index: 15;
+}
+
+.bmv-zoom-btn {
+    width: 34px; height: 34px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(22,35,56,0.08);
+    color: #162338; font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s; border-radius: 8px;
+}
+.bmv-zoom-btn:hover {
+    background: rgba(255,255,255,0.9);
+    border-color: rgba(22,35,56,0.15);
+}
+
+/* Floors panel (right side, tall floating) */
+.bmv-floors-panel {
+    position: fixed;
+    top: 50%;
+    right: 1.5rem;
+    transform: translateY(-50%);
+    width: 180px;
+    max-height: calc(100vh - 6rem);
+    z-index: 20;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(22,35,56,0.1);
+    overflow: hidden;
+    animation: bmv-panelIn 0.3s ease;
+    transition: opacity 0.25s, transform 0.25s;
+}
+
+@keyframes bmv-panelIn {
+    from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+.bmv-floors-panel.collapsed {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) translateX(20px);
+}
+
+.bmv-floors-panel.collapsed .bmv-floors-expand {
+    position: fixed;
+    top: 50%;
+    right: 1.5rem;
+    transform: translateY(-50%);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.bmv-floors-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(22,35,56,0.08);
+    flex-shrink: 0;
+}
+
+.bmv-floors-title {
+    flex: 1;
+    font-size: 0.85rem; font-weight: 700;
+    color: #162338;
+    letter-spacing: 0.02em;
+}
+
+.bmv-floors-collapse {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(22,35,56,0.08);
+    color: #162338; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+}
+.bmv-floors-collapse:hover { background: rgba(255,255,255,0.9); }
+
+.bmv-floors-list {
+    flex: 1; overflow-y: auto; padding: 0.5rem;
+    display: flex; flex-direction: column; gap: 0.25rem;
+}
+.bmv-floors-list::-webkit-scrollbar { width: 4px; }
+.bmv-floors-list::-webkit-scrollbar-track { background: transparent; }
+.bmv-floors-list::-webkit-scrollbar-thumb { background: rgba(22,35,56,0.15); border-radius: 2px; }
+
+.bmv-floor-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.82rem; font-weight: 600;
+    color: #162338;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+}
+
+.bmv-floor-btn:hover,
+.bmv-floor-btn.hover {
+    background: rgba(34,197,94,0.12);
+    border-color: rgba(34,197,94,0.25);
+}
+
+.bmv-floor-btn.active {
+    background: rgba(34,197,94,0.18);
+    border-color: rgba(34,197,94,0.35);
+}
+
+.bmv-floor-num {
+    font-weight: 700;
+}
+
+.bmv-floor-count {
+    font-size: 0.68rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.bmv-floors-expand {
+    display: none;
+    padding: 0.6rem 1rem;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(22,35,56,0.08);
+    font-family: var(--font-body);
+    font-size: 0.82rem; font-weight: 600;
+    color: #162338; cursor: pointer;
+    align-items: center; gap: 0.5rem;
+    transition: background 0.2s;
+}
+.bmv-floors-expand:hover { background: rgba(255,255,255,0.9); }
+
+.bmv-floors-panel.collapsed .bmv-floors-header,
+.bmv-floors-panel.collapsed .bmv-floors-list {
+    display: none;
+}
+.bmv-floors-panel.collapsed ~ .bmv-floors-expand-outer,
+.bmv-floors-panel.collapsed .bmv-floors-expand {
+    display: flex;
+}
+
+/* Building selector (bottom-right) */
+.bmv-building-selector {
+    position: fixed;
+    bottom: 1.5rem; right: 1.5rem;
+    z-index: 25;
+    pointer-events: auto;
+}
+
+.bmv-building-trigger {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(22,35,56,0.08);
+    font-family: var(--font-body);
+    font-size: 0.82rem; font-weight: 600;
+    color: #162338; cursor: pointer;
+    transition: background 0.2s;
+}
+.bmv-building-trigger:hover { background: rgba(255,255,255,0.9); }
+
+.bmv-building-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    min-width: 200px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(22,35,56,0.12);
+    overflow: hidden;
+    animation: bmv-menuIn 0.18s ease;
+}
+.bmv-building-menu[hidden] { display: none; }
+@keyframes bmv-menuIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.bmv-building-item {
+    display: block;
+    padding: 0.6rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.82rem; font-weight: 500;
+    color: #162338;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+.bmv-building-item:hover { background: rgba(22,35,56,0.05); }
+.bmv-building-item.active { font-weight: 700; background: rgba(34,197,94,0.1); }
+
+/* Floor plan modal */
+.bmv-fp-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(22,35,56,0.45);
+    z-index: 1000;
+    display: none;
+    align-items: center; justify-content: center;
+}
+.bmv-fp-modal-backdrop.visible { display: flex; }
+
+.bmv-fp-modal {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(22,35,56,0.15);
+    width: 90vw; max-width: 900px;
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: bmv-modalIn 0.25s ease;
+}
+@keyframes bmv-modalIn {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.bmv-fp-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(22,35,56,0.08);
+}
+
+.bmv-fp-modal-title {
+    font-family: var(--font-display);
+    font-size: 1rem; font-weight: 700;
+    color: #162338;
+}
+
+.bmv-fp-modal-close {
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 8px;
+    font-size: 1.2rem; color: #6b7280;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s;
+}
+.bmv-fp-modal-close:hover { background: rgba(22,35,56,0.05); color: #162338; }
+
+.bmv-fp-modal-body {
+    flex: 1; overflow: auto;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    background: var(--color-bg);
+}
+
+.bmv-fp-modal-img {
+    max-width: 100%;
+    max-height: calc(90vh - 5rem);
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* Image toggle (bottom-left, above watermark) */
+.bmv-image-toggle {
+    position: fixed;
+    bottom: 2.5rem; left: 1rem;
+    z-index: 25;
+    pointer-events: auto;
+}
+
+.bmv-image-toggle-trigger {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.55rem 0.9rem;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(22,35,56,0.08);
+    font-family: var(--font-body);
+    font-size: 0.82rem; font-weight: 600;
+    color: #162338; cursor: pointer;
+    transition: background 0.2s;
+    max-width: 220px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bmv-image-toggle-trigger:hover { background: rgba(255,255,255,0.9); }
+
+.bmv-image-toggle-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    min-width: 220px;
+    max-width: 320px;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(22,35,56,0.08);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(22,35,56,0.12);
+    overflow: hidden;
+    animation: bmv-menuIn 0.18s ease;
+}
+.bmv-image-toggle-menu[hidden] { display: none; }
+
+.bmv-image-toggle-title {
+    font-size: 0.7rem; font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.6rem 0.85rem 0.3rem;
+}
+
+.bmv-image-toggle-list {
+    display: flex; flex-direction: column;
+    padding: 0.3rem 0.5rem 0.5rem;
+    gap: 0.2rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.bmv-image-toggle-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.8rem; font-weight: 500;
+    color: #162338;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+}
+.bmv-image-toggle-item:hover {
+    background: rgba(34,197,94,0.1);
+    border-color: rgba(34,197,94,0.2);
+}
+.bmv-image-toggle-item.active {
+    background: rgba(34,197,94,0.15);
+    border-color: rgba(34,197,94,0.3);
+    font-weight: 700;
+}
+
+.bmv-image-toggle-thumb {
+    width: 40px; height: 28px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid rgba(22,35,56,0.08);
+    flex-shrink: 0;
+}
+
+.bmv-image-toggle-name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Watermark */
+.bmv-watermark {
+    position: fixed;
+    bottom: 1rem; left: 1rem;
+    font-family: var(--font-display);
+    font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(22,35,56,0.2);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .bmv-floors-panel {
+        top: auto; bottom: 4rem; right: 0.75rem;
+        transform: none;
+        width: 160px;
+        max-height: 50vh;
+    }
+    @keyframes bmv-panelIn {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .bmv-floors-panel.collapsed {
+        transform: translateX(20px);
+    }
+    .bmv-zoom-controls { top: 0.75rem; right: 0.75rem; }
+    .bmv-building-selector { bottom: 0.75rem; right: 0.75rem; }
+}

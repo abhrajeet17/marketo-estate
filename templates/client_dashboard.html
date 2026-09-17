@@ -1,0 +1,451 @@
+{% extends 'base.html' %}
+{% block title %}My Projects – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<style>
+/* ── Client dashboard overrides ── */
+.cd-page {
+    min-height: 100vh;
+    background: var(--color-bg);
+    display: flex;
+}
+.cd-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-x: hidden;
+}
+.cd-topbar {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--color-bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.cd-topbar-title {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+.cd-topbar-sub {
+    font-size: 0.82rem;
+    color: var(--color-muted);
+    margin-top: 0.1rem;
+}
+.cd-content {
+    padding: 1.75rem 2rem;
+    flex: 1;
+}
+.cd-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+}
+.cd-search {
+    flex: 1;
+    max-width: 400px;
+    padding: 0.6rem 0.9rem 0.6rem 2.4rem;
+    background: var(--color-surface-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--color-text);
+    outline: none;
+}
+.cd-search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+.cd-search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-muted);
+    pointer-events: none;
+}
+/* Project sections */
+.cd-section {
+    margin-bottom: 2.5rem;
+}
+.cd-section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin-bottom: 1rem;
+}
+.cd-workspace-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.1rem;
+}
+.cd-workspace-meta {
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    margin-bottom: 0.85rem;
+}
+/* Project grid */
+.cd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.cd-card {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+.cd-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 4px 16px rgba(22,35,56,0.08);
+}
+.cd-card-thumb {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    background: var(--color-surface);
+    display: block;
+}
+.cd-card-thumb.loading-placeholder {
+    background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-strong) 50%, var(--color-surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.cd-card-body {
+    padding: 0.75rem;
+    flex: 1;
+}
+.cd-card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cd-card-meta {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.cd-access-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgba(100,160,255,0.12);
+    border: 1px solid rgba(100,160,255,0.25);
+    color: var(--color-text);
+}
+.cd-access-pill.viewer {
+    background: rgba(22,35,56,0.06);
+    border-color: rgba(22,35,56,0.12);
+}
+/* Empty / loading states */
+.cd-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+.cd-loading {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-muted);
+    font-size: 0.88rem;
+}
+/* Unfiled section */
+.cd-unfiled-label {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--color-muted);
+    margin-bottom: 0.75rem;
+}
+/* No projects at all */
+.cd-no-projects {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    color: var(--color-muted);
+    gap: 0.75rem;
+    text-align: center;
+}
+.cd-no-projects-icon {
+    font-size: 2.5rem;
+    opacity: 0.4;
+}
+.cd-no-projects-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+.cd-no-projects-sub {
+    font-size: 0.85rem;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="cd-page" id="cd-page">
+    {% set active_page = 'dashboard' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="cd-main">
+        <header class="cd-topbar">
+            <div>
+                <div class="cd-topbar-title" id="cd-org-name">My Projects</div>
+                <div class="cd-topbar-sub" id="cd-user-name"></div>
+            </div>
+        </header>
+
+        <main class="cd-content">
+            <div class="cd-search-row">
+                <div class="cd-search-wrap">
+                    <span class="cd-search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                    <input type="search" class="cd-search" id="cd-search" placeholder="Search projects..." autocomplete="off">
+                </div>
+            </div>
+
+            <div id="cd-sections">
+                <div class="cd-grid" style="margin-top:1rem;">
+                    <div class="cd-loading" id="cd-initial-loading">Loading your projects...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="/static/js/org_theme.js"></script>
+<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
+<script>
+(function () {
+    'use strict';
+
+    var supabase = window._supabase;
+    var projects = [];
+    var workspaces = [];
+
+    function getAuthHeaders() {
+        return supabase.auth.getSession().then(function (r) {
+            var h = {};
+            if (r.data.session && r.data.session.access_token)
+                h['Authorization'] = 'Bearer ' + r.data.session.access_token;
+            return h;
+        });
+    }
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, function (c) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c;
+        });
+    }
+
+    function openProject(id, is360, accessType) {
+        var base = (accessType === 'client') ? 'client' : 'customer';
+        var path = is360 ? ('/' + base + '/3d/' + id) : ('/' + base + '/' + id);
+        getAuthHeaders().then(function (h) {
+            var token = (h['Authorization'] || '').replace('Bearer ', '');
+            if (token) {
+                window.location.href = path + '?token=' + encodeURIComponent(token);
+            } else {
+                window.location.href = path;
+            }
+        });
+    }
+
+    function renderSections(query) {
+        var q = (query || '').trim().toLowerCase();
+        var sectionsEl = document.getElementById('cd-sections');
+
+        // Filter projects
+        var filtered = projects.filter(function (p) {
+            return !q || (p.name || '').toLowerCase().indexOf(q) !== -1;
+        });
+
+        if (!filtered.length) {
+            sectionsEl.innerHTML = '<div class="cd-no-projects">' +
+                '<div class="cd-no-projects-icon">📂</div>' +
+                '<div class="cd-no-projects-title">' + (q ? 'No matching projects' : 'No projects yet') + '</div>' +
+                '<div class="cd-no-projects-sub">' + (q ? 'Try a different search term.' : 'Ask your admin to grant you access to a project.') + '</div>' +
+                '</div>';
+            return;
+        }
+
+        // Group by workspace
+        var wsMap = {};
+        workspaces.forEach(function (ws) { wsMap[String(ws.id)] = ws; });
+
+        var groups = {}; // wsKey -> { ws, items }
+        var unfiledKey = '__unfiled__';
+
+        filtered.forEach(function (p) {
+            var wsId = p.workspace_id ? String(p.workspace_id) : null;
+            var key = wsId || unfiledKey;
+            if (!groups[key]) groups[key] = { ws: wsId ? wsMap[wsId] : null, items: [] };
+            groups[key].items.push(p);
+        });
+
+        // Sort groups: named workspaces first (alphabetically), then unfiled
+        var keys = Object.keys(groups).sort(function (a, b) {
+            if (a === unfiledKey) return 1;
+            if (b === unfiledKey) return -1;
+            var nameA = ((groups[a].ws && groups[a].ws.name) || '').toLowerCase();
+            var nameB = ((groups[b].ws && groups[b].ws.name) || '').toLowerCase();
+            return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+        });
+
+        var html = '';
+        keys.forEach(function (key) {
+            var group = groups[key];
+            var ws = group.ws;
+            html += '<div class="cd-section">';
+            if (key === unfiledKey) {
+                html += '<div class="cd-section-title">Unfiled Projects</div>';
+            } else {
+                html += '<div class="cd-workspace-name">' + escapeHtml((ws && ws.name) || 'Project') + '</div>';
+                var meta = [];
+                if (ws) {
+                    if (ws.builder_name) meta.push(escapeHtml(ws.builder_name));
+                    if (ws.location_city) meta.push(escapeHtml(ws.location_city));
+                    if (ws.project_type) meta.push(escapeHtml(ws.project_type));
+                }
+                if (meta.length) html += '<div class="cd-workspace-meta">' + meta.join(' · ') + '</div>';
+            }
+            html += '<div class="cd-grid">';
+            group.items.forEach(function (p) {
+                var at = p.access_type || 'viewer';
+                var pillClass = at === 'client' ? '' : ' viewer';
+                html += '<div class="cd-card" data-id="' + p.id + '" data-is360="' + (p.is_360 ? '1' : '0') + '" data-at="' + escapeHtml(at) + '">' +
+                    '<img class="cd-card-thumb loading-placeholder" data-src="/uploads/' + escapeHtml(p.filename || '') + '?size=thumb" alt="' + escapeHtml(p.name || '') + '">' +
+                    '<div class="cd-card-body">' +
+                        '<div class="cd-card-name">' + escapeHtml(p.name || 'Untitled') + '</div>' +
+                        '<div class="cd-card-meta">' +
+                            '<span class="cd-access-pill' + pillClass + '">' + escapeHtml(at) + '</span>' +
+                            (p.is_360 ? '<span>360°</span>' : '<span>Flat</span>') +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            });
+            html += '</div></div>';
+        });
+
+        sectionsEl.innerHTML = html;
+
+        // Lazy-load thumbnails
+        var imgs = sectionsEl.querySelectorAll('img[data-src]');
+        if ('IntersectionObserver' in window) {
+            var obs = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        var img = e.target;
+                        img.src = img.getAttribute('data-src');
+                        img.classList.remove('loading-placeholder');
+                        obs.unobserve(img);
+                    }
+                });
+            }, { rootMargin: '200px' });
+            imgs.forEach(function (img) { obs.observe(img); });
+        } else {
+            imgs.forEach(function (img) { img.src = img.getAttribute('data-src'); img.classList.remove('loading-placeholder'); });
+        }
+
+        // Click handlers
+        sectionsEl.querySelectorAll('.cd-card').forEach(function (card) {
+            card.addEventListener('click', function () {
+                openProject(card.getAttribute('data-id'), card.getAttribute('data-is360') === '1', card.getAttribute('data-at'));
+            });
+        });
+    }
+
+    function loadData() {
+        getAuthHeaders().then(function (h) {
+            return Promise.all([
+                fetch('/api/panoramas', { headers: h }).then(function (r) { return r.ok ? r.json() : []; }),
+                fetch('/api/workspaces', { headers: h }).then(function (r) { return r.ok ? r.json() : []; })
+            ]);
+        }).then(function (results) {
+            var allProjects = Array.isArray(results[0]) ? results[0] : [];
+            var allProjects = Array.isArray(results[1]) ? results[1] : [];
+
+            // Only show projects with client or viewer access (not owner)
+            projects = allProjects.filter(function (p) {
+                var at = String(p.access_type || '');
+                return at === 'client' || at === 'viewer';
+            });
+            workspaces = allProjects.filter(function (ws) {
+                var at = String(ws.access_type || '');
+                return at !== 'owner';
+            });
+
+            renderSections('');
+        }).catch(function () {
+            document.getElementById('cd-sections').innerHTML =
+                '<div class="cd-no-projects"><div class="cd-no-projects-icon">⚠️</div><div class="cd-no-projects-title">Failed to load projects</div></div>';
+        });
+    }
+
+    // Search
+    var searchEl = document.getElementById('cd-search');
+    if (searchEl) {
+        searchEl.addEventListener('input', function () { renderSections(searchEl.value); });
+    }
+
+    // Boot
+    window.sidebarReady.then(function (ctx) {
+        var role = ctx.role || '';
+        var isAdmin = role === 'admin' || role === 'superadmin';
+
+        // Admins/owners use the full dashboard
+        if (isAdmin) {
+            window.location.replace('/dashboard');
+            return;
+        }
+
+        // Set user name
+        var nameEl = document.getElementById('cd-user-name');
+        if (nameEl && ctx.profile) {
+            nameEl.textContent = ctx.profile.name || ctx.profile.email || '';
+        }
+
+        // Apply org name
+        var orgEl = document.getElementById('cd-org-name');
+        var clientGroupName = String(ctx.clientGroupName || '').trim();
+        var orgName = ctx.org && ctx.org.name ? ctx.org.name : '';
+        var displayName = String(ctx.displayOrgName || '').trim() || clientGroupName || orgName || '';
+        if (orgEl && displayName) orgEl.textContent = displayName;
+
+        try { if (window.applyOrgTheme) window.applyOrgTheme(); } catch (e) {}
+
+        loadData();
+    });
+})();
+</script>
+{% endblock %}

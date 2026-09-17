@@ -1,0 +1,2987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ workspace_name or 'Full View' }} - MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/fv_sidebar.css">
+    <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+    {% if is_editor %}
+    <script src="/static/js/supabase.min.js"></script>
+    {% endif %}
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0e14; font-family: 'Syne', sans-serif; }
+        .cfv-shell-preview {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+        .cfv-shell-stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .cfv-header-shell {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            max-width: calc(100vw - 28px);
+        }
+        .cfv-header-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: calc(0.85rem * var(--fv-header-padding-scale, 1));
+            min-height: 74px;
+            padding: calc(0.8rem * var(--fv-header-padding-scale, 1)) calc(0.95rem * var(--fv-header-padding-scale, 1));
+            border-radius: 20px;
+            border: 1px solid rgba(120, 143, 170, 0.28);
+            background: linear-gradient(135deg, rgba(28, 38, 56, 0.96) 0%, rgba(37, 44, 57, 0.96) 100%);
+            box-shadow: 0 12px 30px rgba(20, 28, 43, 0.14);
+            min-width: 0;
+            max-width: calc(100vw - 28px);
+        }
+        .cfv-header-logo-shell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            width: max(42px, calc(54px * var(--fv-header-logo-scale, 1)));
+            height: max(42px, calc(54px * var(--fv-header-logo-scale, 1)));
+            padding: calc(8px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1)) calc(12px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1));
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .cfv-header-logo-shell[hidden] {
+            display: none;
+        }
+        .cfv-header-logo {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .cfv-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.18rem;
+            min-width: 0;
+            max-width: max(150px, calc(220px * var(--fv-header-scale, 1)));
+            color: rgba(255, 255, 255, 0.92);
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            flex: 0 1 auto;
+            min-width: 0;
+        }
+        .cfv-header-autoplay-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            flex: 0 0 auto;
+            padding: 0;
+            background: rgba(12, 14, 20, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.92);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+            cursor: pointer;
+        }
+        .cfv-header-autoplay-btn[hidden] {
+            display: none;
+        }
+        .cfv-header-autoplay-btn:hover {
+            background: rgba(18, 21, 30, 0.9);
+        }
+        .cfv-header-preview-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.34rem;
+            width: auto;
+            min-width: 42px;
+            height: 42px;
+            padding: 0 0.72rem;
+            flex: 0 0 auto;
+            background: rgba(12, 14, 20, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.92);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .cfv-header-preview-btn:hover {
+            background: rgba(18, 21, 30, 0.9);
+        }
+        .cfv-header-preview-btn iconify-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 18px;
+            display: block;
+        }
+        .cfv-header-preview-btn-label {
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+        .cfv-header-autoplay-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+        }
+        .cfv-header-autoplay-icon svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            fill: currentColor;
+        }
+        .cfv-header-autoplay-icon-play {
+            display: none;
+        }
+        .cfv-header-autoplay-btn.is-paused .cfv-header-autoplay-icon-pause {
+            display: none;
+        }
+        .cfv-header-autoplay-btn.is-paused .cfv-header-autoplay-icon-play {
+            display: inline-flex;
+        }
+        .cfv-header-title {
+            font-size: calc(0.92rem * var(--fv-header-scale, 1));
+            font-weight: 700;
+            line-height: 1.15;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: min(180px, 100%);
+        }
+        .cfv-header-sub {
+            margin-top: 0.18rem;
+            font-size: calc(0.7rem * var(--fv-header-scale, 1));
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.66);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .cfv-frame-host {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: #0c0e14;
+        }
+        .cfv-tab-frame {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #0c0e14;
+            display: none;
+        }
+        .cfv-tab-frame.cfv-tab-frame--active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .cfv-frame-host.cfv-frame-host--mobile-nav {
+                bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+                height: auto;
+            }
+            .cfv-header-shell {
+                gap: 0.45rem;
+                max-width: calc(100vw - 20px);
+            }
+            .cfv-header-brand {
+                gap: calc(0.75rem * var(--fv-header-padding-scale, 1));
+                min-height: 68px;
+                padding: calc(0.7rem * var(--fv-header-padding-scale, 1)) calc(0.8rem * var(--fv-header-padding-scale, 1));
+            }
+            .cfv-header-logo-shell {
+                width: max(40px, calc(46px * var(--fv-header-logo-scale, 1)));
+                height: max(40px, calc(46px * var(--fv-header-logo-scale, 1)));
+                padding: calc(6px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1)) calc(9px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1));
+            }
+            .cfv-header {
+                max-width: max(140px, calc(200px * var(--fv-header-scale, 1)));
+            }
+            .cfv-header-title {
+                font-size: calc(0.86rem * var(--fv-header-scale, 1));
+            }
+            .cfv-header-sub {
+                font-size: calc(0.7rem * var(--fv-header-scale, 1));
+            }
+            .cfv-header-preview-btn {
+                padding: 0;
+                width: 42px;
+                min-width: 42px;
+            }
+            .cfv-header-preview-btn-label {
+                display: none;
+            }
+        }
+
+        body.fv-mobile-mode .cfv-shell-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(75, 170, 245, 0.22), transparent 42%),
+                radial-gradient(circle at 85% 10%, rgba(75, 245, 200, 0.14), transparent 38%),
+                radial-gradient(circle at 50% 92%, rgba(255, 255, 255, 0.06), transparent 44%),
+                #0b0e15;
+        }
+        body.fv-mobile-mode .cfv-shell-stage {
+            width: min(410px, calc(100vw - 28px));
+            height: min(844px, calc(100vh - 28px));
+            border-radius: 24px;
+            overflow: hidden;
+            background: #0c0e14;
+            border: 1px solid rgba(176, 216, 247, 0.34);
+            box-shadow:
+                0 32px 62px rgba(0, 0, 0, 0.52),
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+        }
+        body.fv-mobile-mode .cfv-header-shell,
+        body.fv-mobile-mode .cfv-frame-host,
+        body.fv-mobile-mode .fv-sidebar,
+        body.fv-mobile-mode .fv-nav-reveal-fab {
+            position: absolute;
+        }
+        body.fv-mobile-mode .cfv-header-shell {
+            top: 10px;
+            left: 10px;
+            max-width: calc(100% - 20px);
+            gap: 0.45rem;
+        }
+        body.fv-mobile-mode .cfv-header-brand {
+            gap: calc(0.75rem * var(--fv-header-padding-scale, 1));
+            min-height: 68px;
+            padding: calc(0.7rem * var(--fv-header-padding-scale, 1)) calc(0.8rem * var(--fv-header-padding-scale, 1));
+        }
+        body.fv-mobile-mode .cfv-header-logo-shell {
+            width: max(40px, calc(46px * var(--fv-header-logo-scale, 1)));
+            height: max(40px, calc(46px * var(--fv-header-logo-scale, 1)));
+            padding: calc(6px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1)) calc(9px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1));
+        }
+        body.fv-mobile-mode .cfv-header {
+            max-width: max(140px, calc(200px * var(--fv-header-scale, 1)));
+        }
+        body.fv-mobile-mode .cfv-header-title {
+            font-size: calc(0.86rem * var(--fv-header-scale, 1));
+        }
+        body.fv-mobile-mode .cfv-header-sub {
+            font-size: calc(0.7rem * var(--fv-header-scale, 1));
+        }
+        body.fv-mobile-mode .cfv-frame-host {
+            inset: 0;
+        }
+        body.fv-mobile-mode .cfv-frame-host.cfv-frame-host--mobile-nav {
+            bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+            height: auto;
+        }
+        body.fv-mobile-mode .fv-sidebar {
+            z-index: 1205;
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            transform: none;
+            isolation: isolate;
+            pointer-events: auto;
+            width: 100%;
+            max-height: none;
+            padding: 5px 6px calc(7px + env(safe-area-inset-bottom, 0));
+            flex-direction: row;
+            align-items: stretch;
+            border-left: 1px solid rgba(119, 163, 207, 0.34);
+            border-radius: 14px 14px 0 0;
+            box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.45);
+            overflow-x: hidden;
+            overflow-y: hidden;
+            flex-wrap: nowrap;
+        }
+        body.fv-mobile-mode .fv-sidebar::before {
+            display: none;
+        }
+        body.fv-mobile-mode .fv-sidebar-btn {
+            position: relative;
+            z-index: 1;
+            min-height: 72px;
+            height: max(72px, calc(var(--fv-menu-icon-box-size, 26px) + (var(--fv-menu-font-size, 9px) * 3.25) + 18px));
+            width: auto;
+            min-width: 0;
+            flex: 1 1 0;
+            padding: 7px 3px 6px;
+            gap: 4px;
+            justify-content: flex-start;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        body.fv-mobile-mode .fv-sidebar-btn--active {
+            border-radius: 8px;
+        }
+        body.fv-mobile-mode .fv-sidebar-label {
+            max-width: 100%;
+            font-size: var(--fv-menu-font-size, 0.55rem);
+            line-height: 1.05;
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: clip;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            min-height: calc(3 * 1.05em);
+        }
+        body.fv-mobile-mode .fv-nav-reveal-fab {
+            z-index: 1206;
+            right: 14px;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .fv-style-editor {
+            position: fixed;
+            top: 86px;
+            left: 14px;
+            z-index: 280;
+            width: min(350px, calc(100vw - 28px));
+            max-height: calc(100vh - 102px);
+            overflow-y: auto;
+            background: rgba(10, 17, 30, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 14px;
+            box-shadow: 0 14px 44px rgba(0, 0, 0, 0.36);
+            color: rgba(245, 249, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .fv-style-editor-head {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            padding: 0.85rem 0.95rem;
+            border-bottom: 1px solid rgba(255,255,255,0.14);
+            background: rgba(8, 14, 26, 0.92);
+        }
+        .fv-style-editor-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .fv-style-editor-sub {
+            margin-top: 0.18rem;
+            font-size: 0.68rem;
+            color: rgba(232, 240, 255, 0.72);
+            line-height: 1.35;
+        }
+        .fv-style-editor-body {
+            padding: 0.85rem 0.95rem 0.95rem;
+            display: grid;
+            gap: 0.85rem;
+        }
+        .fv-style-section {
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 0.7rem;
+            background: rgba(255,255,255,0.04);
+        }
+        .fv-style-section-title {
+            font-size: 0.69rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            font-weight: 700;
+            margin-bottom: 0.62rem;
+            color: rgba(221, 234, 255, 0.88);
+        }
+        .fv-style-field {
+            margin-bottom: 0.55rem;
+        }
+        .fv-style-field:last-child {
+            margin-bottom: 0;
+        }
+        .fv-style-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.67rem;
+            font-weight: 600;
+            color: rgba(236, 244, 255, 0.84);
+            margin-bottom: 0.25rem;
+            letter-spacing: 0.02em;
+        }
+        .fv-style-val {
+            color: rgba(177, 223, 255, 0.95);
+            font-weight: 700;
+        }
+        .fv-style-input,
+        .fv-style-select {
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(9, 16, 29, 0.85);
+            color: #f7fbff;
+            font-size: 0.72rem;
+            font-family: 'Syne', sans-serif;
+            padding: 0.38rem 0.45rem;
+        }
+        .fv-style-input[type="color"] {
+            width: 100%;
+            height: 30px;
+            padding: 0.12rem;
+            cursor: pointer;
+        }
+        .fv-style-input[type="range"] {
+            padding: 0;
+            accent-color: #59ceff;
+            cursor: pointer;
+        }
+        .fv-style-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.45rem;
+        }
+        .fv-style-logo-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .fv-style-spacing-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.45rem;
+        }
+        .fv-style-logo-preview-shell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 76px;
+            padding: calc(12px * var(--fv-header-logo-padding-scale, 1)) calc(14px * var(--fv-header-logo-padding-scale, 1));
+            border: 1px dashed rgba(255,255,255,0.18);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.04);
+            overflow: hidden;
+        }
+        .fv-style-logo-preview-shell.is-empty {
+            justify-content: flex-start;
+        }
+        .fv-style-logo-preview {
+            display: block;
+            width: 100%;
+            max-height: 52px;
+            object-fit: contain;
+            object-position: left center;
+        }
+        .fv-style-logo-placeholder {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.56);
+        }
+        .fv-style-logo-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .fv-style-logo-hint {
+            font-size: 0.74rem;
+            line-height: 1.45;
+            color: rgba(255,255,255,0.66);
+        }
+        .fv-style-logo-hint.error {
+            color: rgba(255, 180, 180, 0.95);
+        }
+        .fv-style-actions {
+            display: flex;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+        .fv-style-btn {
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: #f2f8ff;
+            border-radius: 8px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.42rem 0.6rem;
+            cursor: pointer;
+        }
+        .fv-style-btn:hover {
+            background: rgba(255,255,255,0.14);
+        }
+        .fv-style-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .fv-style-btn.primary {
+            background: rgba(59, 168, 235, 0.24);
+            border-color: rgba(100, 194, 250, 0.46);
+        }
+        .fv-style-status {
+            min-height: 1rem;
+            font-size: 0.67rem;
+            color: rgba(173, 255, 204, 0.95);
+        }
+        .fv-style-status.error {
+            color: rgba(255, 180, 180, 0.95);
+        }
+
+        @media (max-width: 768px) {
+            .fv-style-editor {
+                top: auto;
+                bottom: calc(86px + env(safe-area-inset-bottom, 0));
+                left: 10px;
+                right: 10px;
+                width: auto;
+                max-height: min(58vh, 560px);
+            }
+            .cfv-header-logo-shell {
+                width: max(40px, calc(46px * var(--fv-header-logo-scale, 1)));
+                height: max(40px, calc(46px * var(--fv-header-logo-scale, 1)));
+                padding: calc(6px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1)) calc(9px * var(--fv-header-logo-scale, 1) * var(--fv-header-logo-padding-scale, 1));
+            }
+            .cfv-header {
+                max-width: max(140px, calc(200px * var(--fv-header-scale, 1)));
+            }
+            .cfv-header-shell {
+                max-width: calc(100vw - 20px);
+                gap: 0.45rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cfv-shell-preview" id="cfv-shell-preview">
+        <div class="cfv-shell-stage" id="cfv-shell-stage">
+            <div class="cfv-header-shell">
+                <div class="cfv-header-brand" id="cfv-header-brand">
+                    <div class="cfv-header-logo-shell" id="cfv-header-logo-shell" hidden>
+                        <img class="cfv-header-logo" id="cfv-header-logo" alt="{{ workspace_name or 'Project' }} logo">
+                    </div>
+                    <div class="cfv-header" id="cfv-header">
+                        <div class="cfv-header-title" id="cfv-header-title">{{ workspace_name or 'Project' }}</div>
+                        <div class="cfv-header-sub" id="cfv-header-sub">Full View</div>
+                    </div>
+                </div>
+                <button type="button" class="cfv-header-autoplay-btn" id="cfv-header-autoplay-btn" aria-label="Pause autoplay" title="Pause autoplay" hidden>
+                    <span class="cfv-header-autoplay-icon cfv-header-autoplay-icon-pause" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <rect x="6" y="5" width="4" height="14" rx="1.4"></rect>
+                            <rect x="14" y="5" width="4" height="14" rx="1.4"></rect>
+                        </svg>
+                    </span>
+                    <span class="cfv-header-autoplay-icon cfv-header-autoplay-icon-play" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"></path>
+                        </svg>
+                    </span>
+                </button>
+                {% if is_editor %}
+                <button type="button" class="cfv-header-preview-btn" id="cfv-header-preview-btn" aria-label="Switch to mobile preview" title="Switch to mobile preview">
+                    <iconify-icon id="cfv-header-preview-icon" icon="ph:device-mobile"></iconify-icon>
+                    <span class="cfv-header-preview-btn-label" id="cfv-header-preview-label">Mobile View</span>
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="cfv-frame-host" id="cfv-frame-host" aria-live="polite"></div>
+
+            {% if fv_config and fv_config.get('tabs') and (is_editor or fv_config.get('is_active')) %}
+            <nav class="fv-sidebar" id="fv-sidebar" aria-label="Full View Navigation">
+                {% for tab in fv_config.get('tabs', []) %}
+                {% set tab_content = tab.content_data or {} %}
+                <button class="fv-sidebar-btn" type="button"
+                        data-tab-type="{{ tab.tab_type }}"
+                        data-ref-panorama="{{ tab.ref_panorama_id or '' }}"
+                        data-ref-daynight="{{ tab.ref_daynight_id or '' }}"
+                        data-ref-floorplan="{{ tab.ref_floor_plan_id or '' }}"
+                        data-ref-gallery="{{ tab.ref_gallery_id or '' }}"
+                        data-ref-projectplan="{{ tab.ref_project_plan_id or '' }}"
+                        data-ref-salesmap="{{ tab.ref_sales_map_id or '' }}"
+                        data-ref-salesflat360="{{ tab.ref_sales_flat360_id or '' }}"
+                        data-content='{{ (tab.content_data or {}) | tojson }}'
+                        title="{{ tab.name }}">
+                    <span class="fv-sidebar-icon" style="--fv-tab-icon-offset-x: {{ tab_content.get('icon_offset_x_px', tab_content.get('icon_offset_x', 0)) }}px; --fv-tab-icon-offset-y: {{ tab_content.get('icon_offset_y_px', tab_content.get('icon_offset_y', 0)) }}px;">
+                        {% if tab_content.get('icon_mode') == 'upload' and tab_content.get('icon_upload_url') %}
+                        <img src="{{ tab_content.get('icon_upload_url') }}" alt="" class="fv-sidebar-custom-icon">
+                        {% else %}
+                        <iconify-icon icon="{{ tab.icon }}"></iconify-icon>
+                        {% endif %}
+                    </span>
+                    <span class="fv-sidebar-label">{{ tab.name }}</span>
+                </button>
+                {% endfor %}
+            </nav>
+            {% endif %}
+
+            <button type="button" class="fv-nav-reveal-fab" id="fv-nav-reveal-fab" aria-label="Show navigation" hidden></button>
+        </div>
+    </div>
+
+    {% if is_editor %}
+    <aside class="fv-style-editor" id="fv-style-editor">
+        <div class="fv-style-editor-head">
+            <div class="fv-style-editor-title">Full View Screen Editor</div>
+            <div class="fv-style-editor-sub">Sidebar theme, header logo size, logo shell padding, header size, header spacing, and modal spacing plus floor plan, gallery, and sales map panel colors, glow, transparency, blur, and size are synced to customer full view.</div>
+        </div>
+        <div class="fv-style-editor-body">
+            <div class="fv-style-section">
+                <div class="fv-style-section-title">Header Branding</div>
+                <div class="fv-style-field">
+                    <label class="fv-style-label">Header Logo</label>
+                    <div class="fv-style-logo-row">
+                        <div class="fv-style-logo-preview-shell is-empty" id="fv-style-logo-preview-shell">
+                            <img id="fv-style-logo-preview" class="fv-style-logo-preview" alt="Full View header logo preview" hidden>
+                            <div class="fv-style-logo-placeholder" id="fv-style-logo-placeholder">No logo uploaded yet.</div>
+                        </div>
+                        <div class="fv-style-logo-actions">
+                            <button class="fv-style-btn" id="fv-style-logo-upload-btn" type="button">Upload Logo</button>
+                            <button class="fv-style-btn" id="fv-style-logo-remove-btn" type="button">Remove Logo</button>
+                        </div>
+                        <input id="fv-style-logo-input" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+                        <div class="fv-style-field">
+                            <label class="fv-style-label" for="fv-style-header-logo-size">Logo Size <span class="fv-style-val" id="fv-style-header-logo-size-val"></span></label>
+                            <input id="fv-style-header-logo-size" class="fv-style-input" type="range" min="60" max="160" step="1">
+                        </div>
+                        <div class="fv-style-field">
+                            <label class="fv-style-label" for="fv-style-header-logo-padding">Logo Shell Padding <span class="fv-style-val" id="fv-style-header-logo-padding-val"></span></label>
+                            <input id="fv-style-header-logo-padding" class="fv-style-input" type="range" min="0" max="160" step="1">
+                        </div>
+                        <div class="fv-style-field">
+                            <label class="fv-style-label" for="fv-style-header-size">Header Size <span class="fv-style-val" id="fv-style-header-size-val"></span></label>
+                            <input id="fv-style-header-size" class="fv-style-input" type="range" min="60" max="160" step="1">
+                        </div>
+                        <div class="fv-style-logo-hint" id="fv-style-logo-status">Appears on the left side of the Full View header. Use the size and spacing sliders to resize the logo box, logo shell padding, branding card, and modal spacing live. PNG, JPG, or WebP up to 5 MB.</div>
+                    </div>
+                </div>
+                <div class="fv-style-spacing-grid">
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-header-padding">Header Padding <span class="fv-style-val" id="fv-style-header-padding-val"></span></label>
+                        <input id="fv-style-header-padding" class="fv-style-input" type="range" min="0" max="160" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-padding">Modal Padding <span class="fv-style-val" id="fv-style-modal-padding-val"></span></label>
+                        <input id="fv-style-modal-padding" class="fv-style-input" type="range" min="60" max="160" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="fv-style-section">
+                <div class="fv-style-section-title">Theme</div>
+                <div class="fv-style-field">
+                    <label class="fv-style-label" for="fv-style-theme">Menu Theme Preset</label>
+                    <select id="fv-style-theme" class="fv-style-select">
+                        <option value="blue">Classic Blue</option>
+                        <option value="slate">Slate Night</option>
+                        <option value="light">Light Glass</option>
+                        <option value="emerald">Emerald Glow</option>
+                        <option value="teal">Teal Horizon</option>
+                        <option value="aqua">Aqua Pulse</option>
+                        <option value="mint">Mint Frost</option>
+                        <option value="lime">Lime Edge</option>
+                        <option value="amber">Amber Ember</option>
+                        <option value="gold">Golden Luxe</option>
+                        <option value="sunset">Sunset Flame</option>
+                        <option value="coral">Coral Bloom</option>
+                        <option value="rose">Rose Quartz</option>
+                        <option value="ruby">Ruby Velvet</option>
+                        <option value="plum">Plum Royale</option>
+                        <option value="violet">Violet Haze</option>
+                        <option value="indigo">Indigo Nova</option>
+                        <option value="graphite">Graphite Neon</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="fv-style-section">
+                <div class="fv-style-section-title">Preview Mode</div>
+                <div class="fv-style-field">
+                    <label class="fv-style-label" for="fv-style-preview-mode">Screen Mode</label>
+                    <select id="fv-style-preview-mode" class="fv-style-select">
+                        <option value="desktop">Desktop Mode</option>
+                        <option value="mobile">Mobile Mode</option>
+                    </select>
+                </div>
+                <div class="fv-style-logo-hint">Mobile Mode shrinks the preview into a phone-sized screen so you can fine-tune icon size, text size, and modal settings while editing.</div>
+            </div>
+
+            <div class="fv-style-section">
+                <div class="fv-style-section-title">Menu Colors</div>
+                <div class="fv-style-grid">
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-start">Gradient Start</label>
+                        <input id="fv-style-menu-start" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-end">Gradient End</label>
+                        <input id="fv-style-menu-end" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-bg-opacity">Menu BG Opacity <span class="fv-style-val" id="fv-style-menu-bg-opacity-val"></span></label>
+                        <input id="fv-style-menu-bg-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-accent">Accent Glow</label>
+                        <input id="fv-style-menu-accent" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-glow-opacity">Glow Opacity <span class="fv-style-val" id="fv-style-menu-glow-opacity-val"></span></label>
+                        <input id="fv-style-menu-glow-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-border">Menu Border</label>
+                        <input id="fv-style-menu-border" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-text">Menu Text</label>
+                        <input id="fv-style-menu-text" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-active-bg">Active Row</label>
+                        <input id="fv-style-menu-active-bg" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-active-text">Active Text</label>
+                        <input id="fv-style-menu-active-text" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-white-icons">Icon Color</label>
+                        <select id="fv-style-menu-white-icons" class="fv-style-select">
+                            <option value="0">Follow Text</option>
+                            <option value="1">Always White</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-width">Menu Width <span class="fv-style-val" id="fv-style-menu-width-val"></span></label>
+                        <input id="fv-style-menu-width" class="fv-style-input" type="range" min="72" max="180" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-height">Menu Height <span class="fv-style-val" id="fv-style-menu-height-val"></span></label>
+                        <input id="fv-style-menu-height" class="fv-style-input" type="range" min="30" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-icon-size">Menu Icon Size <span class="fv-style-val" id="fv-style-menu-icon-size-val"></span></label>
+                        <input id="fv-style-menu-icon-size" class="fv-style-input" type="range" min="12" max="40" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-font">Menu Font</label>
+                        <select id="fv-style-menu-font" class="fv-style-select">
+                            <option value="Syne">Syne</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Lora">Lora</option>
+                            <option value="Merriweather">Merriweather</option>
+                            <option value="Oswald">Oswald</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-menu-font-size">Menu Label Size <span class="fv-style-val" id="fv-style-menu-font-size-val"></span></label>
+                        <input id="fv-style-menu-font-size" class="fv-style-input" type="range" min="2" max="48" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="fv-style-section">
+                <div class="fv-style-section-title">Floor Plan Modal</div>
+                <div class="fv-style-grid">
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-bg">Modal BG</label>
+                        <input id="fv-style-modal-bg" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-bg-opacity">Panel BG Opacity <span class="fv-style-val" id="fv-style-modal-bg-opacity-val"></span></label>
+                        <input id="fv-style-modal-bg-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-blur">Background Blur <span class="fv-style-val" id="fv-style-modal-blur-val"></span></label>
+                        <input id="fv-style-modal-blur" class="fv-style-input" type="range" min="0" max="40" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-border">Modal Border</label>
+                        <input id="fv-style-modal-border" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-glow">Glow Color</label>
+                        <input id="fv-style-modal-glow" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-glow-opacity">Glow Opacity <span class="fv-style-val" id="fv-style-modal-glow-opacity-val"></span></label>
+                        <input id="fv-style-modal-glow-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-title">Title Text</label>
+                        <input id="fv-style-modal-title" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-item">Item Text</label>
+                        <input id="fv-style-modal-item" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-active-bg">Active Item BG</label>
+                        <input id="fv-style-modal-active-bg" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-active-border">Active Item Border</label>
+                        <input id="fv-style-modal-active-border" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-width">Modal Width <span class="fv-style-val" id="fv-style-modal-width-val"></span></label>
+                        <input id="fv-style-modal-width" class="fv-style-input" type="range" min="220" max="2200" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-height">Modal Height <span class="fv-style-val" id="fv-style-modal-height-val"></span></label>
+                        <input id="fv-style-modal-height" class="fv-style-input" type="range" min="20" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-right">Right Offset <span class="fv-style-val" id="fv-style-modal-right-val"></span></label>
+                        <input id="fv-style-modal-right" class="fv-style-input" type="range" min="0" max="280" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-bottom">Bottom Offset <span class="fv-style-val" id="fv-style-modal-bottom-val"></span></label>
+                        <input id="fv-style-modal-bottom" class="fv-style-input" type="range" min="0" max="240" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-title-font">Title Font</label>
+                        <select id="fv-style-modal-title-font" class="fv-style-select">
+                            <option value="Syne">Syne</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Lora">Lora</option>
+                            <option value="Merriweather">Merriweather</option>
+                            <option value="Oswald">Oswald</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-item-font">Item Font</label>
+                        <select id="fv-style-modal-item-font" class="fv-style-select">
+                            <option value="Syne">Syne</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Lora">Lora</option>
+                            <option value="Merriweather">Merriweather</option>
+                            <option value="Oswald">Oswald</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-title-size">Title Size <span class="fv-style-val" id="fv-style-modal-title-size-val"></span></label>
+                        <input id="fv-style-modal-title-size" class="fv-style-input" type="range" min="11" max="24" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-modal-item-size">Item Size <span class="fv-style-val" id="fv-style-modal-item-size-val"></span></label>
+                        <input id="fv-style-modal-item-size" class="fv-style-input" type="range" min="10" max="22" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="fv-style-section">
+                <div class="fv-style-section-title">Gallery Modal</div>
+                <div class="fv-style-grid">
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-bg">Modal BG</label>
+                        <input id="fv-style-gallery-modal-bg" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-bg-opacity">Panel BG Opacity <span class="fv-style-val" id="fv-style-gallery-modal-bg-opacity-val"></span></label>
+                        <input id="fv-style-gallery-modal-bg-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-blur">Background Blur <span class="fv-style-val" id="fv-style-gallery-modal-blur-val"></span></label>
+                        <input id="fv-style-gallery-modal-blur" class="fv-style-input" type="range" min="0" max="40" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-border">Modal Border</label>
+                        <input id="fv-style-gallery-modal-border" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-glow">Glow Color</label>
+                        <input id="fv-style-gallery-modal-glow" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-glow-opacity">Glow Opacity <span class="fv-style-val" id="fv-style-gallery-modal-glow-opacity-val"></span></label>
+                        <input id="fv-style-gallery-modal-glow-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-title">Title Text</label>
+                        <input id="fv-style-gallery-modal-title" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-item">Item Text</label>
+                        <input id="fv-style-gallery-modal-item" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-active-bg">Active Item BG</label>
+                        <input id="fv-style-gallery-modal-active-bg" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-active-border">Active Item Border</label>
+                        <input id="fv-style-gallery-modal-active-border" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-width">Modal Width <span class="fv-style-val" id="fv-style-gallery-modal-width-val"></span></label>
+                        <input id="fv-style-gallery-modal-width" class="fv-style-input" type="range" min="220" max="2200" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-height">Modal Height <span class="fv-style-val" id="fv-style-gallery-modal-height-val"></span></label>
+                        <input id="fv-style-gallery-modal-height" class="fv-style-input" type="range" min="20" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-right">Right Offset <span class="fv-style-val" id="fv-style-gallery-modal-right-val"></span></label>
+                        <input id="fv-style-gallery-modal-right" class="fv-style-input" type="range" min="0" max="280" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-bottom">Bottom Offset <span class="fv-style-val" id="fv-style-gallery-modal-bottom-val"></span></label>
+                        <input id="fv-style-gallery-modal-bottom" class="fv-style-input" type="range" min="0" max="240" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-title-font">Title Font</label>
+                        <select id="fv-style-gallery-modal-title-font" class="fv-style-select">
+                            <option value="Syne">Syne</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Lora">Lora</option>
+                            <option value="Merriweather">Merriweather</option>
+                            <option value="Oswald">Oswald</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-item-font">Item Font</label>
+                        <select id="fv-style-gallery-modal-item-font" class="fv-style-select">
+                            <option value="Syne">Syne</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Lora">Lora</option>
+                            <option value="Merriweather">Merriweather</option>
+                            <option value="Oswald">Oswald</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-title-size">Title Size <span class="fv-style-val" id="fv-style-gallery-modal-title-size-val"></span></label>
+                        <input id="fv-style-gallery-modal-title-size" class="fv-style-input" type="range" min="11" max="24" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-gallery-modal-item-size">Item Size <span class="fv-style-val" id="fv-style-gallery-modal-item-size-val"></span></label>
+                        <input id="fv-style-gallery-modal-item-size" class="fv-style-input" type="range" min="10" max="22" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="fv-style-section">
+                <div class="fv-style-section-title">Sales Map Menu</div>
+                <div class="fv-style-grid">
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-bg">Modal BG</label>
+                        <input id="fv-style-salesmap-modal-bg" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-bg-opacity">Panel BG Opacity <span class="fv-style-val" id="fv-style-salesmap-modal-bg-opacity-val"></span></label>
+                        <input id="fv-style-salesmap-modal-bg-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-blur">Background Blur <span class="fv-style-val" id="fv-style-salesmap-modal-blur-val"></span></label>
+                        <input id="fv-style-salesmap-modal-blur" class="fv-style-input" type="range" min="0" max="40" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-border">Modal Border</label>
+                        <input id="fv-style-salesmap-modal-border" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-glow">Glow Color</label>
+                        <input id="fv-style-salesmap-modal-glow" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-glow-opacity">Glow Opacity <span class="fv-style-val" id="fv-style-salesmap-modal-glow-opacity-val"></span></label>
+                        <input id="fv-style-salesmap-modal-glow-opacity" class="fv-style-input" type="range" min="0" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-title">Title Text</label>
+                        <input id="fv-style-salesmap-modal-title" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-item">Item Text</label>
+                        <input id="fv-style-salesmap-modal-item" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-active-bg">Active Item BG</label>
+                        <input id="fv-style-salesmap-modal-active-bg" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-active-border">Active Item Border</label>
+                        <input id="fv-style-salesmap-modal-active-border" class="fv-style-input" type="color">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-width">Modal Width <span class="fv-style-val" id="fv-style-salesmap-modal-width-val"></span></label>
+                        <input id="fv-style-salesmap-modal-width" class="fv-style-input" type="range" min="220" max="2200" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-height">Modal Height <span class="fv-style-val" id="fv-style-salesmap-modal-height-val"></span></label>
+                        <input id="fv-style-salesmap-modal-height" class="fv-style-input" type="range" min="20" max="100" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-left">Left Offset <span class="fv-style-val" id="fv-style-salesmap-modal-left-val"></span></label>
+                        <input id="fv-style-salesmap-modal-left" class="fv-style-input" type="range" min="0" max="2400" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-bottom">Bottom Offset <span class="fv-style-val" id="fv-style-salesmap-modal-bottom-val"></span></label>
+                        <input id="fv-style-salesmap-modal-bottom" class="fv-style-input" type="range" min="0" max="240" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-title-font">Title Font</label>
+                        <select id="fv-style-salesmap-modal-title-font" class="fv-style-select">
+                            <option value="Syne">Syne</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Lora">Lora</option>
+                            <option value="Merriweather">Merriweather</option>
+                            <option value="Oswald">Oswald</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-item-font">Item Font</label>
+                        <select id="fv-style-salesmap-modal-item-font" class="fv-style-select">
+                            <option value="Syne">Syne</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Lora">Lora</option>
+                            <option value="Merriweather">Merriweather</option>
+                            <option value="Oswald">Oswald</option>
+                        </select>
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-title-size">Title Size <span class="fv-style-val" id="fv-style-salesmap-modal-title-size-val"></span></label>
+                        <input id="fv-style-salesmap-modal-title-size" class="fv-style-input" type="range" min="11" max="24" step="1">
+                    </div>
+                    <div class="fv-style-field">
+                        <label class="fv-style-label" for="fv-style-salesmap-modal-item-size">Item Size <span class="fv-style-val" id="fv-style-salesmap-modal-item-size-val"></span></label>
+                        <input id="fv-style-salesmap-modal-item-size" class="fv-style-input" type="range" min="10" max="22" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="fv-style-actions">
+                <button class="fv-style-btn" id="fv-style-open-floorplan" type="button">Preview Floor Plans</button>
+                <button class="fv-style-btn" id="fv-style-open-gallery" type="button">Preview Gallery</button>
+                <button class="fv-style-btn" id="fv-style-open-salesmap" type="button">Preview Sales Map</button>
+                <button class="fv-style-btn" id="fv-style-reset" type="button">Reset</button>
+                <button class="fv-style-btn primary" id="fv-style-save" type="button">Save Style</button>
+            </div>
+            <div class="fv-style-status" id="fv-style-status"></div>
+        </div>
+    </aside>
+    {% endif %}
+
+<script>
+(function () {
+    'use strict';
+
+    var WS_ID = {{ (workspace_id or '') | tojson }};
+    var INIT_TYPE = {{ (init_type or '') | tojson }};
+    var INIT_REF = {{ (init_ref or '') | tojson }};
+    var IS_EDITOR = {{ (is_editor or false) | tojson }};
+    var FV_CONFIG_ID = {{ (fv_config.get('id') if fv_config else '') | tojson }};
+    var INITIAL_STYLE = {{ (fv_style or {}) | tojson }};
+    var INITIAL_EDITOR_PREVIEW_MODE = {{ (editor_preview_mode or '') | tojson }};
+    var SUPABASE_URL = {{ (supabase_url or '') | tojson }};
+    var SUPABASE_ANON_KEY = {{ (supabase_anon_key or '') | tojson }};
+
+    var frameHost = document.getElementById('cfv-frame-host');
+    var sidebar = document.getElementById('fv-sidebar');
+    var headerLogoShellEl = document.getElementById('cfv-header-logo-shell');
+    var headerLogoEl = document.getElementById('cfv-header-logo');
+    var headerTitleEl = document.getElementById('cfv-header-title');
+    var headerSubEl = document.getElementById('cfv-header-sub');
+    var headerAutoplayBtn = document.getElementById('cfv-header-autoplay-btn');
+    var headerPreviewBtn = document.getElementById('cfv-header-preview-btn');
+    var headerPreviewIcon = document.getElementById('cfv-header-preview-icon');
+    var headerPreviewLabel = document.getElementById('cfv-header-preview-label');
+    var navFab = document.getElementById('fv-nav-reveal-fab');
+    var activeBtn = null;
+    var activeFrame = null;
+    var frameCache = {};
+    var tabMetaByKey = {};
+    var preloadStarted = false;
+    var preloadedFrameCount = 0;
+    var DEBUG = true;
+    var styleState = null;
+    var shellAutoplayAvailable = false;
+    var shellAutoplayPaused = false;
+    var SHELL_BASE_PATH = {{ (shell_base_path or '') | tojson }};
+    if (!SHELL_BASE_PATH) {
+        SHELL_BASE_PATH = (IS_EDITOR ? '/customer/full-view/edit/' : '/customer/full-view/') + encodeURIComponent(WS_ID || '');
+    }
+    var PREFETCH_STATE_KEY = 'fv_shell_prefetch_v3::' + String(WS_ID || '');
+    var PREVIEW_MODE_STORAGE_KEY = 'fv_shell_editor_preview_mode::' + String(WS_ID || '');
+    var PREFETCH_TTL_MS = 15 * 60 * 1000;
+    var MAX_PRELOADED_FRAMES = 8;
+    var editorPreviewMode = 'desktop';
+
+    function getRequestedReferenceUserId() {
+        try {
+            var params = new URLSearchParams(window.location.search || '');
+            return String(params.get('ref_user_id') || '').trim();
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function appendRequestedReferenceParam(params) {
+        var refUserId = getRequestedReferenceUserId();
+        if (refUserId) params.set('ref_user_id', refUserId);
+        return params;
+    }
+
+    function defaultModalStyle() {
+        return {
+            bg: '#1e1e1e',
+            bg_opacity_pct: 82,
+            backdrop_blur_px: 18,
+            border: '#d6dee6',
+            glow_color: '#a4c1ea',
+            glow_opacity_pct: 34,
+            title_text: '#ffffff',
+            item_text: '#f2f6ff',
+            item_active_bg: '#3e567f',
+            item_active_border: '#a4c1ea',
+            width: 260,
+            max_height_vh: 72,
+            right_offset: 112,
+            bottom_offset: 24,
+            title_font_family: 'Syne',
+            item_font_family: 'Syne',
+            title_font_size_px: 13,
+            item_font_size_px: 12
+        };
+    }
+
+    function defaultSalesMapModalStyle() {
+        var modal = defaultModalStyle();
+        modal.left_offset = 24;
+        return modal;
+    }
+
+    function editorPreviewQuerySuffix() {
+        return (IS_EDITOR && editorPreviewMode === 'mobile') ? '&preview=mobile' : '';
+    }
+
+    var DEFAULT_STYLE = {
+        menu_theme: 'blue',
+        header_logo_url: '',
+        header_logo_size_pct: 100,
+        header_logo_padding_pct: 100,
+        header_size_pct: 100,
+        header_padding_pct: 100,
+        modal_padding_pct: 100,
+        sidebar: {
+            bg_start: '#253f69',
+            bg_end: '#162b51',
+            bg_opacity_pct: 100,
+            border: '#77a3cf',
+            accent: '#3ec2ff',
+            glow_opacity_pct: 28,
+            text: '#e9f1fb',
+            active_bg: '#cfd5df',
+            active_text: '#26344f',
+            icon_white: false,
+            width: 92,
+            max_height_vh: 98,
+            icon_size_px: 22,
+            font_family: 'Syne',
+            font_size_px: 9
+        },
+        modal: defaultModalStyle(),
+        modal_floorplan: defaultModalStyle(),
+        modal_gallery: defaultModalStyle(),
+        modal_sales_map: defaultSalesMapModalStyle()
+    };
+
+    var THEME_PRESETS = {
+        blue: {
+            sidebar: {
+                bg_start: '#253f69',
+                bg_end: '#162b51',
+                border: '#77a3cf',
+                accent: '#3ec2ff',
+                text: '#e9f1fb',
+                active_bg: '#cfd5df',
+                active_text: '#26344f'
+            },
+            modal: {
+                bg: '#1e1e1e',
+                border: '#d6dee6',
+                title_text: '#ffffff',
+                item_text: '#f2f6ff',
+                item_active_bg: '#3e567f',
+                item_active_border: '#a4c1ea'
+            }
+        },
+        slate: {
+            sidebar: {
+                bg_start: '#1b2637',
+                bg_end: '#101925',
+                border: '#5c738f',
+                accent: '#4eb6ff',
+                text: '#dce9ff',
+                active_bg: '#3d4f67',
+                active_text: '#ffffff'
+            },
+            modal: {
+                bg: '#131b26',
+                border: '#7388a2',
+                title_text: '#f2f8ff',
+                item_text: '#dbe8ff',
+                item_active_bg: '#385072',
+                item_active_border: '#9fb9da'
+            }
+        },
+        light: {
+            sidebar: {
+                bg_start: '#f2f7ff',
+                bg_end: '#dfeaf9',
+                border: '#8ca5c2',
+                accent: '#2a8cff',
+                text: '#20344f',
+                active_bg: '#ffffff',
+                active_text: '#20344f'
+            },
+            modal: {
+                bg: '#f3f7ff',
+                border: '#9eb4cf',
+                title_text: '#1d314d',
+                item_text: '#1f3657',
+                item_active_bg: '#d7e4f6',
+                item_active_border: '#8eabd0'
+            }
+        },
+        emerald: {
+            sidebar: {
+                bg_start: '#123d2d',
+                bg_end: '#0a241a',
+                border: '#57b58f',
+                accent: '#2ef0a0',
+                text: '#e7fff4',
+                active_bg: '#d7f7e4',
+                active_text: '#153828'
+            },
+            modal: {
+                bg: '#10251b',
+                border: '#69c39c',
+                title_text: '#f2fff8',
+                item_text: '#dff7ea',
+                item_active_bg: '#1f5a40',
+                item_active_border: '#8de3b8'
+            }
+        },
+        teal: {
+            sidebar: {
+                bg_start: '#0f3740',
+                bg_end: '#0a1f24',
+                border: '#5ab9c2',
+                accent: '#37e6ff',
+                text: '#e8fdff',
+                active_bg: '#d7f6f9',
+                active_text: '#14353a'
+            },
+            modal: {
+                bg: '#10252b',
+                border: '#6fc7d0',
+                title_text: '#f1feff',
+                item_text: '#daf9fb',
+                item_active_bg: '#1f5f67',
+                item_active_border: '#8ce2e9'
+            }
+        },
+        aqua: {
+            sidebar: {
+                bg_start: '#0d3f58',
+                bg_end: '#092637',
+                border: '#63bfe3',
+                accent: '#56f1ff',
+                text: '#e8fbff',
+                active_bg: '#d8f1fb',
+                active_text: '#12364a'
+            },
+            modal: {
+                bg: '#0f2632',
+                border: '#76caea',
+                title_text: '#f1fbff',
+                item_text: '#d7f2ff',
+                item_active_bg: '#1e5a74',
+                item_active_border: '#93def5'
+            }
+        },
+        mint: {
+            sidebar: {
+                bg_start: '#effff5',
+                bg_end: '#d2f8e3',
+                border: '#7bc39f',
+                accent: '#27c78b',
+                text: '#214536',
+                active_bg: '#ffffff',
+                active_text: '#173425'
+            },
+            modal: {
+                bg: '#f3fff8',
+                border: '#8dd0ad',
+                title_text: '#163827',
+                item_text: '#254838',
+                item_active_bg: '#d2f4df',
+                item_active_border: '#78bf99'
+            }
+        },
+        lime: {
+            sidebar: {
+                bg_start: '#324715',
+                bg_end: '#1d2a0c',
+                border: '#a2c85d',
+                accent: '#d2ff47',
+                text: '#f5ffdc',
+                active_bg: '#edf7c9',
+                active_text: '#27370d'
+            },
+            modal: {
+                bg: '#212f12',
+                border: '#b5d86f',
+                title_text: '#fcffe9',
+                item_text: '#eef8cf',
+                item_active_bg: '#516f1f',
+                item_active_border: '#d4f28b'
+            }
+        },
+        amber: {
+            sidebar: {
+                bg_start: '#4d2f0a',
+                bg_end: '#2b1806',
+                border: '#d99a4e',
+                accent: '#ffc24b',
+                text: '#fff2dd',
+                active_bg: '#ffe2b5',
+                active_text: '#4e2f0d'
+            },
+            modal: {
+                bg: '#36210a',
+                border: '#e2a95e',
+                title_text: '#fff8ec',
+                item_text: '#f7e6c6',
+                item_active_bg: '#7b4a12',
+                item_active_border: '#ffc979'
+            }
+        },
+        gold: {
+            sidebar: {
+                bg_start: '#fff4d1',
+                bg_end: '#f1d99a',
+                border: '#c8a653',
+                accent: '#f0b90b',
+                text: '#4a3712',
+                active_bg: '#ffffff',
+                active_text: '#3d2b0a'
+            },
+            modal: {
+                bg: '#fff8e4',
+                border: '#d6b870',
+                title_text: '#4a3611',
+                item_text: '#5a4516',
+                item_active_bg: '#f2dfab',
+                item_active_border: '#cfa44b'
+            }
+        },
+        sunset: {
+            sidebar: {
+                bg_start: '#5b1f1b',
+                bg_end: '#30100f',
+                border: '#e57958',
+                accent: '#ff9d57',
+                text: '#ffeae2',
+                active_bg: '#ffd1be',
+                active_text: '#4f1f18'
+            },
+            modal: {
+                bg: '#3d1613',
+                border: '#ef8b67',
+                title_text: '#fff4ee',
+                item_text: '#ffe2d7',
+                item_active_bg: '#8a3429',
+                item_active_border: '#ffb18b'
+            }
+        },
+        coral: {
+            sidebar: {
+                bg_start: '#6a2d2d',
+                bg_end: '#3c171b',
+                border: '#ea8a7a',
+                accent: '#ff7f6e',
+                text: '#fff0ed',
+                active_bg: '#ffd7d1',
+                active_text: '#512025'
+            },
+            modal: {
+                bg: '#451d22',
+                border: '#f39b8f',
+                title_text: '#fff5f2',
+                item_text: '#ffe4e0',
+                item_active_bg: '#9a4a43',
+                item_active_border: '#ffb3a8'
+            }
+        },
+        rose: {
+            sidebar: {
+                bg_start: '#5b2644',
+                bg_end: '#331324',
+                border: '#d984ba',
+                accent: '#ff7fd1',
+                text: '#ffedf7',
+                active_bg: '#ffd7ea',
+                active_text: '#4a2038'
+            },
+            modal: {
+                bg: '#40192d',
+                border: '#e497c5',
+                title_text: '#fff4fb',
+                item_text: '#ffe3f1',
+                item_active_bg: '#874565',
+                item_active_border: '#ffacd9'
+            }
+        },
+        ruby: {
+            sidebar: {
+                bg_start: '#54141f',
+                bg_end: '#2e0a11',
+                border: '#d05c74',
+                accent: '#ff466e',
+                text: '#ffebf0',
+                active_bg: '#ffc6d3',
+                active_text: '#4a101b'
+            },
+            modal: {
+                bg: '#3a1018',
+                border: '#dd7186',
+                title_text: '#fff4f6',
+                item_text: '#ffdce4',
+                item_active_bg: '#7f2136',
+                item_active_border: '#ff91a9'
+            }
+        },
+        plum: {
+            sidebar: {
+                bg_start: '#43204b',
+                bg_end: '#241029',
+                border: '#ad78c0',
+                accent: '#df81ff',
+                text: '#fbeeff',
+                active_bg: '#ebd5f4',
+                active_text: '#35183d'
+            },
+            modal: {
+                bg: '#2f1635',
+                border: '#be88d1',
+                title_text: '#fef6ff',
+                item_text: '#f0dff7',
+                item_active_bg: '#69367b',
+                item_active_border: '#e4a3ff'
+            }
+        },
+        violet: {
+            sidebar: {
+                bg_start: '#3c246a',
+                bg_end: '#20113d',
+                border: '#8d7ae6',
+                accent: '#a993ff',
+                text: '#f1ecff',
+                active_bg: '#ddd7ff',
+                active_text: '#2b1d54'
+            },
+            modal: {
+                bg: '#29184b',
+                border: '#a194ec',
+                title_text: '#faf8ff',
+                item_text: '#e6e0ff',
+                item_active_bg: '#51378f',
+                item_active_border: '#beb2ff'
+            }
+        },
+        indigo: {
+            sidebar: {
+                bg_start: '#172b66',
+                bg_end: '#0c173c',
+                border: '#5d86f3',
+                accent: '#7fa8ff',
+                text: '#eaf0ff',
+                active_bg: '#cedcff',
+                active_text: '#192c5b'
+            },
+            modal: {
+                bg: '#13204a',
+                border: '#7398ff',
+                title_text: '#f5f8ff',
+                item_text: '#dae4ff',
+                item_active_bg: '#244186',
+                item_active_border: '#9ab6ff'
+            }
+        },
+        graphite: {
+            sidebar: {
+                bg_start: '#24272f',
+                bg_end: '#121419',
+                border: '#788393',
+                accent: '#9ed6ff',
+                text: '#f1f5fb',
+                active_bg: '#d8dee8',
+                active_text: '#222935'
+            },
+            modal: {
+                bg: '#1b1f27',
+                border: '#8792a3',
+                title_text: '#fbfcff',
+                item_text: '#e6ebf5',
+                item_active_bg: '#364051',
+                item_active_border: '#a6b2c7'
+            }
+        }
+    };
+    var FONT_FAMILIES = ['Syne', 'Inter', 'Poppins', 'Montserrat', 'Lora', 'Merriweather', 'Oswald'];
+
+    function fvLog(level, message, data) {
+        if (!DEBUG) return;
+        var stamp = new Date().toISOString();
+        var prefix = '[FV][' + stamp + '] ' + message;
+        if (level === 'error') {
+            console.error(prefix, data || '');
+            return;
+        }
+        if (level === 'warn') {
+            console.warn(prefix, data || '');
+            return;
+        }
+        console.log(prefix, data || '');
+    }
+
+    function cloneObj(v) {
+        return JSON.parse(JSON.stringify(v || {}));
+    }
+
+    function deepMerge(target, source) {
+        if (!source || typeof source !== 'object') return target;
+        Object.keys(source).forEach(function (key) {
+            var srcVal = source[key];
+            if (srcVal && typeof srcVal === 'object' && !Array.isArray(srcVal)) {
+                if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+                    target[key] = {};
+                }
+                deepMerge(target[key], srcVal);
+                return;
+            }
+            target[key] = srcVal;
+        });
+        return target;
+    }
+
+    function clampInt(value, min, max, fallback) {
+        var n = parseInt(value, 10);
+        if (Number.isNaN(n)) return fallback;
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+    }
+
+    function coerceBool(value, fallback) {
+        if (typeof value === 'boolean') return value;
+        if (typeof value === 'number') return value !== 0;
+        var raw = String(value == null ? '' : value).trim().toLowerCase();
+        if (!raw) return fallback;
+        if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
+        if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
+        return fallback;
+    }
+
+    function sanitizeHex(value, fallback) {
+        var s = String(value || '').trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+        if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+            return '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+        }
+        return fallback;
+    }
+
+    function sanitizeFontFamily(value, fallback) {
+        var v = String(value || '').trim();
+        if (!v) return fallback;
+        for (var i = 0; i < FONT_FAMILIES.length; i++) {
+            if (FONT_FAMILIES[i].toLowerCase() === v.toLowerCase()) return FONT_FAMILIES[i];
+        }
+        return fallback;
+    }
+
+    function hexToRgba(hex, alpha) {
+        var clean = sanitizeHex(hex, '#000000').replace('#', '');
+        var r = parseInt(clean.slice(0, 2), 16);
+        var g = parseInt(clean.slice(2, 4), 16);
+        var b = parseInt(clean.slice(4, 6), 16);
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+    }
+
+    function mixHexColor(hexA, hexB, ratio) {
+        var a = sanitizeHex(hexA, '#000000').replace('#', '');
+        var b = sanitizeHex(hexB, '#000000').replace('#', '');
+        var rr = Math.max(0, Math.min(1, ratio));
+        var r = Math.round(parseInt(a.slice(0, 2), 16) * (1 - rr) + parseInt(b.slice(0, 2), 16) * rr);
+        var g = Math.round(parseInt(a.slice(2, 4), 16) * (1 - rr) + parseInt(b.slice(2, 4), 16) * rr);
+        var bl = Math.round(parseInt(a.slice(4, 6), 16) * (1 - rr) + parseInt(b.slice(4, 6), 16) * rr);
+        function toHex(n) {
+            var out = n.toString(16);
+            return out.length === 1 ? ('0' + out) : out;
+        }
+        return '#' + toHex(r) + toHex(g) + toHex(bl);
+    }
+
+    function normalizeModalBlock(modalRaw, fallbackRaw) {
+        var fallback = (fallbackRaw && typeof fallbackRaw === 'object') ? fallbackRaw : DEFAULT_STYLE.modal;
+        var modal = (modalRaw && typeof modalRaw === 'object') ? modalRaw : {};
+        return {
+            bg: sanitizeHex(modal.bg, fallback.bg),
+            bg_opacity_pct: clampInt(modal.bg_opacity_pct, 0, 100, typeof fallback.bg_opacity_pct === 'number' ? fallback.bg_opacity_pct : 82),
+            backdrop_blur_px: clampInt(modal.backdrop_blur_px, 0, 40, typeof fallback.backdrop_blur_px === 'number' ? fallback.backdrop_blur_px : 18),
+            border: sanitizeHex(modal.border, fallback.border),
+            glow_color: sanitizeHex(modal.glow_color, modal.item_active_border || fallback.glow_color || fallback.item_active_border || DEFAULT_STYLE.modal.glow_color),
+            glow_opacity_pct: clampInt(modal.glow_opacity_pct, 0, 100, typeof fallback.glow_opacity_pct === 'number' ? fallback.glow_opacity_pct : 34),
+            title_text: sanitizeHex(modal.title_text, fallback.title_text),
+            item_text: sanitizeHex(modal.item_text, fallback.item_text),
+            item_active_bg: sanitizeHex(modal.item_active_bg, fallback.item_active_bg),
+            item_active_border: sanitizeHex(modal.item_active_border, fallback.item_active_border),
+            width: clampInt(modal.width, 220, 2200, fallback.width),
+            max_height_vh: clampInt(modal.max_height_vh, 20, 100, fallback.max_height_vh),
+            right_offset: clampInt(modal.right_offset, 0, 280, fallback.right_offset),
+            bottom_offset: clampInt(modal.bottom_offset, 0, 240, fallback.bottom_offset),
+            title_font_family: sanitizeFontFamily(modal.title_font_family, fallback.title_font_family),
+            item_font_family: sanitizeFontFamily(modal.item_font_family, fallback.item_font_family),
+            title_font_size_px: clampInt(modal.title_font_size_px, 11, 24, fallback.title_font_size_px),
+            item_font_size_px: clampInt(modal.item_font_size_px, 10, 22, fallback.item_font_size_px)
+        };
+    }
+
+    function normalizeSalesMapModalBlock(modalRaw, fallbackRaw, fallbackLeftOffset) {
+        var modal = (modalRaw && typeof modalRaw === 'object') ? modalRaw : {};
+        var normalized = normalizeModalBlock(modal, fallbackRaw);
+        normalized.left_offset = clampInt(modal.left_offset, 0, 2400, typeof fallbackLeftOffset === 'number' ? fallbackLeftOffset : DEFAULT_STYLE.modal_sales_map.left_offset);
+        return normalized;
+    }
+
+    function normalizeStyleCore(raw) {
+        var input = (raw && typeof raw === 'object') ? raw : {};
+        var source = cloneObj(input);
+        delete source.desktop;
+        delete source.mobile;
+        var merged = deepMerge(cloneObj(DEFAULT_STYLE), source);
+        if (!THEME_PRESETS[merged.menu_theme]) merged.menu_theme = 'blue';
+        merged.header_logo_url = String(merged.header_logo_url || '').trim();
+        merged.header_logo_size_pct = clampInt(merged.header_logo_size_pct, 60, 160, DEFAULT_STYLE.header_logo_size_pct);
+        merged.header_logo_padding_pct = clampInt(merged.header_logo_padding_pct, 0, 160, DEFAULT_STYLE.header_logo_padding_pct);
+        merged.header_size_pct = clampInt(merged.header_size_pct, 60, 160, DEFAULT_STYLE.header_size_pct);
+        merged.header_padding_pct = clampInt(merged.header_padding_pct, 0, 160, DEFAULT_STYLE.header_padding_pct);
+        merged.modal_padding_pct = clampInt(merged.modal_padding_pct, 60, 160, DEFAULT_STYLE.modal_padding_pct);
+
+        merged.sidebar.bg_start = sanitizeHex(merged.sidebar.bg_start, DEFAULT_STYLE.sidebar.bg_start);
+        merged.sidebar.bg_end = sanitizeHex(merged.sidebar.bg_end, DEFAULT_STYLE.sidebar.bg_end);
+        merged.sidebar.bg_opacity_pct = clampInt(merged.sidebar.bg_opacity_pct, 0, 100, DEFAULT_STYLE.sidebar.bg_opacity_pct);
+        merged.sidebar.border = sanitizeHex(merged.sidebar.border, DEFAULT_STYLE.sidebar.border);
+        merged.sidebar.accent = sanitizeHex(merged.sidebar.accent, DEFAULT_STYLE.sidebar.accent);
+        merged.sidebar.glow_opacity_pct = clampInt(merged.sidebar.glow_opacity_pct, 0, 100, DEFAULT_STYLE.sidebar.glow_opacity_pct);
+        merged.sidebar.text = sanitizeHex(merged.sidebar.text, DEFAULT_STYLE.sidebar.text);
+        merged.sidebar.active_bg = sanitizeHex(merged.sidebar.active_bg, DEFAULT_STYLE.sidebar.active_bg);
+        merged.sidebar.active_text = sanitizeHex(merged.sidebar.active_text, DEFAULT_STYLE.sidebar.active_text);
+        merged.sidebar.icon_white = coerceBool(merged.sidebar.icon_white, DEFAULT_STYLE.sidebar.icon_white);
+        merged.sidebar.width = clampInt(merged.sidebar.width, 72, 180, DEFAULT_STYLE.sidebar.width);
+        merged.sidebar.max_height_vh = clampInt(merged.sidebar.max_height_vh, 30, 100, DEFAULT_STYLE.sidebar.max_height_vh);
+        merged.sidebar.icon_size_px = clampInt(merged.sidebar.icon_size_px, 12, 40, DEFAULT_STYLE.sidebar.icon_size_px);
+        merged.sidebar.font_family = sanitizeFontFamily(merged.sidebar.font_family, DEFAULT_STYLE.sidebar.font_family);
+        merged.sidebar.font_size_px = clampInt(merged.sidebar.font_size_px, 2, 48, DEFAULT_STYLE.sidebar.font_size_px);
+
+        var legacyModal = (input.modal && typeof input.modal === 'object') ? input.modal : null;
+        var hasFloorPlanModal = (input.modal_floorplan && typeof input.modal_floorplan === 'object');
+        var hasGalleryModal = (input.modal_gallery && typeof input.modal_gallery === 'object');
+        var hasSalesMapModal = (input.modal_sales_map && typeof input.modal_sales_map === 'object');
+        if (legacyModal && !hasFloorPlanModal) deepMerge(merged.modal_floorplan, legacyModal);
+        if (legacyModal && !hasGalleryModal) deepMerge(merged.modal_gallery, legacyModal);
+        if (legacyModal && !hasSalesMapModal) deepMerge(merged.modal_sales_map, legacyModal);
+
+        merged.modal = normalizeModalBlock(merged.modal, DEFAULT_STYLE.modal);
+        merged.modal_floorplan = normalizeModalBlock(merged.modal_floorplan, merged.modal);
+        merged.modal_gallery = normalizeModalBlock(merged.modal_gallery, merged.modal);
+        merged.modal_sales_map = normalizeSalesMapModalBlock(merged.modal_sales_map, merged.modal, DEFAULT_STYLE.modal_sales_map.left_offset);
+        return merged;
+    }
+
+    function baseStyleInput(raw) {
+        var input = (raw && typeof raw === 'object') ? cloneObj(raw) : {};
+        delete input.desktop;
+        delete input.mobile;
+        return input;
+    }
+
+    function normalizeStyle(raw) {
+        var input = (raw && typeof raw === 'object') ? raw : {};
+        var base = baseStyleInput(input);
+        var desktop = normalizeStyleCore(input.desktop && typeof input.desktop === 'object'
+            ? deepMerge(cloneObj(base), input.desktop)
+            : base);
+        var mobile = normalizeStyleCore(input.mobile && typeof input.mobile === 'object'
+            ? deepMerge(cloneObj(desktop), input.mobile)
+            : desktop);
+        var out = cloneObj(desktop);
+        out.desktop = desktop;
+        out.mobile = mobile;
+        return out;
+    }
+
+    function currentStyleMode() {
+        if (IS_EDITOR) return normalizePreviewMode(editorPreviewMode);
+        try {
+            if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return 'mobile';
+        } catch (e) { }
+        return 'desktop';
+    }
+
+    function effectiveStyle(style, mode) {
+        var normalized = normalizeStyle(style);
+        var key = normalizePreviewMode(mode || currentStyleMode());
+        return normalizeStyleCore(normalized[key] || normalized.desktop || normalized);
+    }
+
+    function editStyleBucket() {
+        styleState = normalizeStyle(styleState);
+        var key = normalizePreviewMode(editorPreviewMode);
+        if (!styleState[key]) styleState[key] = normalizeStyleCore(styleState.desktop || styleState);
+        return styleState[key];
+    }
+
+    function applyActiveStyleEdit(setter, value) {
+        var bucket = editStyleBucket();
+        var root = styleState;
+        styleState = bucket;
+        setter(value, bucket);
+        bucket = styleState;
+        styleState = root;
+        styleState[normalizePreviewMode(editorPreviewMode)] = normalizeStyleCore(bucket);
+        styleState = normalizeStyle(styleState);
+    }
+
+    function applyHeaderBranding(style) {
+        if (!headerLogoShellEl || !headerLogoEl) return;
+        var activeStyle = effectiveStyle(style);
+        var logoUrl = String((activeStyle && activeStyle.header_logo_url) || '').trim();
+        if (!logoUrl) {
+            headerLogoEl.removeAttribute('src');
+            headerLogoShellEl.hidden = true;
+            return;
+        }
+        if (headerLogoEl.getAttribute('src') !== logoUrl) {
+            headerLogoEl.src = logoUrl;
+        }
+        headerLogoShellEl.hidden = false;
+    }
+
+    function setCssVar(name, value) {
+        document.documentElement.style.setProperty(name, value);
+    }
+
+    function applyStyleConfig(style) {
+        var s = effectiveStyle(style);
+        var menuMid = mixHexColor(s.sidebar.bg_start, s.sidebar.bg_end, 0.45);
+        var menuBgAlpha = s.sidebar.bg_opacity_pct / 100;
+        var menuGlowAlpha = s.sidebar.glow_opacity_pct / 100;
+        var menuBorderAlpha = Math.min(0.58, Math.max(0.12, 0.12 + (menuBgAlpha * 0.46)));
+        var menuShadowAlpha = Math.min(0.44, Math.max(0.10, 0.08 + (menuBgAlpha * 0.36)));
+        var menuInnerBorderAlpha = Math.min(0.05, Math.max(0.01, 0.01 + (menuBgAlpha * 0.04)));
+        var menuAccentAlpha = Math.min(1, Math.max(0.24, 0.22 + (menuGlowAlpha * 0.78)));
+        var menuAccentFadeAlpha = Math.min(0.28, Math.max(0.06, menuGlowAlpha * 0.24));
+        setCssVar('--fv-menu-bg-start', hexToRgba(s.sidebar.bg_start, menuBgAlpha));
+        setCssVar('--fv-menu-bg-mid', hexToRgba(menuMid, menuBgAlpha));
+        setCssVar('--fv-menu-bg-end', hexToRgba(s.sidebar.bg_end, menuBgAlpha));
+        setCssVar('--fv-menu-border', hexToRgba(s.sidebar.border, menuBorderAlpha));
+        setCssVar('--fv-menu-accent', s.sidebar.accent);
+        setCssVar('--fv-menu-accent-bar', hexToRgba(s.sidebar.accent, menuAccentAlpha));
+        setCssVar('--fv-menu-accent-fade', hexToRgba(s.sidebar.accent, menuAccentFadeAlpha));
+        setCssVar('--fv-menu-text', s.sidebar.text);
+        setCssVar('--fv-menu-active-bg', s.sidebar.active_bg);
+        setCssVar('--fv-menu-active-text', s.sidebar.active_text);
+        setCssVar('--fv-menu-icon-color', s.sidebar.icon_white ? '#ffffff' : 'currentColor');
+        setCssVar('--fv-menu-icon-active-color', s.sidebar.icon_white ? '#ffffff' : 'currentColor');
+        setCssVar('--fv-menu-icon-image-filter', s.sidebar.icon_white ? 'brightness(0) invert(1)' : 'none');
+        setCssVar('--fv-menu-width', s.sidebar.width + 'px');
+        setCssVar('--fv-menu-max-height', s.sidebar.max_height_vh + 'vh');
+        setCssVar('--fv-menu-icon-size', s.sidebar.icon_size_px + 'px');
+        setCssVar('--fv-menu-icon-box-size', clampInt(s.sidebar.icon_size_px + 4, 16, 52, 26) + 'px');
+        setCssVar('--fv-menu-glow', hexToRgba(s.sidebar.accent, menuGlowAlpha));
+        setCssVar('--fv-menu-shadow', 'rgba(0, 0, 0, ' + menuShadowAlpha.toFixed(3) + ')');
+        setCssVar('--fv-menu-inner-border', 'rgba(255, 255, 255, ' + menuInnerBorderAlpha.toFixed(3) + ')');
+        setCssVar('--fv-menu-font-family', "'" + s.sidebar.font_family + "', sans-serif");
+        setCssVar('--fv-menu-font-size', s.sidebar.font_size_px + 'px');
+        setCssVar('--fv-header-logo-scale', String(s.header_logo_size_pct / 100));
+        setCssVar('--fv-header-logo-padding-scale', String(s.header_logo_padding_pct / 100));
+        setCssVar('--fv-header-scale', String(s.header_size_pct / 100));
+        setCssVar('--fv-header-padding-scale', String(s.header_padding_pct / 100));
+        setCssVar('--fv-modal-padding-scale', String(s.modal_padding_pct / 100));
+        if (sidebar) {
+            var iconSizePx = s.sidebar.icon_size_px + 'px';
+            sidebar.querySelectorAll('.fv-sidebar-icon iconify-icon').forEach(function (node) {
+                node.style.fontSize = iconSizePx;
+            });
+        }
+
+        var modalBgAlpha = s.modal_floorplan.bg_opacity_pct / 100;
+        var modalBorderAlpha = Math.min(0.38, Math.max(0.10, 0.10 + (modalBgAlpha * 0.28)));
+        var modalShadowAlpha = Math.min(0.35, Math.max(0.08, 0.06 + (modalBgAlpha * 0.29)));
+        setCssVar('--fv-modal-bg', hexToRgba(s.modal_floorplan.bg, modalBgAlpha));
+        setCssVar('--fv-modal-border', hexToRgba(s.modal_floorplan.border, modalBorderAlpha));
+        setCssVar('--fv-modal-backdrop-blur', s.modal_floorplan.backdrop_blur_px + 'px');
+        setCssVar('--fv-modal-glow', hexToRgba(s.modal_floorplan.glow_color, s.modal_floorplan.glow_opacity_pct / 100));
+        setCssVar('--fv-modal-shadow', 'rgba(0, 0, 0, ' + modalShadowAlpha.toFixed(3) + ')');
+        setCssVar('--fv-modal-title', s.modal_floorplan.title_text);
+        setCssVar('--fv-modal-item-text', hexToRgba(s.modal_floorplan.item_text, 0.9));
+        setCssVar('--fv-modal-item-active-bg', hexToRgba(s.modal_floorplan.item_active_bg, 0.35));
+        setCssVar('--fv-modal-item-active-border', hexToRgba(s.modal_floorplan.item_active_border, 0.62));
+        setCssVar('--fv-modal-width', s.modal_floorplan.width + 'px');
+        setCssVar('--fv-modal-height', s.modal_floorplan.max_height_vh + 'vh');
+        setCssVar('--fv-modal-max-height', s.modal_floorplan.max_height_vh + 'vh');
+        setCssVar('--fv-modal-right', s.modal_floorplan.right_offset + 'px');
+        setCssVar('--fv-modal-bottom', s.modal_floorplan.bottom_offset + 'px');
+        setCssVar('--fv-modal-title-font-family', "'" + s.modal_floorplan.title_font_family + "', sans-serif");
+        setCssVar('--fv-modal-item-font-family', "'" + s.modal_floorplan.item_font_family + "', sans-serif");
+        setCssVar('--fv-modal-title-font-size', s.modal_floorplan.title_font_size_px + 'px');
+        setCssVar('--fv-modal-item-font-size', s.modal_floorplan.item_font_size_px + 'px');
+    }
+
+    function postStylePreview() {
+        if (!activeFrame || !activeFrame.contentWindow) return;
+        activeFrame.contentWindow.postMessage({
+            type: 'fv-style-preview',
+            style: normalizeStyle(styleState),
+            mode: currentStyleMode()
+        }, window.location.origin);
+    }
+
+    function syncHeaderAutoplayUi() {
+        if (!headerAutoplayBtn) return;
+        headerAutoplayBtn.hidden = !shellAutoplayAvailable;
+        headerAutoplayBtn.classList.toggle('is-paused', !!shellAutoplayPaused);
+        var label = shellAutoplayPaused ? 'Play autoplay' : 'Pause autoplay';
+        headerAutoplayBtn.title = label;
+        headerAutoplayBtn.setAttribute('aria-label', label);
+    }
+
+    function resetHeaderAutoplayUi() {
+        shellAutoplayAvailable = false;
+        shellAutoplayPaused = false;
+        syncHeaderAutoplayUi();
+    }
+
+    function postToActiveFrame(message) {
+        if (!activeFrame || !activeFrame.contentWindow) return false;
+        activeFrame.contentWindow.postMessage(message, window.location.origin);
+        return true;
+    }
+
+    function requestActiveFrameAutoplayState() {
+        postToActiveFrame({ type: 'fv-gallery-autoplay-query' });
+    }
+
+    function applyAndBroadcastStyle() {
+        styleState = normalizeStyle(styleState);
+        applyStyleConfig(styleState);
+        applyHeaderBranding(styleState);
+        if (IS_EDITOR) postStylePreview();
+    }
+
+    if (!IS_EDITOR) {
+        window.addEventListener('resize', function () {
+            applyAndBroadcastStyle();
+        });
+    }
+
+    function normalizeTabType(type) {
+        return String(type || '').trim().toLowerCase();
+    }
+
+    function normalizeContentData(raw) {
+        if (!raw) return {};
+        if (typeof raw === 'string') return { url: raw.trim() };
+        if (typeof raw !== 'object') return {};
+        var url = raw.url || raw.video_url || raw.youtube_url || raw.embed_url || raw.link || raw.src || '';
+        if (url) return { ...raw, url: String(url).trim() };
+        return raw;
+    }
+
+    function parseContentData(btn) {
+        try {
+            var parsed = JSON.parse(btn.dataset.content || '{}');
+            return normalizeContentData(parsed);
+        } catch (e) {
+            fvLog('error', 'Failed to parse tab content JSON', {
+                title: btn && btn.title,
+                raw: btn ? btn.dataset.content : null,
+                error: String(e && e.message || e)
+            });
+            return {};
+        }
+    }
+
+    function sanitizeUrl(rawUrl) {
+        var url = String(rawUrl || '').trim();
+        if (!url) return '';
+        if (/^(www\.|youtu\.be\/|youtube\.com\/|m\.youtube\.com\/)/i.test(url)) return 'https://' + url;
+        if (/^\/\//.test(url)) return 'https:' + url;
+        if (/^[a-z][a-z0-9+.-]*:/i.test(url) && !/^https?:/i.test(url)) return '';
+        return url;
+    }
+
+    function extractYouTubeIdLoose(rawText) {
+        var text = String(rawText || '');
+        if (!text) return null;
+        var patterns = [
+            /[?&]v=([A-Za-z0-9_-]{11})/i,
+            /youtu\.be\/([A-Za-z0-9_-]{11})/i,
+            /\/embed\/([A-Za-z0-9_-]{11})/i,
+            /\/shorts\/([A-Za-z0-9_-]{11})/i,
+            /\/live\/([A-Za-z0-9_-]{11})/i
+        ];
+        for (var i = 0; i < patterns.length; i++) {
+            var m = text.match(patterns[i]);
+            if (m && m[1]) return m[1];
+        }
+        return null;
+    }
+
+    function extractYouTubeId(rawUrl) {
+        var normalized = sanitizeUrl(rawUrl);
+        if (!normalized) return null;
+        try {
+            var url = new URL(normalized);
+            var host = (url.hostname || '').toLowerCase();
+            var path = url.pathname || '';
+            var id = null;
+            if (host === 'youtu.be') {
+                var parts = path.split('/').filter(Boolean);
+                id = parts[0] || null;
+            } else if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+                if (path === '/watch') id = url.searchParams.get('v');
+                else if (path.startsWith('/embed/')) id = path.split('/')[2] || null;
+                else if (path.startsWith('/shorts/')) id = path.split('/')[2] || null;
+                else if (path.startsWith('/live/')) id = path.split('/')[2] || null;
+            } else if (host === 'm.youtube.com' && path === '/watch') {
+                id = url.searchParams.get('v');
+            }
+            if (!id) return null;
+            id = id.trim();
+            if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+                var compact = id.match(/[A-Za-z0-9_-]{11}/);
+                if (compact && compact[0]) id = compact[0];
+            }
+            if (/^[A-Za-z0-9_-]{11}$/.test(id)) return id;
+        } catch (e) {
+            // ignore and fallback below
+        }
+        return extractYouTubeIdLoose(rawUrl) || extractYouTubeIdLoose(normalized);
+    }
+
+    function normalizeYouTubeEmbedUrl(rawUrl) {
+        var normalized = sanitizeUrl(rawUrl);
+        if (!normalized) return null;
+        var id = extractYouTubeId(normalized);
+        if (!id) return null;
+        var params = ['autoplay=1', 'mute=1', 'playsinline=1', 'rel=0', 'modestbranding=1', 'controls=1'];
+        return 'https://www.youtube-nocookie.com/embed/' + id + '?' + params.join('&');
+    }
+
+    function isYouTubeEmbedUrl(url) {
+        return /^https:\/\/www\.youtube-nocookie\.com\/embed\//i.test(String(url || ''));
+    }
+
+    function panoramaEmbedUrl(panoramaId) {
+        if (!WS_ID) return null;
+        var params = new URLSearchParams();
+        params.set('embed', '1');
+        var panoRef = String(panoramaId || '').trim();
+        if (panoRef) params.set('pano', panoRef);
+        appendRequestedReferenceParam(params);
+        var url = '/customer/project/' + encodeURIComponent(WS_ID) + '?' + params.toString();
+        return url + editorPreviewQuerySuffix();
+    }
+
+    function embedUrl(type, ref, contentData) {
+        contentData = normalizeContentData(contentData);
+        var contentUrl = (contentData && contentData.url) ? String(contentData.url).trim() : '';
+        var ytEmbed = null;
+        if (contentUrl) {
+            ytEmbed = normalizeYouTubeEmbedUrl(contentUrl);
+            if (ytEmbed) return ytEmbed;
+        }
+        var wsQ = '?workspace_id=' + encodeURIComponent(WS_ID) + '&embed=1';
+        var previewQ = editorPreviewQuerySuffix();
+        if (type === 'floor_plan' && ref) return '/customer/full-view/floor-plan/' + ref + wsQ + previewQ;
+        if (type === 'gallery' && ref) return '/customer/full-view/gallery/' + ref + wsQ + previewQ;
+        if (type === 'amenities' && ref) return '/customer/full-view/gallery/' + ref + wsQ + previewQ;
+        if (type === 'highlights' && ref) return '/customer/full-view/gallery/' + ref + wsQ + previewQ;
+        if (type === 'daynight' && ref) return '/customer/full-view/daynight/' + ref + wsQ + previewQ;
+        if (type === 'project_plan' && ref) return '/customer/full-view/project-plan/' + ref + wsQ + previewQ;
+        if (type === 'sales_map' && ref) return '/customer/full-view/sales-map/' + ref + wsQ + previewQ;
+        if (type === 'sales_flat360' && ref) return '/customer/full-view/sales-flat360/' + ref + wsQ + previewQ;
+        if (type === 'video') return ytEmbed;
+        if (type === 'location' && contentUrl) return contentUrl;
+        if (type === 'brochure' && contentUrl) return contentUrl;
+        if (type === 'link' && contentUrl) return sanitizeUrl(contentUrl);
+        if (type === 'custom' && contentUrl) return contentUrl;
+        return null;
+    }
+
+    function tabRefForButton(btn) {
+        if (!btn) return '';
+        return String(
+            btn.dataset.refFloorplan ||
+            btn.dataset.refGallery ||
+            btn.dataset.refDaynight ||
+            btn.dataset.refProjectplan ||
+            btn.dataset.refSalesmap ||
+            btn.dataset.refSalesflat360 ||
+            btn.dataset.refPanorama ||
+            ''
+        ).trim();
+    }
+
+    function buildTabMeta(btn) {
+        if (!btn) return null;
+        var type = normalizeTabType(btn.dataset.tabType || '');
+        var pano = String(btn.dataset.refPanorama || '').trim();
+        var gal = String(btn.dataset.refGallery || '').trim();
+        var ref = tabRefForButton(btn);
+        var cd = parseContentData(btn);
+        var url = null;
+
+        if (type === '360_pano' || type === 'drone_view') {
+            ref = pano || ref;
+            url = panoramaEmbedUrl(pano || ref);
+        } else if (type === 'highlights' && !gal && pano) {
+            ref = pano;
+            url = panoramaEmbedUrl(pano);
+        } else {
+            url = embedUrl(type, ref, cd);
+        }
+
+        var opensNewWindow = Boolean(
+            url &&
+            !isYouTubeEmbedUrl(url) &&
+            type !== 'video' &&
+            type !== 'link' &&
+            (url.indexOf('http://') === 0 || url.indexOf('https://') === 0 || url.indexOf('//') === 0)
+        );
+        var isEmbeddable = Boolean(url && !opensNewWindow);
+        var key = type + '::' + String(ref || '') + '::' + String(url || '');
+        var meta = {
+            key: key,
+            type: type,
+            ref: String(ref || ''),
+            url: url,
+            opensNewWindow: opensNewWindow,
+            isEmbeddable: isEmbeddable,
+            btn: btn
+        };
+        tabMetaByKey[key] = meta;
+        return meta;
+    }
+
+    function readPrefetchState() {
+        try {
+            var raw = window.localStorage ? localStorage.getItem(PREFETCH_STATE_KEY) : null;
+            if (!raw) return { ts: 0, keys: [] };
+            var parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return { ts: 0, keys: [] };
+            if (!Array.isArray(parsed.keys)) parsed.keys = [];
+            return parsed;
+        } catch (e) {
+            return { ts: 0, keys: [] };
+        }
+    }
+
+    function writePrefetchState(state) {
+        try {
+            if (!window.localStorage) return;
+            localStorage.setItem(PREFETCH_STATE_KEY, JSON.stringify(state || { ts: Date.now(), keys: [] }));
+        } catch (e) { }
+    }
+
+    function markPrefetchedFrameKey(key) {
+        if (!key) return;
+        var state = readPrefetchState();
+        var keys = Array.isArray(state.keys) ? state.keys.slice(0) : [];
+        if (keys.indexOf(key) < 0) keys.push(key);
+        state.keys = keys.slice(-60);
+        state.ts = Date.now();
+        writePrefetchState(state);
+    }
+
+    function shouldPreloadInBackground() {
+        var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!conn) return true;
+        if (conn.saveData) return false;
+        var type = String(conn.effectiveType || '').toLowerCase();
+        if (type.indexOf('2g') >= 0 || type.indexOf('slow-2g') >= 0) return false;
+        return true;
+    }
+
+    function prefetchDocument(url) {
+        if (!url) return;
+        if (!(url.indexOf('/') === 0 || url.indexOf(window.location.origin) === 0)) return;
+        try {
+            var link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.as = 'document';
+            link.href = url;
+            document.head.appendChild(link);
+        } catch (e) { }
+        try {
+            fetch(url, { credentials: 'same-origin', mode: 'same-origin', cache: 'force-cache' }).catch(function () { });
+        } catch (e2) { }
+    }
+
+    function ensureTabFrame(meta, opts) {
+        opts = opts || {};
+        if (!meta || !meta.isEmbeddable || !meta.url || !frameHost) return null;
+        var frameEl = frameCache[meta.key] || null;
+        if (!frameEl) {
+            if (opts.preload && preloadedFrameCount >= MAX_PRELOADED_FRAMES) return null;
+            frameEl = document.createElement('iframe');
+            frameEl.className = 'cfv-tab-frame';
+            frameEl.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+            // YouTube embeds can throw Error 153 when cross-origin referer is suppressed.
+            frameEl.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+            frameEl.setAttribute('loading', opts.preload ? 'lazy' : 'eager');
+            frameEl.dataset.key = meta.key;
+            frameEl.dataset.url = meta.url;
+            frameEl.addEventListener('load', function () {
+                fvLog('log', 'Iframe loaded', { src: frameEl.getAttribute('src') || '' });
+                markPrefetchedFrameKey(meta.key);
+                if (IS_EDITOR && activeFrame === frameEl) setTimeout(postStylePreview, 30);
+                if (activeFrame === frameEl) setTimeout(requestActiveFrameAutoplayState, 30);
+            });
+            frameEl.addEventListener('error', function () {
+                fvLog('error', 'Iframe error', { src: frameEl.getAttribute('src') || '' });
+            });
+            frameCache[meta.key] = frameEl;
+            frameHost.appendChild(frameEl);
+            if (opts.preload) preloadedFrameCount += 1;
+        }
+        if (frameEl.getAttribute('src') !== meta.url) {
+            frameEl.setAttribute('src', meta.url);
+        }
+        return frameEl;
+    }
+
+    function showTabFrame(frameEl) {
+        Object.keys(frameCache).forEach(function (key) {
+            var node = frameCache[key];
+            if (node) node.classList.remove('cfv-tab-frame--active');
+        });
+        resetHeaderAutoplayUi();
+        if (!frameEl) {
+            activeFrame = null;
+            return;
+        }
+        frameEl.classList.add('cfv-tab-frame--active');
+        activeFrame = frameEl;
+        setTimeout(requestActiveFrameAutoplayState, 30);
+    }
+
+    function activateTabFrame(meta) {
+        var frameEl = ensureTabFrame(meta, { preload: false });
+        showTabFrame(frameEl);
+        return frameEl;
+    }
+
+    function scheduleFramePreload(currentMeta) {
+        if (preloadStarted || !sidebar || !frameHost) return;
+        preloadStarted = true;
+
+        var state = readPrefetchState();
+        var stale = (Date.now() - Number(state.ts || 0)) > PREFETCH_TTL_MS;
+        var seen = new Set(Array.isArray(state.keys) ? state.keys : []);
+        var queue = [];
+        sidebar.querySelectorAll('.fv-sidebar-btn').forEach(function (btn) {
+            var meta = buildTabMeta(btn);
+            if (!meta || !meta.isEmbeddable || !meta.url) return;
+            if (currentMeta && meta.key === currentMeta.key) return;
+            queue.push(meta);
+        });
+        if (!queue.length) return;
+
+        queue.sort(function (a, b) {
+            var aSeen = seen.has(a.key) ? 1 : 0;
+            var bSeen = seen.has(b.key) ? 1 : 0;
+            return aSeen - bSeen;
+        });
+        if (!stale) queue = queue.slice(0, Math.min(queue.length, 4));
+        if (!shouldPreloadInBackground()) queue = queue.slice(0, 2);
+
+        var idx = 0;
+        function step() {
+            if (idx >= queue.length) return;
+            var meta = queue[idx++];
+            prefetchDocument(meta.url);
+            ensureTabFrame(meta, { preload: true });
+            setTimeout(step, 220);
+        }
+
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 2200 });
+        else setTimeout(step, 320);
+    }
+
+    function setActive(btn) {
+        if (activeBtn) activeBtn.classList.remove('fv-sidebar-btn--active');
+        activeBtn = btn;
+        if (btn) btn.classList.add('fv-sidebar-btn--active');
+    }
+
+    function releaseSidebarButtonFocus(btn) {
+        if (!btn || typeof btn.blur !== 'function') return;
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(function () { btn.blur(); });
+        } else {
+            setTimeout(function () { btn.blur(); }, 0);
+        }
+    }
+
+    function tabDisplayName(btn) {
+        if (!btn) return '';
+        var labelEl = btn.querySelector('.fv-sidebar-label');
+        var label = (labelEl && labelEl.textContent) ? labelEl.textContent.trim() : '';
+        if (!label) label = String(btn.title || '').trim();
+        return label;
+    }
+
+    function updateShellHomeSidebarState(btn) {
+        if (!sidebar) {
+            document.body.classList.remove('fv-home-active');
+            if (frameHost) frameHost.classList.remove('cfv-frame-host--mobile-nav');
+            if (navFab) {
+                navFab.hidden = true;
+                navFab.style.display = 'none';
+            }
+            return;
+        }
+        sidebar.classList.remove('fv-sidebar--hidden');
+        document.body.classList.remove('fv-home-active');
+        if (frameHost) frameHost.classList.add('cfv-frame-host--mobile-nav');
+        if (navFab) {
+            navFab.hidden = true;
+            navFab.style.display = 'none';
+        }
+    }
+
+    if (navFab) navFab.innerHTML = '<iconify-icon icon="ph:list"></iconify-icon>';
+    if (navFab) {
+        navFab.addEventListener('click', function () {
+            if (sidebar) sidebar.classList.remove('fv-sidebar--hidden');
+            document.body.classList.remove('fv-home-active');
+            if (frameHost) frameHost.classList.add('cfv-frame-host--mobile-nav');
+            navFab.hidden = true;
+            navFab.style.display = 'none';
+        });
+    }
+
+    function loadTab(btn, opts) {
+        opts = opts || {};
+        var meta = buildTabMeta(btn);
+
+        if (headerTitleEl && !headerTitleEl.textContent) headerTitleEl.textContent = 'Project';
+        if (headerSubEl) {
+            var labelEl = btn.querySelector('.fv-sidebar-label');
+            var label = (labelEl && labelEl.textContent) ? labelEl.textContent.trim() : (btn.title || 'Full View');
+            headerSubEl.textContent = label || 'Full View';
+        }
+
+        if (!meta || !meta.url) {
+            setActive(null);
+            updateShellHomeSidebarState(null);
+            showTabFrame(null);
+            return;
+        }
+
+        if (meta.opensNewWindow) {
+            window.open(meta.url, '_blank', 'noopener');
+            setActive(null);
+            updateShellHomeSidebarState(null);
+            showTabFrame(null);
+            return;
+        }
+
+        setActive(btn);
+        updateShellHomeSidebarState(btn);
+        var frameEl = activateTabFrame(meta);
+        if (!frameEl) return;
+
+        if (!opts.skipPreload) scheduleFramePreload(meta);
+        if (history.replaceState && WS_ID) {
+            var params = new URLSearchParams();
+            params.set('type', meta.type);
+            params.set('ref', meta.ref || '');
+            appendRequestedReferenceParam(params);
+            history.replaceState(null, '', SHELL_BASE_PATH
+                + '?' + params.toString()
+                + editorPreviewQuerySuffix());
+        }
+    }
+
+    window.addEventListener('message', function (evt) {
+        if (evt.origin !== window.location.origin) return;
+        if (!activeFrame || evt.source !== activeFrame.contentWindow) return;
+        var data = evt.data || {};
+        if (data.type !== 'fv-gallery-autoplay-state') return;
+        shellAutoplayAvailable = !!data.available;
+        shellAutoplayPaused = !!data.paused;
+        syncHeaderAutoplayUi();
+    });
+
+    if (headerAutoplayBtn) {
+        headerAutoplayBtn.addEventListener('click', function () {
+            if (!shellAutoplayAvailable) return;
+            postToActiveFrame({ type: 'fv-gallery-autoplay-control', action: 'toggle' });
+        });
+    }
+    if (headerPreviewBtn) {
+        headerPreviewBtn.addEventListener('click', function () {
+            applyEditorPreviewMode(editorPreviewMode === 'mobile' ? 'desktop' : 'mobile');
+        });
+    }
+
+    if (sidebar) {
+        sidebar.addEventListener('click', function (evt) {
+            var btn = evt.target && evt.target.closest ? evt.target.closest('.fv-sidebar-btn') : null;
+            if (!btn || !sidebar.contains(btn)) return;
+            evt.preventDefault();
+            loadTab(btn);
+            releaseSidebarButtonFocus(btn);
+        });
+    }
+
+    function autoSelect() {
+        if (!sidebar) return;
+        var btns = sidebar.querySelectorAll('.fv-sidebar-btn');
+        var initTypeNorm = normalizeTabType(INIT_TYPE);
+
+        function isInternalEmbeddable(btn) {
+            var meta = buildTabMeta(btn);
+            return !!(meta && meta.isEmbeddable);
+        }
+
+        if (initTypeNorm) {
+            for (var i = 0; i < btns.length; i++) {
+                var b = btns[i];
+                if (normalizeTabType(b.dataset.tabType) !== initTypeNorm) continue;
+                var initRef = tabRefForButton(b);
+                if (INIT_REF && initRef && String(initRef) !== String(INIT_REF)) continue;
+                loadTab(b);
+                return;
+            }
+        }
+
+        if (IS_EDITOR) {
+            for (var pref = 0; pref < btns.length; pref++) {
+                if (normalizeTabType(btns[pref].dataset.tabType) === 'floor_plan') {
+                    loadTab(btns[pref]);
+                    return;
+                }
+            }
+            for (var pref2 = 0; pref2 < btns.length; pref2++) {
+                var t = normalizeTabType(btns[pref2].dataset.tabType);
+                if (t === 'gallery' || t === 'highlights' || t === 'amenities') {
+                    loadTab(btns[pref2]);
+                    return;
+                }
+            }
+        }
+
+        for (var j = 0; j < btns.length; j++) {
+            if (isInternalEmbeddable(btns[j])) {
+                loadTab(btns[j]);
+                return;
+            }
+        }
+    }
+
+    function firstTabByTypes(typeList) {
+        if (!sidebar) return null;
+        for (var i = 0; i < typeList.length; i++) {
+            var selector = '.fv-sidebar-btn[data-tab-type="' + typeList[i] + '"]';
+            var found = sidebar.querySelector(selector);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    function showEditorStatus(message, isError) {
+        var el = document.getElementById('fv-style-status');
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.toggle('error', !!isError);
+        if (message) {
+            setTimeout(function () {
+                if (el.textContent === message) el.textContent = '';
+            }, 3500);
+        }
+    }
+
+    function normalizePreviewMode(mode) {
+        return String(mode || '').trim().toLowerCase() === 'mobile' ? 'mobile' : 'desktop';
+    }
+
+    function loadEditorPreviewMode() {
+        if (!IS_EDITOR) return 'desktop';
+        if (INITIAL_EDITOR_PREVIEW_MODE) return normalizePreviewMode(INITIAL_EDITOR_PREVIEW_MODE);
+        try {
+            if (!window.localStorage) return 'desktop';
+            return normalizePreviewMode(localStorage.getItem(PREVIEW_MODE_STORAGE_KEY));
+        } catch (e) {
+            return 'desktop';
+        }
+    }
+
+    function syncEditorPreviewToggleUi() {
+        if (!IS_EDITOR) return;
+        if (headerPreviewBtn) {
+            var switchToMobile = editorPreviewMode !== 'mobile';
+            headerPreviewBtn.title = switchToMobile ? 'Switch to mobile preview' : 'Switch to desktop preview';
+            headerPreviewBtn.setAttribute('aria-label', headerPreviewBtn.title);
+        }
+        if (headerPreviewIcon) {
+            headerPreviewIcon.setAttribute('icon', editorPreviewMode === 'mobile' ? 'ph:desktop' : 'ph:device-mobile');
+        }
+        if (headerPreviewLabel) {
+            headerPreviewLabel.textContent = editorPreviewMode === 'mobile' ? 'Desktop View' : 'Mobile View';
+        }
+    }
+
+    function applyEditorPreviewMode(mode) {
+        if (!IS_EDITOR) return;
+        editorPreviewMode = normalizePreviewMode(mode);
+        document.body.classList.toggle('fv-mobile-mode', editorPreviewMode === 'mobile');
+        var selectEl = document.getElementById('fv-style-preview-mode');
+        if (selectEl && selectEl.value !== editorPreviewMode) selectEl.value = editorPreviewMode;
+        syncEditorPreviewToggleUi();
+        syncEditorForm();
+        applyAndBroadcastStyle();
+        try {
+            if (window.localStorage) localStorage.setItem(PREVIEW_MODE_STORAGE_KEY, editorPreviewMode);
+        } catch (e) { }
+        if (activeBtn) {
+            loadTab(activeBtn, { skipPreload: true });
+        }
+    }
+
+    function editorAuthHeaders(includeJsonContentType) {
+        var withJson = includeJsonContentType !== false;
+        if (!window._supabase) return Promise.resolve(withJson ? { 'Content-Type': 'application/json' } : {});
+        return window._supabase.auth.getSession().then(function (r) {
+            var h = withJson ? { 'Content-Type': 'application/json' } : {};
+            if (r.data.session && r.data.session.access_token) h.Authorization = 'Bearer ' + r.data.session.access_token;
+            return h;
+        });
+    }
+
+    async function uploadFullViewHeaderLogo(file) {
+        var headers = await editorAuthHeaders(false);
+        var formData = new FormData();
+        formData.append('file', file);
+        if (WS_ID) formData.append('workspace_id', WS_ID);
+        var res = await fetch('/api/full-view/logo-upload', {
+            method: 'POST',
+            headers: headers,
+            body: formData
+        });
+        var text = await res.text().catch(function () { return ''; });
+        var payload = null;
+        try { payload = text ? JSON.parse(text) : null; } catch (e) { payload = null; }
+        if (!res.ok) {
+            throw new Error((payload && payload.error) || text || res.statusText || 'Logo upload failed');
+        }
+        return payload || {};
+    }
+
+    function syncHeaderLogoControls(message, isError) {
+        var previewShell = document.getElementById('fv-style-logo-preview-shell');
+        var previewEl = document.getElementById('fv-style-logo-preview');
+        var placeholderEl = document.getElementById('fv-style-logo-placeholder');
+        var statusEl = document.getElementById('fv-style-logo-status');
+        var removeBtn = document.getElementById('fv-style-logo-remove-btn');
+        var defaultStatus = 'Appears on the left side of the Full View header. Use the size and spacing sliders to resize the logo box, logo shell padding, branding card, and modal spacing live. PNG, JPG, or WebP up to 5 MB.';
+        var activeStyle = effectiveStyle(styleState, editorPreviewMode);
+        var logoUrl = String((activeStyle && activeStyle.header_logo_url) || '').trim();
+
+        if (previewShell) previewShell.classList.toggle('is-empty', !logoUrl);
+        if (previewEl) {
+            if (logoUrl) {
+                if (previewEl.getAttribute('src') !== logoUrl) previewEl.src = logoUrl;
+                previewEl.hidden = false;
+            } else {
+                previewEl.hidden = true;
+                previewEl.removeAttribute('src');
+            }
+        }
+        if (placeholderEl) placeholderEl.hidden = !!logoUrl;
+        if (removeBtn) removeBtn.disabled = !logoUrl;
+        if (statusEl) {
+            statusEl.textContent = message || defaultStatus;
+            statusEl.classList.toggle('error', !!isError);
+        }
+    }
+
+    function syncEditorForm() {
+        var s = effectiveStyle(styleState, editorPreviewMode);
+        var set = function (id, value) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.value = value;
+        };
+        set('fv-style-theme', s.menu_theme);
+        set('fv-style-preview-mode', editorPreviewMode);
+        set('fv-style-header-logo-size', s.header_logo_size_pct);
+        set('fv-style-header-logo-padding', s.header_logo_padding_pct);
+        set('fv-style-header-size', s.header_size_pct);
+        set('fv-style-header-padding', s.header_padding_pct);
+        set('fv-style-modal-padding', s.modal_padding_pct);
+        set('fv-style-menu-start', s.sidebar.bg_start);
+        set('fv-style-menu-end', s.sidebar.bg_end);
+        set('fv-style-menu-bg-opacity', s.sidebar.bg_opacity_pct);
+        set('fv-style-menu-border', s.sidebar.border);
+        set('fv-style-menu-accent', s.sidebar.accent);
+        set('fv-style-menu-glow-opacity', s.sidebar.glow_opacity_pct);
+        set('fv-style-menu-text', s.sidebar.text);
+        set('fv-style-menu-active-bg', s.sidebar.active_bg);
+        set('fv-style-menu-active-text', s.sidebar.active_text);
+        set('fv-style-menu-white-icons', s.sidebar.icon_white ? '1' : '0');
+        set('fv-style-menu-width', s.sidebar.width);
+        set('fv-style-menu-height', s.sidebar.max_height_vh);
+        set('fv-style-menu-icon-size', s.sidebar.icon_size_px);
+        set('fv-style-menu-font', s.sidebar.font_family);
+        set('fv-style-menu-font-size', s.sidebar.font_size_px);
+        set('fv-style-modal-bg', s.modal_floorplan.bg);
+        set('fv-style-modal-bg-opacity', s.modal_floorplan.bg_opacity_pct);
+        set('fv-style-modal-blur', s.modal_floorplan.backdrop_blur_px);
+        set('fv-style-modal-border', s.modal_floorplan.border);
+        set('fv-style-modal-glow', s.modal_floorplan.glow_color);
+        set('fv-style-modal-glow-opacity', s.modal_floorplan.glow_opacity_pct);
+        set('fv-style-modal-title', s.modal_floorplan.title_text);
+        set('fv-style-modal-item', s.modal_floorplan.item_text);
+        set('fv-style-modal-active-bg', s.modal_floorplan.item_active_bg);
+        set('fv-style-modal-active-border', s.modal_floorplan.item_active_border);
+        set('fv-style-modal-width', s.modal_floorplan.width);
+        set('fv-style-modal-height', s.modal_floorplan.max_height_vh);
+        set('fv-style-modal-right', s.modal_floorplan.right_offset);
+        set('fv-style-modal-bottom', s.modal_floorplan.bottom_offset);
+        set('fv-style-modal-title-font', s.modal_floorplan.title_font_family);
+        set('fv-style-modal-item-font', s.modal_floorplan.item_font_family);
+        set('fv-style-modal-title-size', s.modal_floorplan.title_font_size_px);
+        set('fv-style-modal-item-size', s.modal_floorplan.item_font_size_px);
+        set('fv-style-gallery-modal-bg', s.modal_gallery.bg);
+        set('fv-style-gallery-modal-bg-opacity', s.modal_gallery.bg_opacity_pct);
+        set('fv-style-gallery-modal-blur', s.modal_gallery.backdrop_blur_px);
+        set('fv-style-gallery-modal-border', s.modal_gallery.border);
+        set('fv-style-gallery-modal-glow', s.modal_gallery.glow_color);
+        set('fv-style-gallery-modal-glow-opacity', s.modal_gallery.glow_opacity_pct);
+        set('fv-style-gallery-modal-title', s.modal_gallery.title_text);
+        set('fv-style-gallery-modal-item', s.modal_gallery.item_text);
+        set('fv-style-gallery-modal-active-bg', s.modal_gallery.item_active_bg);
+        set('fv-style-gallery-modal-active-border', s.modal_gallery.item_active_border);
+        set('fv-style-gallery-modal-width', s.modal_gallery.width);
+        set('fv-style-gallery-modal-height', s.modal_gallery.max_height_vh);
+        set('fv-style-gallery-modal-right', s.modal_gallery.right_offset);
+        set('fv-style-gallery-modal-bottom', s.modal_gallery.bottom_offset);
+        set('fv-style-gallery-modal-title-font', s.modal_gallery.title_font_family);
+        set('fv-style-gallery-modal-item-font', s.modal_gallery.item_font_family);
+        set('fv-style-gallery-modal-title-size', s.modal_gallery.title_font_size_px);
+        set('fv-style-gallery-modal-item-size', s.modal_gallery.item_font_size_px);
+        set('fv-style-salesmap-modal-bg', s.modal_sales_map.bg);
+        set('fv-style-salesmap-modal-bg-opacity', s.modal_sales_map.bg_opacity_pct);
+        set('fv-style-salesmap-modal-blur', s.modal_sales_map.backdrop_blur_px);
+        set('fv-style-salesmap-modal-border', s.modal_sales_map.border);
+        set('fv-style-salesmap-modal-glow', s.modal_sales_map.glow_color);
+        set('fv-style-salesmap-modal-glow-opacity', s.modal_sales_map.glow_opacity_pct);
+        set('fv-style-salesmap-modal-title', s.modal_sales_map.title_text);
+        set('fv-style-salesmap-modal-item', s.modal_sales_map.item_text);
+        set('fv-style-salesmap-modal-active-bg', s.modal_sales_map.item_active_bg);
+        set('fv-style-salesmap-modal-active-border', s.modal_sales_map.item_active_border);
+        set('fv-style-salesmap-modal-width', s.modal_sales_map.width);
+        set('fv-style-salesmap-modal-height', s.modal_sales_map.max_height_vh);
+        set('fv-style-salesmap-modal-left', s.modal_sales_map.left_offset);
+        set('fv-style-salesmap-modal-bottom', s.modal_sales_map.bottom_offset);
+        set('fv-style-salesmap-modal-title-font', s.modal_sales_map.title_font_family);
+        set('fv-style-salesmap-modal-item-font', s.modal_sales_map.item_font_family);
+        set('fv-style-salesmap-modal-title-size', s.modal_sales_map.title_font_size_px);
+        set('fv-style-salesmap-modal-item-size', s.modal_sales_map.item_font_size_px);
+
+        var mapVals = [
+            ['fv-style-header-logo-size-val', s.header_logo_size_pct + '%'],
+            ['fv-style-header-logo-padding-val', s.header_logo_padding_pct + '%'],
+            ['fv-style-header-size-val', s.header_size_pct + '%'],
+            ['fv-style-header-padding-val', s.header_padding_pct + '%'],
+            ['fv-style-modal-padding-val', s.modal_padding_pct + '%'],
+            ['fv-style-menu-bg-opacity-val', s.sidebar.bg_opacity_pct + '%'],
+            ['fv-style-menu-glow-opacity-val', s.sidebar.glow_opacity_pct + '%'],
+            ['fv-style-menu-width-val', s.sidebar.width + 'px'],
+            ['fv-style-menu-height-val', s.sidebar.max_height_vh + 'vh'],
+            ['fv-style-menu-icon-size-val', s.sidebar.icon_size_px + 'px'],
+            ['fv-style-menu-font-size-val', s.sidebar.font_size_px + 'px'],
+            ['fv-style-modal-bg-opacity-val', s.modal_floorplan.bg_opacity_pct + '%'],
+            ['fv-style-modal-blur-val', s.modal_floorplan.backdrop_blur_px + 'px'],
+            ['fv-style-modal-glow-opacity-val', s.modal_floorplan.glow_opacity_pct + '%'],
+            ['fv-style-modal-width-val', s.modal_floorplan.width + 'px'],
+            ['fv-style-modal-height-val', s.modal_floorplan.max_height_vh + 'vh'],
+            ['fv-style-modal-right-val', s.modal_floorplan.right_offset + 'px'],
+            ['fv-style-modal-bottom-val', s.modal_floorplan.bottom_offset + 'px'],
+            ['fv-style-modal-title-size-val', s.modal_floorplan.title_font_size_px + 'px'],
+            ['fv-style-modal-item-size-val', s.modal_floorplan.item_font_size_px + 'px'],
+            ['fv-style-gallery-modal-bg-opacity-val', s.modal_gallery.bg_opacity_pct + '%'],
+            ['fv-style-gallery-modal-blur-val', s.modal_gallery.backdrop_blur_px + 'px'],
+            ['fv-style-gallery-modal-glow-opacity-val', s.modal_gallery.glow_opacity_pct + '%'],
+            ['fv-style-gallery-modal-width-val', s.modal_gallery.width + 'px'],
+            ['fv-style-gallery-modal-height-val', s.modal_gallery.max_height_vh + 'vh'],
+            ['fv-style-gallery-modal-right-val', s.modal_gallery.right_offset + 'px'],
+            ['fv-style-gallery-modal-bottom-val', s.modal_gallery.bottom_offset + 'px'],
+            ['fv-style-gallery-modal-title-size-val', s.modal_gallery.title_font_size_px + 'px'],
+            ['fv-style-gallery-modal-item-size-val', s.modal_gallery.item_font_size_px + 'px'],
+            ['fv-style-salesmap-modal-bg-opacity-val', s.modal_sales_map.bg_opacity_pct + '%'],
+            ['fv-style-salesmap-modal-blur-val', s.modal_sales_map.backdrop_blur_px + 'px'],
+            ['fv-style-salesmap-modal-glow-opacity-val', s.modal_sales_map.glow_opacity_pct + '%'],
+            ['fv-style-salesmap-modal-width-val', s.modal_sales_map.width + 'px'],
+            ['fv-style-salesmap-modal-height-val', s.modal_sales_map.max_height_vh + 'vh'],
+            ['fv-style-salesmap-modal-left-val', s.modal_sales_map.left_offset + 'px'],
+            ['fv-style-salesmap-modal-bottom-val', s.modal_sales_map.bottom_offset + 'px'],
+            ['fv-style-salesmap-modal-title-size-val', s.modal_sales_map.title_font_size_px + 'px'],
+            ['fv-style-salesmap-modal-item-size-val', s.modal_sales_map.item_font_size_px + 'px']
+        ];
+        mapVals.forEach(function (row) {
+            var node = document.getElementById(row[0]);
+            if (node) node.textContent = row[1];
+        });
+        syncHeaderLogoControls();
+    }
+
+    function bindEditor() {
+        if (!IS_EDITOR) return;
+        if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY && !window._supabase) {
+            try {
+                window._supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } catch (e) {
+                fvLog('warn', 'Supabase init failed for editor save', e);
+            }
+        }
+
+        syncEditorForm();
+        function bindColor(id, setter) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('input', function () {
+                applyActiveStyleEdit(setter, el.value);
+                applyAndBroadcastStyle();
+            });
+        }
+        function bindRange(id, setter, valId, unit) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('input', function () {
+                var v = parseInt(el.value, 10) || 0;
+                applyActiveStyleEdit(setter, v);
+                var lbl = document.getElementById(valId);
+                if (lbl) lbl.textContent = v + unit;
+                applyAndBroadcastStyle();
+            });
+        }
+        function bindSelect(id, setter) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('change', function () {
+                applyActiveStyleEdit(setter, el.value);
+                applyAndBroadcastStyle();
+            });
+        }
+
+        var logoInput = document.getElementById('fv-style-logo-input');
+        var logoUploadBtn = document.getElementById('fv-style-logo-upload-btn');
+        var logoRemoveBtn = document.getElementById('fv-style-logo-remove-btn');
+        if (logoUploadBtn && logoInput) {
+            logoUploadBtn.addEventListener('click', function () {
+                logoInput.click();
+            });
+        }
+        if (logoInput) {
+            logoInput.addEventListener('change', async function () {
+                var file = this.files && this.files[0] ? this.files[0] : null;
+                if (!file) return;
+                syncHeaderLogoControls('Uploading logo...', false);
+                try {
+                    var result = await uploadFullViewHeaderLogo(file);
+                    editStyleBucket().header_logo_url = String((result && result.url) || '').trim();
+                    styleState = normalizeStyle(styleState);
+                    syncEditorForm();
+                    applyAndBroadcastStyle();
+                    syncHeaderLogoControls('Logo uploaded. Click Save Style to keep it.', false);
+                    showEditorStatus('Logo uploaded. Click Save Style to publish it.', false);
+                } catch (e) {
+                    var message = String((e && e.message) || 'Logo upload failed');
+                    syncHeaderLogoControls(message, true);
+                    showEditorStatus('Logo upload failed: ' + message, true);
+                } finally {
+                    this.value = '';
+                }
+            });
+        }
+        if (logoRemoveBtn) {
+            logoRemoveBtn.addEventListener('click', function () {
+                var bucket = editStyleBucket();
+                if (!bucket.header_logo_url) return;
+                bucket.header_logo_url = '';
+                styleState = normalizeStyle(styleState);
+                syncEditorForm();
+                applyAndBroadcastStyle();
+                syncHeaderLogoControls('Logo removed. Click Save Style to keep it.', false);
+                showEditorStatus('Logo removed. Click Save Style to publish it.', false);
+            });
+        }
+
+        var themeSel = document.getElementById('fv-style-theme');
+        if (themeSel) {
+            themeSel.addEventListener('change', function () {
+                var preset = THEME_PRESETS[themeSel.value];
+                var bucket = editStyleBucket();
+                bucket.menu_theme = themeSel.value;
+                if (preset) {
+                    deepMerge(bucket.sidebar, preset.sidebar);
+                    deepMerge(bucket.modal, preset.modal);
+                    deepMerge(bucket.modal_floorplan, preset.modal);
+                    deepMerge(bucket.modal_gallery, preset.modal);
+                    deepMerge(bucket.modal_sales_map, preset.modal);
+                }
+                styleState[normalizePreviewMode(editorPreviewMode)] = normalizeStyleCore(bucket);
+                styleState = normalizeStyle(styleState);
+                syncEditorForm();
+                applyAndBroadcastStyle();
+            });
+        }
+
+        var previewModeSel = document.getElementById('fv-style-preview-mode');
+        if (previewModeSel) {
+            previewModeSel.value = editorPreviewMode;
+            previewModeSel.addEventListener('change', function () {
+                applyEditorPreviewMode(previewModeSel.value);
+            });
+        }
+
+        bindColor('fv-style-menu-start', function (v) { styleState.sidebar.bg_start = v; });
+        bindColor('fv-style-menu-end', function (v) { styleState.sidebar.bg_end = v; });
+        bindColor('fv-style-menu-border', function (v) { styleState.sidebar.border = v; });
+        bindColor('fv-style-menu-accent', function (v) { styleState.sidebar.accent = v; });
+        bindColor('fv-style-menu-text', function (v) { styleState.sidebar.text = v; });
+        bindColor('fv-style-menu-active-bg', function (v) { styleState.sidebar.active_bg = v; });
+        bindColor('fv-style-menu-active-text', function (v) { styleState.sidebar.active_text = v; });
+        bindColor('fv-style-modal-bg', function (v) { styleState.modal_floorplan.bg = v; });
+        bindColor('fv-style-modal-border', function (v) { styleState.modal_floorplan.border = v; });
+        bindColor('fv-style-modal-glow', function (v) { styleState.modal_floorplan.glow_color = v; });
+        bindColor('fv-style-modal-title', function (v) { styleState.modal_floorplan.title_text = v; });
+        bindColor('fv-style-modal-item', function (v) { styleState.modal_floorplan.item_text = v; });
+        bindColor('fv-style-modal-active-bg', function (v) { styleState.modal_floorplan.item_active_bg = v; });
+        bindColor('fv-style-modal-active-border', function (v) { styleState.modal_floorplan.item_active_border = v; });
+        bindColor('fv-style-gallery-modal-bg', function (v) { styleState.modal_gallery.bg = v; });
+        bindColor('fv-style-gallery-modal-border', function (v) { styleState.modal_gallery.border = v; });
+        bindColor('fv-style-gallery-modal-glow', function (v) { styleState.modal_gallery.glow_color = v; });
+        bindColor('fv-style-gallery-modal-title', function (v) { styleState.modal_gallery.title_text = v; });
+        bindColor('fv-style-gallery-modal-item', function (v) { styleState.modal_gallery.item_text = v; });
+        bindColor('fv-style-gallery-modal-active-bg', function (v) { styleState.modal_gallery.item_active_bg = v; });
+        bindColor('fv-style-gallery-modal-active-border', function (v) { styleState.modal_gallery.item_active_border = v; });
+        bindColor('fv-style-salesmap-modal-bg', function (v) { styleState.modal_sales_map.bg = v; });
+        bindColor('fv-style-salesmap-modal-border', function (v) { styleState.modal_sales_map.border = v; });
+        bindColor('fv-style-salesmap-modal-glow', function (v) { styleState.modal_sales_map.glow_color = v; });
+        bindColor('fv-style-salesmap-modal-title', function (v) { styleState.modal_sales_map.title_text = v; });
+        bindColor('fv-style-salesmap-modal-item', function (v) { styleState.modal_sales_map.item_text = v; });
+        bindColor('fv-style-salesmap-modal-active-bg', function (v) { styleState.modal_sales_map.item_active_bg = v; });
+        bindColor('fv-style-salesmap-modal-active-border', function (v) { styleState.modal_sales_map.item_active_border = v; });
+        bindSelect('fv-style-menu-font', function (v) { styleState.sidebar.font_family = v; });
+        bindSelect('fv-style-menu-white-icons', function (v) { styleState.sidebar.icon_white = v === '1'; });
+        bindSelect('fv-style-modal-title-font', function (v) { styleState.modal_floorplan.title_font_family = v; });
+        bindSelect('fv-style-modal-item-font', function (v) { styleState.modal_floorplan.item_font_family = v; });
+        bindSelect('fv-style-gallery-modal-title-font', function (v) { styleState.modal_gallery.title_font_family = v; });
+        bindSelect('fv-style-gallery-modal-item-font', function (v) { styleState.modal_gallery.item_font_family = v; });
+        bindSelect('fv-style-salesmap-modal-title-font', function (v) { styleState.modal_sales_map.title_font_family = v; });
+        bindSelect('fv-style-salesmap-modal-item-font', function (v) { styleState.modal_sales_map.item_font_family = v; });
+
+        bindRange('fv-style-header-logo-size', function (v) { styleState.header_logo_size_pct = v; }, 'fv-style-header-logo-size-val', '%');
+        bindRange('fv-style-header-logo-padding', function (v) { styleState.header_logo_padding_pct = v; }, 'fv-style-header-logo-padding-val', '%');
+        bindRange('fv-style-header-size', function (v) { styleState.header_size_pct = v; }, 'fv-style-header-size-val', '%');
+        bindRange('fv-style-header-padding', function (v) { styleState.header_padding_pct = v; }, 'fv-style-header-padding-val', '%');
+        bindRange('fv-style-modal-padding', function (v) { styleState.modal_padding_pct = v; }, 'fv-style-modal-padding-val', '%');
+        bindRange('fv-style-menu-bg-opacity', function (v) { styleState.sidebar.bg_opacity_pct = v; }, 'fv-style-menu-bg-opacity-val', '%');
+        bindRange('fv-style-menu-glow-opacity', function (v) { styleState.sidebar.glow_opacity_pct = v; }, 'fv-style-menu-glow-opacity-val', '%');
+        bindRange('fv-style-menu-width', function (v) { styleState.sidebar.width = v; }, 'fv-style-menu-width-val', 'px');
+        bindRange('fv-style-menu-height', function (v) { styleState.sidebar.max_height_vh = v; }, 'fv-style-menu-height-val', 'vh');
+        bindRange('fv-style-menu-icon-size', function (v) { styleState.sidebar.icon_size_px = v; }, 'fv-style-menu-icon-size-val', 'px');
+        bindRange('fv-style-menu-font-size', function (v) { styleState.sidebar.font_size_px = v; }, 'fv-style-menu-font-size-val', 'px');
+        bindRange('fv-style-modal-bg-opacity', function (v) { styleState.modal_floorplan.bg_opacity_pct = v; }, 'fv-style-modal-bg-opacity-val', '%');
+        bindRange('fv-style-modal-blur', function (v) { styleState.modal_floorplan.backdrop_blur_px = v; }, 'fv-style-modal-blur-val', 'px');
+        bindRange('fv-style-modal-glow-opacity', function (v) { styleState.modal_floorplan.glow_opacity_pct = v; }, 'fv-style-modal-glow-opacity-val', '%');
+        bindRange('fv-style-modal-width', function (v) { styleState.modal_floorplan.width = v; }, 'fv-style-modal-width-val', 'px');
+        bindRange('fv-style-modal-height', function (v) { styleState.modal_floorplan.max_height_vh = v; }, 'fv-style-modal-height-val', 'vh');
+        bindRange('fv-style-modal-right', function (v) { styleState.modal_floorplan.right_offset = v; }, 'fv-style-modal-right-val', 'px');
+        bindRange('fv-style-modal-bottom', function (v) { styleState.modal_floorplan.bottom_offset = v; }, 'fv-style-modal-bottom-val', 'px');
+        bindRange('fv-style-modal-title-size', function (v) { styleState.modal_floorplan.title_font_size_px = v; }, 'fv-style-modal-title-size-val', 'px');
+        bindRange('fv-style-modal-item-size', function (v) { styleState.modal_floorplan.item_font_size_px = v; }, 'fv-style-modal-item-size-val', 'px');
+        bindRange('fv-style-gallery-modal-bg-opacity', function (v) { styleState.modal_gallery.bg_opacity_pct = v; }, 'fv-style-gallery-modal-bg-opacity-val', '%');
+        bindRange('fv-style-gallery-modal-blur', function (v) { styleState.modal_gallery.backdrop_blur_px = v; }, 'fv-style-gallery-modal-blur-val', 'px');
+        bindRange('fv-style-gallery-modal-glow-opacity', function (v) { styleState.modal_gallery.glow_opacity_pct = v; }, 'fv-style-gallery-modal-glow-opacity-val', '%');
+        bindRange('fv-style-gallery-modal-width', function (v) { styleState.modal_gallery.width = v; }, 'fv-style-gallery-modal-width-val', 'px');
+        bindRange('fv-style-gallery-modal-height', function (v) { styleState.modal_gallery.max_height_vh = v; }, 'fv-style-gallery-modal-height-val', 'vh');
+        bindRange('fv-style-gallery-modal-right', function (v) { styleState.modal_gallery.right_offset = v; }, 'fv-style-gallery-modal-right-val', 'px');
+        bindRange('fv-style-gallery-modal-bottom', function (v) { styleState.modal_gallery.bottom_offset = v; }, 'fv-style-gallery-modal-bottom-val', 'px');
+        bindRange('fv-style-gallery-modal-title-size', function (v) { styleState.modal_gallery.title_font_size_px = v; }, 'fv-style-gallery-modal-title-size-val', 'px');
+        bindRange('fv-style-gallery-modal-item-size', function (v) { styleState.modal_gallery.item_font_size_px = v; }, 'fv-style-gallery-modal-item-size-val', 'px');
+        bindRange('fv-style-salesmap-modal-bg-opacity', function (v) { styleState.modal_sales_map.bg_opacity_pct = v; }, 'fv-style-salesmap-modal-bg-opacity-val', '%');
+        bindRange('fv-style-salesmap-modal-blur', function (v) { styleState.modal_sales_map.backdrop_blur_px = v; }, 'fv-style-salesmap-modal-blur-val', 'px');
+        bindRange('fv-style-salesmap-modal-glow-opacity', function (v) { styleState.modal_sales_map.glow_opacity_pct = v; }, 'fv-style-salesmap-modal-glow-opacity-val', '%');
+        bindRange('fv-style-salesmap-modal-width', function (v) { styleState.modal_sales_map.width = v; }, 'fv-style-salesmap-modal-width-val', 'px');
+        bindRange('fv-style-salesmap-modal-height', function (v) { styleState.modal_sales_map.max_height_vh = v; }, 'fv-style-salesmap-modal-height-val', 'vh');
+        bindRange('fv-style-salesmap-modal-left', function (v) { styleState.modal_sales_map.left_offset = v; }, 'fv-style-salesmap-modal-left-val', 'px');
+        bindRange('fv-style-salesmap-modal-bottom', function (v) { styleState.modal_sales_map.bottom_offset = v; }, 'fv-style-salesmap-modal-bottom-val', 'px');
+        bindRange('fv-style-salesmap-modal-title-size', function (v) { styleState.modal_sales_map.title_font_size_px = v; }, 'fv-style-salesmap-modal-title-size-val', 'px');
+        bindRange('fv-style-salesmap-modal-item-size', function (v) { styleState.modal_sales_map.item_font_size_px = v; }, 'fv-style-salesmap-modal-item-size-val', 'px');
+
+        var previewFloorPlan = document.getElementById('fv-style-open-floorplan');
+        if (previewFloorPlan) {
+            previewFloorPlan.addEventListener('click', function () {
+                var tab = firstTabByTypes(['floor_plan']);
+                if (!tab) {
+                    showEditorStatus('Add a Floor Plan tab first in Full View Creator.', true);
+                    return;
+                }
+                loadTab(tab);
+            });
+        }
+
+        var previewGallery = document.getElementById('fv-style-open-gallery');
+        if (previewGallery) {
+            previewGallery.addEventListener('click', function () {
+                var tab = firstTabByTypes(['gallery', 'highlights', 'amenities']);
+                if (!tab) {
+                    showEditorStatus('Add a Gallery tab first in Full View Creator.', true);
+                    return;
+                }
+                loadTab(tab);
+            });
+        }
+
+        var previewSalesMap = document.getElementById('fv-style-open-salesmap');
+        if (previewSalesMap) {
+            previewSalesMap.addEventListener('click', function () {
+                var tab = firstTabByTypes(['sales_map']);
+                if (!tab) {
+                    showEditorStatus('Add a Sales Map tab first in Full View Creator.', true);
+                    return;
+                }
+                loadTab(tab);
+            });
+        }
+
+        var resetBtn = document.getElementById('fv-style-reset');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                var preservedLogoUrl = String((styleState && styleState.header_logo_url) || '').trim();
+                styleState = normalizeStyle(DEFAULT_STYLE);
+                styleState.header_logo_url = preservedLogoUrl;
+                syncEditorForm();
+                applyAndBroadcastStyle();
+                showEditorStatus('Theme reset to default.', false);
+            });
+        }
+
+        var saveBtn = document.getElementById('fv-style-save');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async function () {
+                try {
+                    var headers = await editorAuthHeaders();
+                    if (!FV_CONFIG_ID) {
+                        var createRes = await fetch('/api/full-view/config', {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({ workspace_id: WS_ID })
+                        });
+                        if (!createRes.ok) {
+                            var createTxt = await createRes.text();
+                            throw new Error(createTxt || 'Failed to create Full View config');
+                        }
+                        var created = await createRes.json();
+                        FV_CONFIG_ID = (created && created.config && created.config.id) ? created.config.id : '';
+                        if (!FV_CONFIG_ID) throw new Error('Failed to resolve config id');
+                    }
+                    var res = await fetch('/api/full-view/config/' + encodeURIComponent(FV_CONFIG_ID), {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify({ style: normalizeStyle(styleState) })
+                    });
+                    if (!res.ok) {
+                        var txt = await res.text();
+                        throw new Error(txt || 'Save failed');
+                    }
+                    showEditorStatus('Style saved and synced to customer full view.', false);
+                } catch (e) {
+                    showEditorStatus('Save failed: ' + String(e.message || e), true);
+                }
+            });
+        }
+    }
+
+    styleState = normalizeStyle(INITIAL_STYLE);
+    if (headerLogoEl) {
+        headerLogoEl.addEventListener('error', function () {
+            headerLogoEl.removeAttribute('src');
+            if (headerLogoShellEl) headerLogoShellEl.hidden = true;
+        });
+    }
+    if (IS_EDITOR) {
+        editorPreviewMode = loadEditorPreviewMode();
+        applyEditorPreviewMode(editorPreviewMode);
+    }
+    applyAndBroadcastStyle();
+    autoSelect();
+    bindEditor();
+})();
+</script>
+</body>
+</html>

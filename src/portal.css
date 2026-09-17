@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@source "../templates/**/*.html";
+@source "../static/**/*.js";
+@source "../node_modules/preline/dist/*.js";
+
+@import "../node_modules/preline/variants.css";
+
+@plugin "@tailwindcss/forms";
+
+@theme {
+  --color-ms-primary: #ffa300;
+  --color-ms-primary-dark: #e69200;
+  --color-ms-dark: #1a1f2e;
+  --color-ms-dark-deep: #12151f;
+  --color-ms-surface: #f7f0e4;
+  --color-ms-surface-card: #fffdf9;
+  --color-ms-ink: #1f2937;
+  --color-ms-muted: #6b7280;
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@custom-variant hover (&:hover);
+
+@import "../static/css/portal_layout.css";

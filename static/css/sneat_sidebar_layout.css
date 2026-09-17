@@ -1,0 +1,260 @@
+/**
+ * Sneat sidebar layout — keep the vertical menu fixed while main content scrolls.
+ */
+
+:root {
+  --ms-sidebar-content-gap: 1.25rem;
+  --ms-content-pad-x-expanded: 1.5rem;
+  --ms-content-pad-y-expanded: 1.75rem;
+  --ms-content-pad-x-collapsed: 0.75rem;
+  --crm-sidebar-offset: 0px;
+}
+
+@media (min-width: 1200px) {
+  html.layout-menu-fixed #layout-menu.layout-menu,
+  html.layout-menu-fixed-offcanvas #layout-menu.layout-menu {
+    position: fixed !important;
+    inset-block: 0;
+    inset-inline-start: 0;
+    block-size: 100vh;
+    max-block-size: 100dvh;
+    margin-inline: 0 !important;
+    overflow: hidden;
+    z-index: 1090;
+  }
+}
+
+@media (max-width: 1199.98px) {
+  html.layout-menu-fixed #layout-menu.layout-menu,
+  html.layout-menu-fixed-offcanvas #layout-menu.layout-menu {
+    position: fixed !important;
+    inset-block-start: 0;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    block-size: 100vh;
+    max-block-size: 100dvh;
+    overflow: hidden;
+    z-index: 1080;
+  }
+}
+
+#layout-menu.layout-menu {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+#layout-menu.layout-menu .menu-inner {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-bottom: 4.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+#layout-menu .sneat-menu-collapse-toggle.menu-link {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(67, 89, 113, 0.2);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #566a7f;
+  box-shadow: 0 2px 8px rgba(67, 89, 113, 0.12);
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+#layout-menu .sneat-menu-collapse-toggle.menu-link i {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+#layout-menu .sneat-menu-collapse-toggle.menu-link:hover {
+  background: #f5f5f9;
+  color: var(--ms-brand-primary, #696cff);
+  border-color: rgba(var(--ms-brand-primary-rgb, 105, 108, 255), 0.35);
+}
+
+html.layout-menu-collapsed #layout-menu .sneat-menu-collapse-toggle.menu-link {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.layout-content-navbar .layout-page {
+  min-height: 100vh;
+}
+
+.layout-content-navbar .content-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Keep main content aligned with fixed sidebar width (expanded, collapsed, hover) */
+@media (min-width: 1200px) {
+  html.layout-menu-fixed .layout-page,
+  html.layout-menu-fixed-offcanvas .layout-page {
+    transition: padding-inline-start 0.3s ease, padding-inline-end 0.3s ease;
+  }
+
+  html.layout-menu-fixed .layout-page.layout-page--crm-merged-nav,
+  html.layout-menu-fixed-offcanvas .layout-page.layout-page--crm-merged-nav {
+    transition: none;
+  }
+
+  html.layout-menu-fixed:not(.layout-menu-collapsed),
+  html.layout-menu-fixed-offcanvas:not(.layout-menu-collapsed),
+  html.layout-menu-fixed.layout-menu-collapsed.layout-menu-hover,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed.layout-menu-hover {
+    --crm-sidebar-offset: calc(var(--bs-menu-width, 16.25rem) + var(--ms-sidebar-content-gap));
+  }
+
+  html.layout-menu-fixed.layout-menu-collapsed:not(.layout-menu-hover),
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed:not(.layout-menu-hover) {
+    --crm-sidebar-offset: var(--bs-menu-collapsed-width, 5.25rem);
+  }
+
+  html.layout-menu-fixed:not(.layout-menu-collapsed) .layout-page,
+  html.layout-menu-fixed-offcanvas:not(.layout-menu-collapsed) .layout-page,
+  html.layout-menu-fixed.layout-menu-collapsed.layout-menu-hover .layout-page,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed.layout-menu-hover .layout-page {
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    padding-inline-start: var(--crm-sidebar-offset) !important;
+    padding-inline-end: var(--ms-content-pad-x-expanded);
+  }
+
+  html.layout-menu-fixed.layout-menu-collapsed:not(.layout-menu-hover) .layout-page,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed:not(.layout-menu-hover) .layout-page {
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    padding-inline-start: var(--crm-sidebar-offset) !important;
+    padding-inline-end: var(--ms-content-pad-x-collapsed);
+  }
+
+  html.layout-menu-fixed:not(.layout-menu-collapsed) .layout-content-navbar .content-wrapper > .container-xxl.container-p-y,
+  html.layout-menu-fixed-offcanvas:not(.layout-menu-collapsed) .layout-content-navbar .content-wrapper > .container-xxl.container-p-y,
+  html.layout-menu-fixed.layout-menu-collapsed.layout-menu-hover .layout-content-navbar .content-wrapper > .container-xxl.container-p-y,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed.layout-menu-hover .layout-content-navbar .content-wrapper > .container-xxl.container-p-y {
+    padding-inline-start: var(--ms-content-pad-x-expanded) !important;
+    padding-inline-end: var(--ms-content-pad-x-expanded) !important;
+    padding-block-start: var(--ms-content-pad-y-expanded) !important;
+    padding-block-end: var(--ms-content-pad-y-expanded) !important;
+  }
+
+  html.layout-menu-fixed:not(.layout-menu-collapsed) .layout-page--crm-merged-nav .crm-content,
+  html.layout-menu-fixed-offcanvas:not(.layout-menu-collapsed) .layout-page--crm-merged-nav .crm-content,
+  html.layout-menu-fixed.layout-menu-collapsed.layout-menu-hover .layout-page--crm-merged-nav .crm-content,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed.layout-menu-hover .layout-page--crm-merged-nav .crm-content {
+    padding: var(--ms-content-pad-y-expanded) var(--ms-content-pad-x-expanded)
+      calc(var(--ms-content-pad-y-expanded) + 0.25rem);
+  }
+
+  html.layout-menu-fixed:not(.layout-menu-collapsed) .crm-page--sneat .crm-tabs-top,
+  html.layout-menu-fixed-offcanvas:not(.layout-menu-collapsed) .crm-page--sneat .crm-tabs-top,
+  html.layout-menu-fixed.layout-menu-collapsed.layout-menu-hover .crm-page--sneat .crm-tabs-top,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed.layout-menu-hover .crm-page--sneat .crm-tabs-top {
+    padding-left: var(--ms-content-pad-x-expanded);
+    padding-right: var(--ms-content-pad-x-expanded);
+  }
+
+  html.layout-menu-fixed:not(.layout-menu-collapsed) .crm-page--sneat .crm-tabs-bottom,
+  html.layout-menu-fixed-offcanvas:not(.layout-menu-collapsed) .crm-page--sneat .crm-tabs-bottom,
+  html.layout-menu-fixed.layout-menu-collapsed.layout-menu-hover .crm-page--sneat .crm-tabs-bottom,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed.layout-menu-hover .crm-page--sneat .crm-tabs-bottom {
+    padding-left: var(--ms-content-pad-x-expanded);
+    padding-right: var(--ms-content-pad-x-expanded);
+  }
+
+  html.layout-menu-fixed.layout-menu-collapsed:not(.layout-menu-hover) .layout-page--crm-merged-nav .crm-content,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed:not(.layout-menu-hover) .layout-page--crm-merged-nav .crm-content {
+    padding: var(--ms-content-pad-x-collapsed) var(--ms-content-pad-x-collapsed)
+      calc(var(--ms-content-pad-x-collapsed) + 0.5rem);
+  }
+
+  html.layout-menu-fixed.layout-menu-collapsed:not(.layout-menu-hover) .crm-page--sneat .crm-tabs-top,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed:not(.layout-menu-hover) .crm-page--sneat .crm-tabs-top,
+  html.layout-menu-fixed.layout-menu-collapsed:not(.layout-menu-hover) .crm-page--sneat .crm-tabs-bottom,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed:not(.layout-menu-hover) .crm-page--sneat .crm-tabs-bottom {
+    padding-left: var(--ms-content-pad-x-collapsed);
+    padding-right: var(--ms-content-pad-x-collapsed);
+  }
+
+  html.layout-menu-fixed:not(.layout-menu-collapsed) #layout-menu.layout-menu,
+  html.layout-menu-fixed.layout-menu-collapsed.layout-menu-hover #layout-menu.layout-menu,
+  html.layout-menu-fixed-offcanvas:not(.layout-menu-collapsed) #layout-menu.layout-menu,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed.layout-menu-hover #layout-menu.layout-menu {
+    inline-size: var(--bs-menu-width, 16.25rem);
+  }
+
+  html.layout-menu-fixed.layout-menu-collapsed:not(.layout-menu-hover) #layout-menu.layout-menu,
+  html.layout-menu-fixed-offcanvas.layout-menu-collapsed:not(.layout-menu-hover) #layout-menu.layout-menu {
+    inline-size: var(--bs-menu-collapsed-width, 5.25rem);
+  }
+}
+
+/* CRM merged nav: only tab strip + content scroll; sidebar stays fixed */
+.layout-page.layout-page--crm-merged-nav .content-wrapper {
+  overflow-x: clip;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.layout-page.layout-page--crm-merged-nav .crm-page.crm-page--sneat,
+.layout-page.layout-page--crm-merged-nav .crm-page.crm-page--sneat .crm-page-content,
+.layout-page.layout-page--crm-merged-nav .crm-page.crm-page--sneat .crm-tabs,
+.layout-page.layout-page--crm-merged-nav .crm-page.crm-page--sneat .crm-content {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  box-sizing: border-box;
+}
+
+/* Sidebar brand — MarketoState logo instead of text */
+#layout-menu .app-brand.demo {
+  padding-inline: 0.85rem;
+}
+
+#layout-menu .app-brand-link {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+#layout-menu .app-brand-logo.demo {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+#layout-menu .ms-sidebar-brand-logo {
+  height: 34px;
+  width: auto;
+  max-width: min(100%, 11.5rem);
+  object-fit: contain;
+  display: block;
+}
+
+#layout-menu .ms-sidebar-brand-icon {
+  height: 30px;
+  width: 30px;
+  object-fit: contain;
+  display: none;
+}
+
+#layout-menu .menu-header::before {
+  display: none !important;
+}

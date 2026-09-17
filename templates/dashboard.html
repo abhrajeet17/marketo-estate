@@ -1,0 +1,2550 @@
+{% extends 'base.html' %}
+{% block title %}Plotted Development – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css?v=20260822-2">
+<link rel="stylesheet" href="/static/css/share-workspace-modal.css?v=20260822-2">
+{% endblock %}
+{% block content %}
+<div class="dashboard-page dashboard-page--booting" id="dashboard-page">
+    {% set active_page = 'dashboard' %}
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main content wrapper -->
+    <div class="dashboard-main-wrap">
+        <div class="dashboard-boot-loader" id="dashboard-boot-loader" role="status" aria-live="polite">
+            <div class="dashboard-boot-spinner" aria-hidden="true"></div>
+            <div class="dashboard-boot-title">Loading dashboard</div>
+            <div class="dashboard-boot-subtitle">Preparing your projects...</div>
+        </div>
+        <!-- Top bar: org name + subtext (constant) -->
+        <header class="dashboard-topbar">
+            <div class="dashboard-topbar-title">
+                <h1 class="dashboard-org-name" id="org-name">MarketoState</h1>
+                <p class="dashboard-org-subtitle" id="org-subtitle">Plot Marker</p>
+            </div>
+            <div class="topbar-recents" id="topbar-recents">
+                <span class="topbar-recents-label">Recents</span>
+                <div class="topbar-recents-track" id="recents-track"></div>
+            </div>
+        </header>
+
+        <!-- Main content area -->
+        <main class="dashboard-content">
+            <!-- Search bar -->
+            <div class="dashboard-search-wrap">
+                <span class="dashboard-search-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                <input type="search" class="dashboard-search-input" id="dashboard-search" placeholder="Search across all content" autocomplete="off">
+                <button type="button" class="dashboard-search-filter-btn" id="search-filter-btn" aria-label="Filters"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
+            </div>
+
+            <!-- Filters row -->
+            <div class="dashboard-filters">
+                <select class="dashboard-filter-select" id="filter-client" aria-label="Client" style="display:none;">
+                    <option value="">All Clients</option>
+                </select>
+                <select class="dashboard-filter-select" id="filter-type" aria-label="Type">
+                    <option value="">Type</option>
+                    <option value="all">All</option>
+                    <option value="360">360°</option>
+                    <option value="flat">Flat</option>
+                </select>
+                <button type="button" class="dashboard-filter-btn" id="create-workspace-btn" style="display:none;">New Project</button>
+            </div>
+
+            <!-- Two columns: Folders (left) | Projects (right) -->
+            <div class="dashboard-two-col">
+                <aside class="dashboard-folders-col" aria-label="Folders">
+                    <h2 class="dashboard-section-title">PROJECTS</h2>
+                    <div class="dashboard-folders-scroll">
+                        <div class="workspace-list" id="workspace-list">
+                            <div class="folder-card-skeleton"></div>
+                            <div class="folder-card-skeleton"></div>
+                            <div class="folder-card-skeleton"></div>
+                        </div>
+                    </div>
+                </aside>
+                <section class="dashboard-projects-col" aria-label="projects">
+                    <h2 class="dashboard-section-title">360° Pano List</h2>
+                    <div class="dashboard-projects-scroll">
+                        <div id="projects-container" class="projects-container-transition">
+                            <div class="projects-grid" id="projects-skeleton">
+                                <div class="skeleton-card-compact"><div class="skeleton-thumb-compact"></div><div class="skeleton-content"><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div></div>
+                                <div class="skeleton-card-compact"><div class="skeleton-thumb-compact"></div><div class="skeleton-content"><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div></div>
+                                <div class="skeleton-card-compact"><div class="skeleton-thumb-compact"></div><div class="skeleton-content"><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div></div>
+                                <div class="skeleton-card-compact"><div class="skeleton-thumb-compact"></div><div class="skeleton-content"><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upload modal (opened from sidebar Upload button) -->
+    <div class="modal-backdrop" id="upload-modal">
+        <div class="modal upload-modal">
+            <div class="upload-modal-head">
+                <h2 class="modal-title">Upload panorama</h2>
+                <button type="button" class="modal-close" id="upload-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="upload-modal-body">
+                <div class="upload-zone" id="upload-zone">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Drop files here</div>
+                    <div class="upload-hint">or use the Upload button in the sidebar • JPG, PNG, WebP up to 50MB</div>
+                    <input type="file" class="upload-input" id="upload-input" accept="image/*" multiple>
+                    <div class="upload-form" id="upload-form">
+                        <div class="upload-preview">
+                            <img src="" alt="Preview" class="preview-image" id="preview-image">
+                            <div class="preview-info">
+                                <div class="preview-filename" id="preview-filename">filename.jpg</div>
+                                <div class="preview-size" id="preview-size">2.5 MB • 8064 × 4536</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">360° Pano Name</label>
+                                <input type="text" class="form-input" id="project-name" placeholder="e.g., Sunset Valley Estate" value="Untitled">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Add to Project (Folder)</label>
+                                <select class="form-input" id="upload-workspace-select">
+                                    <option value="">Unlinked</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="is-360" style="width: auto; cursor: pointer;">
+                                    <span style="font-size: 0.85rem; color: var(--color-text);">360° Equirectangular Image</span>
+                                </label>
+                                <div style="font-size: 0.7rem; color: var(--color-muted); margin-top: 0.25rem; margin-left: 1.75rem;">Enable for full 360-degree spherical panoramas</div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-secondary" id="cancel-upload">Cancel</button>
+                            <button class="btn btn-primary" id="start-upload">Create 360° Panorama</button>
+                        </div>
+                    </div>
+
+                    <!-- Multi-file upload form (shown when 2+ files selected) -->
+                    <div class="multi-upload-form" id="multi-upload-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Add to Project (Folder)</label>
+                                <select class="form-input" id="multi-upload-workspace-select">
+                                    <option value="">Unlinked</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--color-text);" id="multi-file-count">0 files selected</span>
+                            <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--color-muted);">
+                                <input type="checkbox" id="multi-all-360" style="width: auto; cursor: pointer;">
+                                Mark all as 360°
+                            </label>
+                        </div>
+                        <div class="multi-files-list" id="multi-files-list"></div>
+                        <div class="form-actions" style="margin-top: 1rem;">
+                            <button type="button" class="btn btn-secondary" id="multi-cancel-upload">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="multi-start-upload">Upload Panoramas</button>
+                        </div>
+                    </div>
+
+                    <div class="upload-progress" id="upload-progress">
+                        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+                        <div class="progress-text" id="progress-text">Uploading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-backdrop" id="delete-modal">
+        <div class="modal">
+            <div class="modal-title">Delete 360° Panorama?</div>
+            <div class="modal-text">This will permanently delete this panorama and all its plot markings. This action
+                cannot be undone.</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-delete">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Choose New Main Panorama Modal (shown when deleting main panorama) -->
+    <div class="modal-backdrop" id="choose-main-modal">
+        <div class="modal">
+            <div class="modal-title">Choose New Main Panorama</div>
+            <div class="modal-text">You are deleting the main panorama of this project. Customer/shared links will stop working unless you choose a new main panorama.</div>
+            <div id="choose-main-list" style="margin: 1rem 0; max-height: 260px; overflow-y: auto;"></div>
+            <div id="choose-main-error" class="msg error" style="display:none; margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-choose-main">Cancel</button>
+                <button class="btn btn-danger" id="confirm-choose-main">Delete &amp; Set New Main</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Project Modal -->
+    <div class="modal-backdrop" id="rename-modal">
+        <div class="modal">
+            <div class="modal-title">Rename Project</div>
+            <div class="modal-text" style="margin-bottom: 1rem;">Enter a new project name.</div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="rename-project-input">Project name</label>
+                <input type="text" id="rename-project-input" class="form-input" maxlength="120"
+                    placeholder="Project name">
+            </div>
+            <div id="rename-project-error" class="msg error" style="display:none; margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-rename">Cancel</button>
+                <button class="btn btn-primary" id="confirm-rename">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div class="modal-backdrop" id="create-workspace-modal">
+        <div class="modal" style="max-width: min(680px, 94vw); max-height: 90vh; overflow-y: auto; width: 100%;">
+            <div class="modal-title">Create Project</div>
+            <div class="modal-text" style="margin-bottom: 1rem;">Create a new project to organize panoramas. Add optional details for the Customer Portal.</div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label class="form-label" for="workspace-name-input">Project name *</label>
+                <input type="text" id="workspace-name-input" class="form-input" maxlength="120" placeholder="e.g. Sunset Valley Estate" style="height:34px;font-size:0.95rem;">
+            </div>
+            <details class="upload-details-section" style="margin-bottom: 0.75rem;">
+                <summary style="font-size: 0.81rem; font-weight: 600; cursor: pointer; padding: 0.35rem 0; color:#475569;">Project details (optional)</summary>
+                <div class="ws-compact-form" style="margin-top:0.4rem; display:grid; gap:0.5rem;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Builder name</label>
+                        <input type="text" class="form-input" id="ws-builder-name" maxlength="200" style="height:33px;font-size:0.9rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Project type</label>
+                        <select class="form-input" id="ws-project-type" style="height:33px;font-size:0.9rem;">
+                            <option value="residential">Residential</option>
+                            <option value="commercial">Commercial</option>
+                            <option value="plotted">Plotted</option>
+                            <option value="villa">Villa</option>
+                            <option value="mixed">Mixed Use</option>
+                            <option value="farmland">Farm Land</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Location address</label>
+                        <input type="text" class="form-input" id="ws-location-address" maxlength="500" style="height:33px;font-size:0.9rem;">
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-input" id="ws-location-city" maxlength="120" style="height:33px;font-size:0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">State</label>
+                            <input type="text" class="form-input" id="ws-location-state" maxlength="120" style="height:33px;font-size:0.9rem;">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Google Maps link</label>
+                        <input type="url" class="form-input" id="ws-google-maps-link" placeholder="Paste link" style="height:33px;font-size:0.9rem;">
+                        <div style="font-size:0.65rem;color:var(--color-muted);margin-top:0.12rem;" id="ws-maps-status"></div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">RERA registration</label>
+                            <input type="text" class="form-input" id="ws-rera" maxlength="100" style="height:33px;font-size:0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Total area</label>
+                            <input type="text" class="form-input" id="ws-total-area" maxlength="100" style="height:33px;font-size:0.9rem;">
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Launch date</label>
+                            <input type="date" class="form-input" id="ws-launch-date" style="height:33px;font-size:0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Possession date</label>
+                            <input type="text" class="form-input" id="ws-possession-date" maxlength="80" placeholder="e.g. 2027 Q4" style="height:33px;font-size:0.9rem;">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-input" id="ws-description" rows="2" style="resize:vertical; min-height:52px; font-size:0.9rem;" maxlength="5000"></textarea>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Contact phone</label>
+                            <input type="tel" class="form-input" id="ws-contact-phone" maxlength="50" style="height:33px;font-size:0.9rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Contact email</label>
+                            <input type="email" class="form-input" id="ws-contact-email" maxlength="200" style="height:33px;font-size:0.9rem;">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Amenities (comma-separated)</label>
+                        <input type="text" class="form-input" id="ws-amenities" placeholder="Pool, Gym, Clubhouse" maxlength="500" style="height:33px;font-size:0.9rem;">
+                    </div>
+
+                    <div class="form-group" style="margin:0.15rem 0 0;">
+                        <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.82rem; cursor:pointer; margin:0;">
+                            <input type="checkbox" id="ws-is-published" style="width:14px;height:14px;cursor:pointer;"> 
+                            <span>Published on Customer Portal (make live)</span>
+                        </label>
+                    </div>
+                </div>
+            </details>
+            <div id="workspace-create-error" class="msg error" style="display:none; margin-bottom: 0.75rem;"></div>
+            <div class="modal-actions" style="margin-top:0.85rem; padding-top:0.55rem; border-top:1px solid #e2e8f0;">
+                <button class="btn btn-secondary" id="cancel-create-workspace">Cancel</button>
+                <button class="btn btn-primary" id="confirm-create-workspace">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Project Modal -->
+    <div class="modal-backdrop" id="rename-workspace-modal">
+        <div class="modal">
+            <div class="modal-title">Rename Folder</div>
+            <div class="modal-text" style="margin-bottom: 1rem;">Enter a new project folder name.</div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="workspace-rename-input">Folder name</label>
+                <input type="text" id="workspace-rename-input" class="form-input" maxlength="120" placeholder="Folder name">
+            </div>
+            <div id="workspace-rename-error" class="msg error" style="display:none; margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-rename-workspace">Cancel</button>
+                <button class="btn btn-primary" id="confirm-rename-workspace">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Project Modal -->
+    <div class="modal-backdrop" id="delete-workspace-modal">
+        <div class="modal">
+            <div class="modal-title">Delete Folder?</div>
+            <div class="modal-text">This removes the project only. Panoramas inside it will become unlinked.</div>
+            <div id="workspace-delete-error" class="msg error" style="display:none; margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-delete-workspace">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete-workspace">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    {% include 'components/share_workspace_modal.html' %}
+
+    <!-- Change Password Modal -->
+    <div class="modal-backdrop" id="change-password-modal">
+        <div class="modal">
+            <div class="modal-title">Change password</div>
+            <div class="modal-text" style="margin-bottom: 1rem;">Enter your new password below.</div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label" for="new-password-input">New password</label>
+                <input type="password" id="new-password-input" class="form-input" minlength="6"
+                    placeholder="At least 6 characters" autocomplete="new-password">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label" for="confirm-password-input">Confirm new password</label>
+                <input type="password" id="confirm-password-input" class="form-input" minlength="6"
+                    placeholder="Re-enter new password" autocomplete="new-password">
+            </div>
+            <div id="change-password-error" class="msg error" style="display:none; margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-change-password">Cancel</button>
+                <button class="btn btn-primary" id="confirm-change-password">Update password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+        window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+    </script>
+    <script src="/static/js/sidebar.js?v=20260626-crm-new-tab"></script>
+    <script src="/static/js/share-workspace-modal.js?v=20260622-3"></script>
+    <script>
+        function setDashboardBooting(isBooting) {
+            var page = document.getElementById('dashboard-page');
+            if (!page) return;
+            page.classList.toggle('dashboard-page--booting', !!isBooting);
+        }
+
+        // Plotted Development-specific init: waits for sidebar auth to complete
+        (function () {
+        var supabase = window._supabase;
+        if (!supabase) return;
+
+        window.sidebarReady.then(function (ctx) {
+            currentUserRole = ctx.role;
+            var orgSubEl = document.getElementById('org-subtitle');
+            if (orgSubEl) orgSubEl.textContent = (ctx && ctx.isClientMember) ? 'Inventory and management' : 'Plot Marker';
+            if (ctx.isAdmin) {
+                var createBtn = document.getElementById('create-workspace-btn');
+                if (createBtn) createBtn.style.display = '';
+            }
+            try { if (window.applyOrgTheme) window.applyOrgTheme(); } catch (e) { }
+            try { updateCrmNavVisibility(); } catch (e) { }
+            if (dashboardInitStarted) {
+                try { renderWorkspaces(); } catch (e) { }
+                try { renderProjects(); } catch (e) { }
+                try { renderRecents(); } catch (e) { }
+            }
+            setDashboardBooting(false);
+            startDashboardOnce();
+        }).catch(function () {
+            setDashboardBooting(false);
+        });
+
+            var changePwLink = document.getElementById('nav-change-password');
+            var changePwModal = document.getElementById('change-password-modal');
+            var cancelChangePw = document.getElementById('cancel-change-password');
+            var confirmChangePw = document.getElementById('confirm-change-password');
+            var newPwInput = document.getElementById('new-password-input');
+            var confirmPwInput = document.getElementById('confirm-password-input');
+            var changePwError = document.getElementById('change-password-error');
+            function showChangePwError(msg) {
+                changePwError.textContent = msg || '';
+                changePwError.style.display = msg ? 'block' : 'none';
+            }
+            function openChangePwModal() {
+                showChangePwError('');
+                if (newPwInput) newPwInput.value = '';
+                if (confirmPwInput) confirmPwInput.value = '';
+                changePwModal.classList.add('visible');
+                if (newPwInput) newPwInput.focus();
+            }
+            function closeChangePwModal() {
+                changePwModal.classList.remove('visible');
+                showChangePwError('');
+            }
+            if (changePwLink) changePwLink.addEventListener('click', function (e) { e.preventDefault(); openChangePwModal(); });
+            if (cancelChangePw) cancelChangePw.addEventListener('click', closeChangePwModal);
+            if (changePwModal) changePwModal.addEventListener('click', function (e) { if (e.target === changePwModal) closeChangePwModal(); });
+            if (confirmChangePw && newPwInput && confirmPwInput) {
+                confirmChangePw.addEventListener('click', function () {
+                    var newPw = newPwInput.value;
+                    var confirmPw = confirmPwInput.value;
+                    showChangePwError('');
+                    if (newPw.length < 6) { showChangePwError('Password must be at least 6 characters'); return; }
+                    if (newPw !== confirmPw) { showChangePwError('Passwords do not match'); return; }
+                    confirmChangePw.disabled = true;
+                    supabase.auth.updateUser({ password: newPw }).then(function (res) {
+                        if (res.error) { showChangePwError(res.error.message || 'Failed to update password'); return; }
+                        var toast = document.getElementById('toast-container');
+                        if (toast) {
+                            var el = document.createElement('div');
+                            el.className = 'toast success';
+                            el.textContent = 'Password updated successfully.';
+                            toast.appendChild(el);
+                            setTimeout(function () { el.remove(); }, 3000);
+                        }
+                        closeChangePwModal();
+                    }).catch(function (err) { showChangePwError(err.message || 'Failed to update password'); }).finally(function () { confirmChangePw.disabled = false; });
+                });
+            }
+        }) ();
+
+        (function initUploadModal() {
+            var uploadBtn = document.getElementById('sidebar-upload-link');
+            var uploadModal = document.getElementById('upload-modal');
+            var uploadModalClose = document.getElementById('upload-modal-close');
+            var cancelUploadEl = document.getElementById('cancel-upload');
+            var searchInput = document.getElementById('dashboard-search');
+            var filterType = document.getElementById('filter-type');
+            var filterClient = document.getElementById('filter-client');
+            if (uploadBtn && uploadModal) {
+                uploadBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Populate workspace select with owned folders
+                    var wsSelect = document.getElementById('upload-workspace-select');
+                    if (wsSelect && typeof workspaces !== 'undefined') {
+                        var currentVal = wsSelect.value;
+                        wsSelect.innerHTML = '<option value="">Unlinked</option>';
+                        workspaces.forEach(function(ws) {
+                            if (ws.access_type === 'owner') {
+                                var opt = document.createElement('option');
+                                opt.value = ws.id;
+                                opt.textContent = ws.name || ('Folder #' + ws.id);
+                                wsSelect.appendChild(opt);
+                            }
+                        });
+                        // Pre-select the currently active folder
+                        var activeWsId = getSelectedOwnedProjectId();
+                        wsSelect.value = activeWsId || '';
+                    }
+                    uploadModal.classList.add('visible');
+                });
+            }
+            if (uploadModalClose && uploadModal) {
+                uploadModalClose.addEventListener('click', function () {
+                    uploadModal.classList.remove('visible');
+                    if (typeof resetUploadForm === 'function') resetUploadForm();
+                });
+            }
+            uploadModal && uploadModal.addEventListener('click', function (e) {
+                if (e.target === uploadModal) {
+                    uploadModal.classList.remove('visible');
+                    if (typeof resetUploadForm === 'function') resetUploadForm();
+                }
+            });
+            if (cancelUploadEl && uploadModal) {
+                cancelUploadEl.addEventListener('click', function () {
+                    uploadModal.classList.remove('visible');
+                });
+            }
+            var _searchDebounceTimer = null;
+            function onSearchOrFilterChange() {
+                if (typeof renderRecents === 'function') renderRecents();
+                if (typeof renderWorkspaces === 'function') renderWorkspaces();
+            }
+            function onSearchInputDebounced() {
+                clearTimeout(_searchDebounceTimer);
+                _searchDebounceTimer = setTimeout(onSearchOrFilterChange, 150);
+            }
+            if (searchInput) searchInput.addEventListener('input', onSearchInputDebounced);
+            if (filterType) filterType.addEventListener('change', onSearchOrFilterChange);
+            if (filterClient) filterClient.addEventListener('change', function () {
+                if (typeof renderWorkspaces === 'function') renderWorkspaces();
+                onSearchOrFilterChange();
+            });
+        })();
+
+        function extractCoordsFromGoogleMapsLink(link) {
+            if (!link) return null;
+            var m = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+            m = link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+            if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+            m = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+            m = link.match(/place\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+            return null;
+        }
+
+        (function() {
+            var mapsInput = document.getElementById('ws-google-maps-link');
+            var mapsStatus = document.getElementById('ws-maps-status');
+            var _wsResolveTimer = null;
+            if (mapsInput && mapsStatus) {
+                mapsInput.addEventListener('input', function() {
+                    clearTimeout(_wsResolveTimer);
+                    var link = mapsInput.value.trim();
+                    var coords = extractCoordsFromGoogleMapsLink(link);
+                    if (coords) {
+                        mapsStatus.textContent = 'Coordinates: ' + coords.lat.toFixed(6) + ', ' + coords.lng.toFixed(6);
+                        mapsStatus.style.color = 'var(--color-available)';
+                    } else if (link && (link.match(/goo\.gl\//i) || link.match(/maps\.app\./i))) {
+                        mapsStatus.textContent = 'Resolving...';
+                        mapsStatus.style.color = 'var(--muted)';
+                        _wsResolveTimer = setTimeout(function() {
+                            window.getAuthHeaders().then(function(headers) {
+                                headers['Content-Type'] = 'application/json';
+                                return fetch('/api/resolve-maps-link', { method: 'POST', headers: headers, body: JSON.stringify({ link: link }) });
+                            }).then(function(r) { return r.json(); }).then(function(data) {
+                                if (data.lat != null && data.lng != null) {
+                                    mapsStatus.textContent = 'Coordinates: ' + data.lat.toFixed(6) + ', ' + data.lng.toFixed(6);
+                                    mapsStatus.style.color = 'var(--color-available)';
+                                    var addrEl = document.getElementById('ws-location-address');
+                                    var cityEl = document.getElementById('ws-location-city');
+                                    var stateEl = document.getElementById('ws-location-state');
+                                    if (addrEl && !addrEl.value.trim() && data.address) addrEl.value = data.address;
+                                    if (cityEl && !cityEl.value.trim() && data.city) cityEl.value = data.city;
+                                    if (stateEl && !stateEl.value.trim() && data.state) stateEl.value = data.state;
+                                } else {
+                                    mapsStatus.textContent = data.error || 'Could not extract coordinates';
+                                    mapsStatus.style.color = 'var(--warning)';
+                                }
+                            }).catch(function() {
+                                mapsStatus.textContent = 'Could not resolve link';
+                                mapsStatus.style.color = 'var(--warning)';
+                            });
+                        }, 500);
+                    } else if (link) {
+                        mapsStatus.textContent = 'Could not extract coordinates';
+                        mapsStatus.style.color = 'var(--warning)';
+                    } else {
+                        mapsStatus.textContent = '';
+                    }
+                });
+            }
+        })();
+
+        function getCreateProjectPayload() {
+            var name = (document.getElementById('workspace-name-input') || {}).value;
+            if (!name || !name.trim()) return null;
+            var payload = { name: name.trim() };
+            var pairs = [
+                ['builder_name', 'ws-builder-name'],
+                ['project_type', 'ws-project-type'],
+                ['location_address', 'ws-location-address'],
+                ['location_city', 'ws-location-city'],
+                ['location_state', 'ws-location-state'],
+                ['google_maps_link', 'ws-google-maps-link'],
+                ['rera_registration', 'ws-rera'],
+                ['total_area', 'ws-total-area'],
+                ['launch_date', 'ws-launch-date'],
+                ['possession_date', 'ws-possession-date'],
+                ['description', 'ws-description'],
+                ['contact_phone', 'ws-contact-phone'],
+                ['contact_email', 'ws-contact-email']
+            ];
+            pairs.forEach(function(p) {
+                var el = document.getElementById(p[1]);
+                if (el) {
+                    var v = String(el.value || '').trim();
+                    payload[p[0]] = v;  // include even if empty, for proper edit clears
+                }
+            });
+            var amenitiesEl = document.getElementById('ws-amenities');
+            if (amenitiesEl) {
+                var aVal = String(amenitiesEl.value || '').trim();
+                payload.amenities = aVal ? aVal.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+            }
+            var mapsLink = (document.getElementById('ws-google-maps-link') || {}).value || '';
+            if (mapsLink.trim()) {
+                var coords = extractCoordsFromGoogleMapsLink(mapsLink);
+                if (coords) {
+                    payload.location_lat = coords.lat;
+                    payload.location_lng = coords.lng;
+                }
+            }
+            var pubEl = document.getElementById('ws-is-published');
+            if (pubEl) payload.is_published = !!pubEl.checked;
+            return payload;
+        }
+
+        function clearCreateProjectOptionalFields() {
+            var ids = ['ws-builder-name', 'ws-project-type', 'ws-location-address', 'ws-location-city', 'ws-location-state', 'ws-google-maps-link', 'ws-rera', 'ws-total-area', 'ws-launch-date', 'ws-possession-date', 'ws-description', 'ws-contact-phone', 'ws-contact-email', 'ws-amenities'];
+            ids.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) { el.value = ''; if (id === 'ws-project-type') el.value = 'residential'; }
+            });
+            var pubEl = document.getElementById('ws-is-published');
+            if (pubEl) pubEl.checked = false;
+            var status = document.getElementById('ws-maps-status');
+            if (status) status.textContent = '';
+        }
+
+        let dashboardInitStarted = false;
+
+        function waitForAuthSession(maxAttempts, delayMs) {
+            var supabase = window._supabase;
+            if (!supabase || !supabase.auth || typeof supabase.auth.getSession !== 'function') {
+                return Promise.resolve(null);
+            }
+            var remaining = Number(maxAttempts || 0);
+            function readSession() {
+                return supabase.auth.getSession()
+                    .then(function (r) {
+                        return (r && r.data && r.data.session) ? r.data.session : null;
+                    })
+                    .catch(function () { return null; });
+            }
+            function step() {
+                return readSession().then(function (session) {
+                    if (session || remaining <= 0) return session;
+                    remaining -= 1;
+                    return new Promise(function (resolve) {
+                        setTimeout(function () { resolve(step()); }, Number(delayMs || 180));
+                    });
+                });
+            }
+            return step();
+        }
+
+        function getAuthHeaders() {
+            if (window.pmApi && typeof window.pmApi.getAuthHeaders === 'function') {
+                return window.pmApi.getAuthHeaders({
+                    waitAttempts: 24,
+                    waitDelayMs: 180
+                });
+            }
+            return waitForAuthSession(20, 180).then(function (session) {
+                var h = {};
+                if (session && session.access_token) h['Authorization'] = 'Bearer ' + session.access_token;
+                return h;
+            });
+        }
+
+        async function ensureAuthHeadersOrRedirect() {
+            var headers = await getAuthHeaders();
+            if (headers && headers.Authorization) return headers;
+            var session = null;
+            if (window.pmApi && typeof window.pmApi.waitForSession === 'function') {
+                session = await window.pmApi.waitForSession(30, 200).catch(function () { return null; });
+            } else {
+                session = await waitForAuthSession(30, 200).catch(function () { return null; });
+            }
+            if (session && session.access_token) {
+                return { Authorization: 'Bearer ' + session.access_token };
+            }
+            window.location.replace('/login');
+            return null;
+        }
+
+        // State
+        let projects = [];
+        let workspaces = [];
+        let clientOptions = [];
+        let selectedProjectKey = 'unfiled';
+        let selectedFile = null;
+        let selectedImageWidth = 0;
+        let selectedImageHeight = 0;
+        let previewObjectUrl = '';
+        let selectedFiles = []; // multi-file: [{file, name, width, height, is360, objectUrl}]
+        let deleteTargetId = null;
+        let renameTargetId = null;
+        let renameProjectTargetId = null;
+        let deleteProjectTargetId = null;
+        let editWorkspaceTargetId = null;
+        let draggingPanoramaId = null;
+        let projectFeatureReady = true;
+        let projectsLoadFailed = false;
+        let currentUserRole = '';
+        let orgSlug = '';
+
+        // DOM Elements
+        const uploadZone = document.getElementById('upload-zone');
+        const uploadInput = document.getElementById('upload-input');
+        const uploadForm = document.getElementById('upload-form');
+        const previewImage = document.getElementById('preview-image');
+        const previewFilename = document.getElementById('preview-filename');
+        const previewSize = document.getElementById('preview-size');
+        const projectName = document.getElementById('project-name');
+        const cancelUpload = document.getElementById('cancel-upload');
+        const startUpload = document.getElementById('start-upload');
+        const uploadProgress = document.getElementById('upload-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const multiUploadForm = document.getElementById('multi-upload-form');
+        const multiFilesList = document.getElementById('multi-files-list');
+        const multiFileCount = document.getElementById('multi-file-count');
+        const multiStartUpload = document.getElementById('multi-start-upload');
+        const multiCancelUpload = document.getElementById('multi-cancel-upload');
+        const multiAll360 = document.getElementById('multi-all-360');
+        const projectsContainer = document.getElementById('projects-container');
+        const projectList = document.getElementById('workspace-list');
+        const filterClientSelect = document.getElementById('filter-client');
+        const createProjectBtn = document.getElementById('create-workspace-btn');
+        const deleteModal = document.getElementById('delete-modal');
+        const cancelDelete = document.getElementById('cancel-delete');
+        const confirmDelete = document.getElementById('confirm-delete');
+        const chooseMainModal = document.getElementById('choose-main-modal');
+        const chooseMainList = document.getElementById('choose-main-list');
+        const chooseMainError = document.getElementById('choose-main-error');
+        const cancelChooseMain = document.getElementById('cancel-choose-main');
+        const confirmChooseMain = document.getElementById('confirm-choose-main');
+        const renameModal = document.getElementById('rename-modal');
+        const cancelRename = document.getElementById('cancel-rename');
+        const confirmRename = document.getElementById('confirm-rename');
+        const renameProjectInput = document.getElementById('rename-project-input');
+        const renameProjectError = document.getElementById('rename-project-error');
+        const createProjectModal = document.getElementById('create-workspace-modal');
+        const projectNameInput = document.getElementById('workspace-name-input');
+        const projectCreateError = document.getElementById('workspace-create-error');
+        const cancelCreateProject = document.getElementById('cancel-create-workspace');
+        const confirmCreateProject = document.getElementById('confirm-create-workspace');
+        const renameProjectModal = document.getElementById('rename-workspace-modal');
+        const projectRenameInput = document.getElementById('workspace-rename-input');
+        const projectRenameError = document.getElementById('workspace-rename-error');
+        const cancelRenameProject = document.getElementById('cancel-rename-workspace');
+        const confirmRenameProject = document.getElementById('confirm-rename-workspace');
+        const deleteProjectModal = document.getElementById('delete-workspace-modal');
+        const projectDeleteError = document.getElementById('workspace-delete-error');
+        const cancelDeleteProject = document.getElementById('cancel-delete-workspace');
+        const confirmDeleteProject = document.getElementById('confirm-delete-workspace');
+        const toastContainer = document.getElementById('toast-container');
+
+        function setCrmNavVisible(visible) {
+            var el = document.getElementById('nav-crm');
+            if (!el) return;
+            el.style.display = visible ? '' : 'none';
+            if (visible && typeof window.configureCrmNavOpenInNewTab === 'function') {
+                window.configureCrmNavOpenInNewTab();
+            }
+        }
+
+        function updateCrmNavVisibility() {
+            var roleAllows = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+            var projectAllows = projects.some(function (p) {
+                var at = String((p && p.access_type) || 'owner');
+                return at === 'owner' || at === 'client' || at === 'broker';
+            });
+            setCrmNavVisible(roleAllows || projectAllows);
+        }
+
+        function getFilteredProjects() {
+            var list = getVisibleProjects();
+            var searchEl = document.getElementById('dashboard-search');
+            var typeEl = document.getElementById('filter-type');
+            var clientEl = document.getElementById('filter-client');
+            var q = (searchEl && searchEl.value) ? String(searchEl.value).trim().toLowerCase() : '';
+            if (q) {
+                list = list.filter(function (p) { return (p.name || '').toLowerCase().indexOf(q) !== -1; });
+            }
+            var clientVal = clientEl ? String(clientEl.value || '').trim() : '';
+            if (clientVal) {
+                list = list.filter(function (p) {
+                    var ids = Array.isArray(p.client_ids) ? p.client_ids.map(String) : [];
+                    return ids.indexOf(clientVal) >= 0;
+                });
+            }
+            var typeVal = typeEl ? typeEl.value : '';
+            if (typeVal === '360') list = list.filter(function (p) { return Boolean(p.is_360); });
+            if (typeVal === 'flat') list = list.filter(function (p) { return !p.is_360; });
+            list = list.slice();
+            list.sort(function (a, b) {
+                var ta = (a.updated_at && new Date(a.updated_at).getTime()) || 0;
+                var tb = (b.updated_at && new Date(b.updated_at).getTime()) || 0;
+                return tb - ta;
+            });
+            return list;
+        }
+
+        function getProjectById(ProjectId) {
+            if (!ProjectId) return null;
+            return workspaces.find(function (w) { return String(w.id) === String(ProjectId); }) || null;
+        }
+
+        function getMainPanoramaIdForProject(ProjectId) {
+            var ws = getProjectById(ProjectId);
+            if (ws && ws.main_panorama_id) return parseInt(ws.main_panorama_id, 10);
+            var inProject = projects.filter(function (p) { return String(p.workspace_id || '') === String(ProjectId); });
+            var first360 = inProject.find(function (p) { return Boolean(p.is_360); });
+            return first360 ? parseInt(first360.id, 10) : null;
+        }
+
+        async function setAsMain(projectId, event) {
+            if (event) event.stopPropagation();
+            var ProjectId = getSelectedOwnedProjectId();
+            if (!ProjectId) return;
+            try {
+                var headers = await getAuthHeaders();
+                headers['Content-Type'] = 'application/json';
+                var res = await fetch('/api/workspaces/' + encodeURIComponent(ProjectId), {
+                    method: 'PATCH',
+                    headers: headers,
+                    body: JSON.stringify({ main_panorama_id: parseInt(projectId, 10) })
+                });
+                if (!res.ok) {
+                    var err = await res.json().catch(function () { return {}; });
+                    showToast(err.error || 'Failed to set main');
+                    return;
+                }
+                var data = await res.json();
+                if (data.workspace) {
+                    var idx = workspaces.findIndex(function (w) { return String(w.id) === String(ProjectId); });
+                    if (idx >= 0) workspaces[idx] = data.workspace;
+                }
+                renderWorkspaces();
+                renderProjects();
+                showToast('Main panorama updated');
+            } catch (e) {
+                showToast('Failed to set main');
+            }
+        }
+
+        function getSelectedOwnedProjectId() {
+            if (!selectedProjectKey || selectedProjectKey.indexOf('ws:') !== 0) return null;
+            var ProjectId = selectedProjectKey.slice(3);
+            var ws = getProjectById(ProjectId);
+            if (!ws) return null;
+            return (ws.access_type === 'owner') ? ProjectId : null;
+        }
+
+        function getVisibleProjects() {
+            if (selectedProjectKey === 'unfiled') {
+                return projects.filter(function (p) { return !p.workspace_id; });
+            }
+            if (selectedProjectKey.indexOf('ws:') === 0) {
+                var ProjectId = selectedProjectKey.slice(3);
+                return projects.filter(function (p) { return String(p.workspace_id || '') === String(ProjectId); });
+            }
+            return projects.slice();
+        }
+
+        function setProjectSelection(key) {
+            selectedProjectKey = key || 'unfiled';
+            renderWorkspaces();
+            renderProjects();
+        }
+
+        function renderWorkspaces() {
+            if (!projectList) return;
+            if (!projectFeatureReady) {
+                projectList.innerHTML = '<div class="empty-state" style="padding:0.8rem;"><div class="empty-text">Project schema required</div><div class="empty-hint">Run db/schema.sql in Supabase SQL Editor</div></div>';
+                return;
+            }
+
+            var clientFilter = filterClientSelect ? String(filterClientSelect.value || '').trim() : '';
+            var countSource = projects.filter(function (p) {
+                if (!clientFilter) return true;
+                var ids = Array.isArray(p.client_ids) ? p.client_ids.map(String) : [];
+                return ids.indexOf(clientFilter) >= 0;
+            });
+            var unfiledCount = countSource.filter(function (p) { return !p.workspace_id; }).length;
+            var countByProject = {};
+            countSource.forEach(function (p) {
+                if (!p.workspace_id) return;
+                var key = String(p.workspace_id);
+                countByProject[key] = (countByProject[key] || 0) + 1;
+            });
+
+            var items = '';
+
+            items += '<div class="folder-card folder-card--system ' + (selectedProjectKey === 'unfiled' ? 'active' : '') + '" onclick="setProjectSelection(\'unfiled\')" ondragover="onProjectDragOver(event)" ondragleave="onProjectDragLeave(event)" ondrop="onProjectDrop(event,\'unfiled\')">';
+            items += '<div class="folder-card-head"><span class="folder-card-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;opacity:0.7"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Unlinked Panoramas</span><span class="folder-card-count">' + unfiledCount + '</span></div>';
+            items += '<p class="folder-card-subtitle">Not assigned to any project</p>';
+            items += '</div>';
+
+            workspaces.forEach(function (ws) {
+                var ProjectId = String(ws.id);
+                var wsKey = 'ws:' + ProjectId;
+                var isOwner = String(ws.access_type || 'owner') === 'owner';
+                var count = countByProject[ProjectId] || 0;
+                if (!isOwner && count === 0) return;
+                var isDashboardAdmin = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+                var dragDropAttr = (isOwner && isDashboardAdmin) ? ' ondragover="onProjectDragOver(event)" ondragleave="onProjectDragLeave(event)" ondrop="onProjectDrop(event,\'' + wsKey + '\')"' : '';
+                items += '<div class="folder-card folder-card--owned ' + (selectedProjectKey === wsKey ? 'active' : '') + '" onclick="setProjectSelection(\'' + wsKey + '\')"' + dragDropAttr + '>';
+                items += '<div class="folder-card-head"><span class="folder-card-title">' + escapeHtml(ws.name || 'Project') + '</span><span class="folder-card-count">' + count + '</span></div>';
+                items += '<p class="folder-card-subtitle">' + (isOwner ? 'Owned folder' : ('Shared: ' + escapeHtml(ws.access_type || 'viewer'))) + '</p>';
+                var isClient = String(ws.access_type || '') === 'client';
+                var isBroker = String(ws.access_type || '') === 'broker';
+                var hasMainPano = !!getMainPanoramaIdForProject(ProjectId);
+                if ((isOwner && isDashboardAdmin) || isClient || isBroker) {
+                    items += '<div class="folder-card-actions">';
+                    if (hasMainPano) {
+                        if (isOwner && isDashboardAdmin) {
+                            items += '<button type="button" class="folder-card-btn" onclick="event.stopPropagation(); window.location.href=\'/customer/edit/' + ProjectId + '\'">Set Customer View</button>';
+                        }
+                        items += '<button type="button" class="folder-card-btn" onclick="event.stopPropagation(); showProjectShareModal(\'' + ProjectId + '\')">Share Reference Link</button>';
+                    }
+                    if (isOwner && isDashboardAdmin) {
+                        items += '<button type="button" class="folder-card-btn" onclick="event.stopPropagation(); window.location.href=\'/workspace/' + ProjectId + '/access\'">Manage access</button>';
+                        items += '<button type="button" class="folder-card-btn" onclick="event.stopPropagation(); openEditWorkspaceModal(\'' + ProjectId + '\')">Edit</button>';
+                        items += '<button type="button" class="folder-card-btn" onclick="event.stopPropagation(); showRenameProjectModal(\'' + ProjectId + '\')">Rename</button>';
+                        items += '<button type="button" class="folder-card-btn folder-card-btn--danger" onclick="event.stopPropagation(); showDeleteProjectModal(\'' + ProjectId + '\')">Delete</button>';
+                    }
+                    items += '</div>';
+                }
+                items += '</div>';
+            });
+
+            projectList.innerHTML = items;
+        }
+
+        function showProjectCreateError(message) {
+            if (!projectCreateError) return;
+            projectCreateError.textContent = message || '';
+            projectCreateError.style.display = message ? 'block' : 'none';
+        }
+
+        function showProjectRenameError(message) {
+            if (!projectRenameError) return;
+            projectRenameError.textContent = message || '';
+            projectRenameError.style.display = message ? 'block' : 'none';
+        }
+
+        function showProjectDeleteError(message) {
+            if (!projectDeleteError) return;
+            projectDeleteError.textContent = message || '';
+            projectDeleteError.style.display = message ? 'block' : 'none';
+        }
+
+        function openCreateProjectModal() {
+            if (!createProjectModal) return;
+            editWorkspaceTargetId = null; // ensure not edit mode
+            if (projectNameInput) projectNameInput.value = '';
+            clearCreateProjectOptionalFields();
+            showProjectCreateError('');
+            var titleEl = createProjectModal.querySelector('.modal-title');
+            if (titleEl) titleEl.textContent = 'Create Project';
+            var textEl = createProjectModal.querySelector('.modal-text');
+            if (textEl) textEl.textContent = 'Create a new project to organize panoramas. Add optional details for the Customer Portal.';
+            if (confirmCreateProject) confirmCreateProject.textContent = 'Create';
+            createProjectModal.classList.add('visible');
+            if (projectNameInput) projectNameInput.focus();
+        }
+
+        function closeCreateProjectModal() {
+            if (!createProjectModal) return;
+            createProjectModal.classList.remove('visible');
+            showProjectCreateError('');
+            // reset edit state and UI texts
+            editWorkspaceTargetId = null;
+            var titleEl = createProjectModal.querySelector('.modal-title');
+            if (titleEl) titleEl.textContent = 'Create Project';
+            var textEl = createProjectModal.querySelector('.modal-text');
+            if (textEl) textEl.textContent = 'Create a new project to organize panoramas. Add optional details for the Customer Portal.';
+            if (confirmCreateProject) confirmCreateProject.textContent = 'Create';
+            clearCreateProjectOptionalFields();
+        }
+
+        function showRenameProjectModal(ProjectId) {
+            renameProjectTargetId = ProjectId;
+            var ws = getProjectById(ProjectId);
+            if (projectRenameInput) {
+                projectRenameInput.value = ws && ws.name ? ws.name : '';
+                projectRenameInput.focus();
+                projectRenameInput.select();
+            }
+            showProjectRenameError('');
+            if (renameProjectModal) renameProjectModal.classList.add('visible');
+        }
+
+        function closeRenameProjectModal() {
+            if (!renameProjectModal) return;
+            renameProjectModal.classList.remove('visible');
+            renameProjectTargetId = null;
+            if (projectRenameInput) projectRenameInput.value = '';
+            showProjectRenameError('');
+        }
+
+        function showDeleteProjectModal(ProjectId) {
+            deleteProjectTargetId = ProjectId;
+            showProjectDeleteError('');
+            if (deleteProjectModal) deleteProjectModal.classList.add('visible');
+        }
+
+        function closeDeleteProjectModal() {
+            if (!deleteProjectModal) return;
+            deleteProjectModal.classList.remove('visible');
+            deleteProjectTargetId = null;
+            showProjectDeleteError('');
+        }
+
+        function openEditWorkspaceModal(ProjectId) {
+            if (!createProjectModal || !projectNameInput) return;
+            editWorkspaceTargetId = ProjectId;
+            showProjectCreateError('Loading project details...');
+            // Always fetch fresh to ensure all detail columns (builder etc) are present for prefill
+            getAuthHeaders().then(function(headers) {
+                return fetch('/api/workspaces/' + encodeURIComponent(ProjectId), { headers: headers });
+            }).then(function(r) {
+                if (!r.ok) throw new Error('Failed to load project for edit');
+                return r.json();
+            }).then(function(p) {
+                showProjectCreateError('');
+                // prefill from fresh p
+                projectNameInput.value = p.name || '';
+                setWorkspaceField('ws-builder-name', p.builder_name);
+                setWorkspaceField('ws-project-type', p.project_type || 'residential');
+                setWorkspaceField('ws-location-address', p.location_address);
+                setWorkspaceField('ws-location-city', p.location_city);
+                setWorkspaceField('ws-location-state', p.location_state);
+                setWorkspaceField('ws-google-maps-link', p.google_maps_link);
+                setWorkspaceField('ws-rera', p.rera_registration);
+                setWorkspaceField('ws-total-area', p.total_area);
+                setWorkspaceField('ws-launch-date', p.launch_date);
+                setWorkspaceField('ws-possession-date', p.possession_date);
+                setWorkspaceField('ws-description', p.description);
+                setWorkspaceField('ws-contact-phone', p.contact_phone);
+                setWorkspaceField('ws-contact-email', p.contact_email);
+                var am = document.getElementById('ws-amenities');
+                if (am) {
+                    am.value = Array.isArray(p.amenities) ? p.amenities.join(', ') : (p.amenities || '');
+                }
+                var pubEl = document.getElementById('ws-is-published');
+                if (pubEl) pubEl.checked = !!p.is_published;
+                var status = document.getElementById('ws-maps-status');
+                if (status) status.textContent = '';
+                // repurpose UI for edit
+                var titleEl = createProjectModal.querySelector('.modal-title');
+                if (titleEl) titleEl.textContent = 'Edit Project';
+                var textEl = createProjectModal.querySelector('.modal-text');
+                if (textEl) textEl.textContent = 'Update the project details below. Changes will be reflected in the customer portal if published.';
+                if (confirmCreateProject) confirmCreateProject.textContent = 'Save Changes';
+                createProjectModal.classList.add('visible');
+                if (projectNameInput) projectNameInput.focus();
+                // trigger maps status update
+                var mapsInput = document.getElementById('ws-google-maps-link');
+                if (mapsInput) mapsInput.dispatchEvent(new Event('input'));
+                // expand details for edit
+                var details = createProjectModal.querySelector('details');
+                if (details) details.open = true;
+            }).catch(function(err) {
+                showProjectCreateError(err.message || 'Failed to load project');
+                // still show the modal with whatever partial data
+                createProjectModal.classList.add('visible');
+            });
+        }
+
+        function setWorkspaceField(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.value = (val != null ? val : '');
+        }
+
+        async function loadWorkspaces() {
+            if (!projectList) return;
+            try {
+                let data = null;
+                if (window.pmApi && typeof window.pmApi.fetchJsonWithRetry === 'function') {
+                    data = await window.pmApi.fetchJsonWithRetry('/api/workspaces', {}, {
+                        retries: 2,
+                        baseDelayMs: 220,
+                        waitAttempts: 8,
+                        waitDelayMs: 140
+                    });
+                } else {
+                    const headers = await ensureAuthHeadersOrRedirect();
+                    if (!headers) return;
+                    const response = await fetch('/api/workspaces', { headers });
+                    if (response.status === 401) {
+                        const retryHeaders = await ensureAuthHeadersOrRedirect();
+                        if (!retryHeaders) return;
+                        const retryResponse = await fetch('/api/workspaces', { headers: retryHeaders });
+                        if (retryResponse.status === 401) {
+                            window.location.replace('/login');
+                            return;
+                        }
+                        if (!retryResponse.ok) {
+                            if (retryResponse.status === 503 || retryResponse.status === 404) {
+                                projectFeatureReady = false;
+                                if (createProjectBtn) createProjectBtn.style.display = 'none';
+                                workspaces = [];
+                                return;
+                            }
+                            throw new Error('Failed to load folders');
+                        }
+                        data = await retryResponse.json();
+                    }
+                    if (!response.ok) {
+                        if (response.status === 503 || response.status === 404) {
+                            projectFeatureReady = false;
+                            if (createProjectBtn) createProjectBtn.style.display = 'none';
+                            workspaces = [];
+                            return;
+                        }
+                        throw new Error('Failed to load folders');
+                    }
+                    data = await response.json();
+                }
+
+                projectFeatureReady = true;
+                var isDashboardAdminForBtn = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+                if (createProjectBtn) createProjectBtn.style.display = isDashboardAdminForBtn ? '' : 'none';
+                workspaces = Array.isArray(data) ? data : [];
+                if (selectedProjectKey.indexOf('ws:') === 0) {
+                    var existing = getProjectById(selectedProjectKey.slice(3));
+                    if (!existing) selectedProjectKey = 'unfiled';
+                }
+            } catch (error) {
+                if (error && (error.status === 503 || error.status === 404)) {
+                    projectFeatureReady = false;
+                    if (createProjectBtn) createProjectBtn.style.display = 'none';
+                    workspaces = [];
+                    return;
+                }
+                projectFeatureReady = false;
+                if (createProjectBtn) createProjectBtn.style.display = 'none';
+                // Preserve last successful state when possible to avoid empty flicker on transient failures.
+                if (!Array.isArray(workspaces)) workspaces = [];
+            }
+        }
+
+        function renderClientOptions() {
+            if (!filterClientSelect) return;
+            var isExternalBroker = currentUserRole === 'broker';
+            var current = String(filterClientSelect.value || '').trim();
+            var options = Array.isArray(clientOptions) ? clientOptions.slice() : [];
+            if (!isExternalBroker || !options.length) {
+                filterClientSelect.value = '';
+                filterClientSelect.style.display = 'none';
+                return;
+            }
+            filterClientSelect.innerHTML = '<option value="">All Clients</option>' + options.map(function (client) {
+                var id = String(client.id || '');
+                var name = client.name || ('Client #' + id);
+                return '<option value="' + escapeHtml(id) + '">' + escapeHtml(name) + '</option>';
+            }).join('');
+            filterClientSelect.value = options.some(function (client) { return String(client.id || '') === current; }) ? current : '';
+            filterClientSelect.style.display = '';
+        }
+
+        async function loadClientOptions() {
+            if (currentUserRole !== 'broker') {
+                clientOptions = [];
+                renderClientOptions();
+                return;
+            }
+            try {
+                var data = null;
+                if (window.pmApi && typeof window.pmApi.fetchJsonWithRetry === 'function') {
+                    data = await window.pmApi.fetchJsonWithRetry('/api/access/client-options', {}, {
+                        retries: 1,
+                        baseDelayMs: 180,
+                        waitAttempts: 6,
+                        waitDelayMs: 120
+                    });
+                } else {
+                    var headers = await ensureAuthHeadersOrRedirect();
+                    if (!headers) return;
+                    var response = await fetch('/api/access/client-options', { headers: headers });
+                    data = response.ok ? await response.json() : [];
+                }
+                clientOptions = Array.isArray(data) ? data : [];
+            } catch (e) {
+                clientOptions = [];
+            }
+            renderClientOptions();
+        }
+
+        function ensureUsefulInitialProjectSelection() {
+            var isDashboardAdmin = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+            if (isDashboardAdmin || selectedProjectKey !== 'unfiled') return;
+            var unfiledCount = projects.filter(function (p) { return !p.workspace_id; }).length;
+            if (unfiledCount > 0) return;
+            var firstProject = (Array.isArray(workspaces) ? workspaces : []).find(function (ws) {
+                return ws && ws.id;
+            });
+            if (firstProject) selectedProjectKey = 'ws:' + String(firstProject.id);
+        }
+
+        async function loadOrgSlug() {
+            try {
+                var headers = await getAuthHeaders();
+                var res = await fetch('/api/org/me', { headers });
+                if (res.ok) {
+                    var data = await res.json();
+                    if (data.org && data.org.slug) orgSlug = data.org.slug;
+                    else if (data.org && data.org.name) orgSlug = String(data.org.name).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'marketostate';
+                }
+            } catch (e) {}
+        }
+
+        async function initializeDashboard() {
+            try {
+                await Promise.all([loadWorkspaces(), loadProjects(), loadClientOptions(), loadOrgSlug()]);
+            } catch (e) {
+                // State already set by loadWorkspaces/loadProjects; single render below.
+            }
+            try {
+                ensureUsefulInitialProjectSelection();
+                renderProjects();
+                renderRecents();
+                if (projectsLoadFailed) {
+                    projectsContainer.innerHTML = '<div class="empty-state"><div class="empty-text">Failed to load projects</div></div>';
+                } else {
+                    renderProjects();
+                }
+            } finally {
+                setDashboardBooting(false);
+            }
+        }
+
+        function startDashboardOnce() {
+            if (dashboardInitStarted) return;
+            dashboardInitStarted = true;
+            initializeDashboard();
+        }
+
+        startDashboardOnce();
+
+        // File Upload Handlers
+        uploadZone.addEventListener('click', (e) => {
+            if (e.target === uploadZone || e.target.classList.contains('upload-icon') ||
+                e.target.classList.contains('upload-text') || e.target.classList.contains('upload-hint')) {
+                uploadInput.click();
+            }
+        });
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length > 1) {
+                handleMultiFileSelect(files);
+            } else if (files.length === 1) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        uploadInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length > 1) {
+                handleMultiFileSelect(files);
+            } else if (files.length === 1) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            selectedImageWidth = 0;
+            selectedImageHeight = 0;
+
+            if (previewObjectUrl) {
+                try { URL.revokeObjectURL(previewObjectUrl); } catch (e) { }
+                previewObjectUrl = '';
+            }
+            previewSize.textContent = `${formatFileSize(file.size)}`;
+            previewObjectUrl = URL.createObjectURL(file);
+            previewImage.onload = () => {
+                selectedImageWidth = previewImage.naturalWidth || 0;
+                selectedImageHeight = previewImage.naturalHeight || 0;
+                if (selectedImageWidth && selectedImageHeight) {
+                    previewSize.textContent = `${formatFileSize(file.size)} • ${selectedImageWidth} × ${selectedImageHeight}`;
+                }
+            };
+            previewImage.onerror = () => {
+                selectedImageWidth = 0;
+                selectedImageHeight = 0;
+            };
+            previewImage.src = previewObjectUrl;
+
+            previewFilename.textContent = file.name;
+            projectName.value = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+            uploadForm.classList.add('visible');
+        }
+
+        cancelUpload.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetUploadForm();
+        });
+
+        startUpload.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!selectedFile) return;
+
+            const name = projectName.value.trim() || 'Untitled';
+            const is360 = document.getElementById('is-360').checked;
+            const wsSelect = document.getElementById('upload-workspace-select');
+            const ProjectId = (wsSelect && wsSelect.value) ? wsSelect.value : getSelectedOwnedProjectId();
+
+            uploadForm.classList.remove('visible');
+            uploadProgress.classList.add('visible');
+            uploadZone.classList.add('uploading');
+
+            try {
+                progressFill.style.width = '0%';
+                progressText.textContent = 'Preparing upload...';
+
+                const headers = await ensureAuthHeadersOrRedirect();
+                if (!headers) return;
+
+                const onCreated = function (project) {
+                    showToast('Project created successfully!', 'success');
+                    resetUploadForm();
+                    var um = document.getElementById('upload-modal');
+                    if (um) um.classList.remove('visible');
+                    Promise.all([loadWorkspaces(), loadProjects()]).then(function () {
+                        renderProjects();
+                        renderWorkspaces();
+                        renderRecents();
+                    });
+                    setTimeout(() => {
+                        openProjectWithAccessToken('admin', project.id, !!project.is_360);
+                    }, 500);
+                };
+
+                let directInfo = null;
+                let allowDynoFallback = false;
+                try {
+                    const urlResp = await fetch('/api/panoramas/upload-url', {
+                        method: 'POST',
+                        headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                        body: JSON.stringify({
+                            original_filename: selectedFile.name,
+                            content_type: selectedFile.type,
+                            size_bytes: selectedFile.size,
+                            name: name
+                        })
+                    });
+                    if (urlResp.ok) {
+                        directInfo = await urlResp.json();
+                    } else {
+                        let msg = '';
+                        try {
+                            const payload = await urlResp.json().catch(() => null);
+                            if (payload && payload.error) msg = String(payload.error);
+                        } catch (e) { }
+                        if (urlResp.status === 413) {
+                            showToast(msg || `File too large (${urlResp.status})`, 'error');
+                            resetUploadForm();
+                            return;
+                        }
+                        if (urlResp.status === 503) {
+                            allowDynoFallback = true;
+                        } else {
+                            showToast(msg || `Upload setup failed (${urlResp.status})`, 'error');
+                            resetUploadForm();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    allowDynoFallback = true;
+                }
+
+                if (directInfo && directInfo.upload_url && directInfo.filename && directInfo.upload_token) {
+                    try {
+                        const maxBytes = Number(directInfo.max_bytes || 0);
+                        if (maxBytes && selectedFile.size > maxBytes) {
+                            const maxMb = Math.max(1, Math.floor(maxBytes / (1024 * 1024)));
+                            throw new Error(`File too large (max ${maxMb}MB)`);
+                        }
+
+                        await new Promise((resolve, reject) => {
+                            const putXhr = new XMLHttpRequest();
+                            putXhr.upload.addEventListener('progress', (ev) => {
+                                if (ev.lengthComputable) {
+                                    const percent = Math.round((ev.loaded / ev.total) * 100);
+                                    progressFill.style.width = `${percent}%`;
+                                    progressText.textContent = `Uploading... ${percent}%`;
+                                }
+                            });
+                            putXhr.addEventListener('load', () => {
+                                if (putXhr.status >= 200 && putXhr.status < 300) return resolve();
+                                reject(new Error(`Upload failed (${putXhr.status})`));
+                            });
+                            putXhr.addEventListener('error', () => reject(new Error('Upload failed (network error).')));
+                            putXhr.addEventListener('timeout', () => reject(new Error('Upload timed out.')));
+                            putXhr.open('PUT', directInfo.upload_url);
+                            putXhr.timeout = 10 * 60 * 1000;
+                            if (directInfo.content_type) putXhr.setRequestHeader('Content-Type', directInfo.content_type);
+                            putXhr.send(selectedFile);
+                        });
+
+                        progressFill.style.width = '100%';
+                        progressText.textContent = 'Finalizing...';
+
+                        const finalize = new FormData();
+                        finalize.append('filename', directInfo.filename);
+                        finalize.append('upload_token', directInfo.upload_token);
+                        finalize.append('original_filename', selectedFile.name);
+                        finalize.append('name', name);
+                        finalize.append('is_360', String(is360));
+                        finalize.append('width', String(selectedImageWidth || 0));
+                        finalize.append('height', String(selectedImageHeight || 0));
+                        if (ProjectId) finalize.append('workspace_id', ProjectId);
+
+                        const finResp = await fetch('/api/panoramas', { method: 'POST', headers: headers, body: finalize });
+                        const finPayload = await finResp.json().catch(() => null);
+                        if (!finResp.ok || !finPayload) {
+                            const msg = finPayload && finPayload.error ? String(finPayload.error) : `Upload failed (${finResp.status})`;
+                            throw new Error(msg);
+                        }
+                        onCreated(finPayload);
+                        return;
+                    } catch (err) {
+                        const msg = err && err.message ? String(err.message) : 'Direct upload failed.';
+                        showToast(msg, 'error');
+                        resetUploadForm();
+                        return;
+                    }
+                }
+
+                if (!allowDynoFallback) {
+                    showToast('Direct upload is required; server upload is disabled.', 'error');
+                    resetUploadForm();
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('name', name);
+                formData.append('is_360', String(is360));
+                formData.append('width', String(selectedImageWidth || 0));
+                formData.append('height', String(selectedImageHeight || 0));
+                if (ProjectId) formData.append('workspace_id', ProjectId);
+
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', (ev) => {
+                    if (ev.lengthComputable) {
+                        const percent = Math.round((ev.loaded / ev.total) * 100);
+                        progressFill.style.width = `${percent}%`;
+                        progressText.textContent = `Uploading... ${percent}%`;
+                    }
+                });
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 201) {
+                        const project = JSON.parse(xhr.responseText);
+                        onCreated(project);
+                    } else {
+                        let message = `Upload failed (${xhr.status})`;
+                        try {
+                            const payload = JSON.parse(xhr.responseText || '{}');
+                            if (payload && payload.error) message = String(payload.error);
+                        } catch (e) { }
+                        showToast(message, 'error');
+                        resetUploadForm();
+                    }
+                });
+                xhr.addEventListener('error', () => {
+                    showToast('Upload failed (network error). Please try again.', 'error');
+                    resetUploadForm();
+                });
+                xhr.addEventListener('timeout', () => {
+                    showToast('Upload timed out. Please try again.', 'error');
+                    resetUploadForm();
+                });
+                xhr.open('POST', '/api/panoramas');
+                xhr.timeout = 4 * 60 * 1000;
+                if (headers.Authorization) xhr.setRequestHeader('Authorization', headers.Authorization);
+                xhr.send(formData);
+            } catch (error) {
+                const message = error && error.message ? String(error.message) : 'Upload failed. Please try again.';
+                showToast(message, 'error');
+                resetUploadForm();
+            }
+        });
+
+        function resetUploadForm() {
+            selectedFile = null;
+            selectedImageWidth = 0;
+            selectedImageHeight = 0;
+            uploadInput.value = '';
+            uploadForm.classList.remove('visible');
+            uploadProgress.classList.remove('visible');
+            uploadZone.classList.remove('uploading');
+            progressFill.style.width = '0%';
+            previewImage.src = '';
+            if (previewObjectUrl) {
+                try { URL.revokeObjectURL(previewObjectUrl); } catch (e) { }
+                previewObjectUrl = '';
+            }
+            projectName.value = 'Untitled';
+            // Clean up multi-file state
+            cleanupMultiFiles();
+            if (multiUploadForm) multiUploadForm.classList.remove('visible');
+            if (multiFilesList) multiFilesList.innerHTML = '';
+            if (multiAll360) multiAll360.checked = false;
+        }
+
+        // --- Multi-file helpers ---
+
+        function cleanupMultiFiles() {
+            selectedFiles.forEach(item => {
+                if (item.objectUrl) try { URL.revokeObjectURL(item.objectUrl); } catch (e) {}
+            });
+            selectedFiles = [];
+        }
+
+        function handleMultiFileSelect(files) {
+            // Reset single-file form
+            selectedFile = null;
+            uploadForm.classList.remove('visible');
+            cleanupMultiFiles();
+
+            selectedFiles = files.map(f => ({
+                file: f,
+                name: f.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+                width: 0,
+                height: 0,
+                is360: false,
+                objectUrl: URL.createObjectURL(f)
+            }));
+
+            // Load image dimensions async
+            selectedFiles.forEach((item, i) => {
+                const img = new Image();
+                img.onload = () => {
+                    item.width = img.naturalWidth || 0;
+                    item.height = img.naturalHeight || 0;
+                    const metaEl = document.getElementById('multi-meta-' + i);
+                    if (metaEl) {
+                        metaEl.textContent = item.file.name + ' • ' + formatFileSize(item.file.size) +
+                            (item.width ? ' • ' + item.width + ' × ' + item.height : '');
+                    }
+                };
+                img.src = item.objectUrl;
+            });
+
+            // Populate multi workspace select from owned workspaces
+            const mws = document.getElementById('multi-upload-workspace-select');
+            if (mws && typeof workspaces !== 'undefined') {
+                mws.innerHTML = '<option value="">Unlinked</option>';
+                workspaces.forEach(function(ws) {
+                    if (ws.access_type === 'owner') {
+                        var opt = document.createElement('option');
+                        opt.value = ws.id;
+                        opt.textContent = ws.name || ('Folder #' + ws.id);
+                        mws.appendChild(opt);
+                    }
+                });
+                var activeWsId = getSelectedOwnedProjectId();
+                mws.value = activeWsId || '';
+            }
+
+            renderMultiFileList();
+            multiUploadForm.classList.add('visible');
+        }
+
+        function renderMultiFileList() {
+            multiFileCount.textContent = selectedFiles.length + ' file' + (selectedFiles.length !== 1 ? 's' : '') + ' selected';
+            multiStartUpload.textContent = 'Upload ' + selectedFiles.length + ' Panorama' + (selectedFiles.length !== 1 ? 's' : '');
+
+            multiFilesList.innerHTML = '';
+            selectedFiles.forEach((item, i) => {
+                const row = document.createElement('div');
+                row.className = 'multi-file-row';
+                row.dataset.index = i;
+                row.innerHTML =
+                    '<img class="multi-thumb" src="' + escapeHtml(item.objectUrl) + '" alt="">' +
+                    '<div class="multi-file-info">' +
+                        '<input type="text" class="form-input multi-name-input" value="' + escapeHtml(item.name) + '" placeholder="Panorama name" data-index="' + i + '">' +
+                        '<div class="multi-file-meta" id="multi-meta-' + i + '">' + escapeHtml(item.file.name) + ' • ' + formatFileSize(item.file.size) +
+                            (item.width ? ' • ' + item.width + ' × ' + item.height : '') + '</div>' +
+                        '<label class="multi-file-360-label">' +
+                            '<input type="checkbox" class="multi-360-check" data-index="' + i + '" style="width:auto;cursor:pointer;"' + (item.is360 ? ' checked' : '') + '> 360° Equirectangular' +
+                        '</label>' +
+                    '</div>' +
+                    '<button type="button" class="multi-file-remove" data-index="' + i + '" title="Remove">&times;</button>';
+                multiFilesList.appendChild(row);
+            });
+
+            multiFilesList.querySelectorAll('.multi-name-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    if (selectedFiles[idx] !== undefined) selectedFiles[idx].name = e.target.value;
+                });
+            });
+            multiFilesList.querySelectorAll('.multi-360-check').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    if (selectedFiles[idx] !== undefined) selectedFiles[idx].is360 = e.target.checked;
+                    // Sync "mark all" checkbox state
+                    const allChecked = selectedFiles.every(f => f.is360);
+                    multiAll360.checked = allChecked;
+                });
+            });
+            multiFilesList.querySelectorAll('.multi-file-remove').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    removeMultiFile(idx);
+                });
+            });
+        }
+
+        function removeMultiFile(index) {
+            if (selectedFiles[index] && selectedFiles[index].objectUrl) {
+                try { URL.revokeObjectURL(selectedFiles[index].objectUrl); } catch (e) {}
+            }
+            selectedFiles.splice(index, 1);
+            if (selectedFiles.length === 0) {
+                multiUploadForm.classList.remove('visible');
+                multiFilesList.innerHTML = '';
+                return;
+            }
+            renderMultiFileList();
+        }
+
+        multiAll360 && multiAll360.addEventListener('change', () => {
+            const checked = multiAll360.checked;
+            selectedFiles.forEach(f => f.is360 = checked);
+            multiFilesList.querySelectorAll('.multi-360-check').forEach(cb => cb.checked = checked);
+        });
+
+        multiCancelUpload && multiCancelUpload.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetUploadForm();
+        });
+
+        multiStartUpload && multiStartUpload.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (selectedFiles.length === 0) return;
+            await uploadAllFiles();
+        });
+
+        async function uploadSingleFile(item, ProjectId, onProgress) {
+            const { file, name, width, height, is360 } = item;
+            const headers = await ensureAuthHeadersOrRedirect();
+            if (!headers) throw new Error('Not authenticated');
+
+            let directInfo = null;
+            let allowDynoFallback = false;
+            try {
+                const urlResp = await fetch('/api/panoramas/upload-url', {
+                    method: 'POST',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                    body: JSON.stringify({
+                        original_filename: file.name,
+                        content_type: file.type,
+                        size_bytes: file.size,
+                        name: name
+                    })
+                });
+                if (urlResp.ok) {
+                    directInfo = await urlResp.json();
+                } else {
+                    const payload = await urlResp.json().catch(() => null);
+                    const errMsg = payload && payload.error ? String(payload.error) : '';
+                    if (urlResp.status === 413) throw new Error(errMsg || 'File too large');
+                    if (urlResp.status === 503) allowDynoFallback = true;
+                    else throw new Error(errMsg || 'Upload setup failed (' + urlResp.status + ')');
+                }
+            } catch (e) {
+                const msg = e && e.message ? e.message : '';
+                if (msg.includes('File too large') || msg.includes('Upload setup failed')) throw e;
+                allowDynoFallback = true;
+            }
+
+            if (directInfo && directInfo.upload_url && directInfo.filename && directInfo.upload_token) {
+                const maxBytes = Number(directInfo.max_bytes || 0);
+                if (maxBytes && file.size > maxBytes) {
+                    const maxMb = Math.max(1, Math.floor(maxBytes / (1024 * 1024)));
+                    throw new Error('File too large (max ' + maxMb + 'MB)');
+                }
+
+                await new Promise((resolve, reject) => {
+                    const putXhr = new XMLHttpRequest();
+                    putXhr.upload.addEventListener('progress', (ev) => {
+                        if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 90));
+                    });
+                    putXhr.addEventListener('load', () => {
+                        if (putXhr.status >= 200 && putXhr.status < 300) return resolve();
+                        reject(new Error('Upload failed (' + putXhr.status + ')'));
+                    });
+                    putXhr.addEventListener('error', () => reject(new Error('Upload failed (network error).')));
+                    putXhr.addEventListener('timeout', () => reject(new Error('Upload timed out.')));
+                    putXhr.open('PUT', directInfo.upload_url);
+                    putXhr.timeout = 10 * 60 * 1000;
+                    if (directInfo.content_type) putXhr.setRequestHeader('Content-Type', directInfo.content_type);
+                    putXhr.send(file);
+                });
+
+                onProgress(95);
+                const finalize = new FormData();
+                finalize.append('filename', directInfo.filename);
+                finalize.append('upload_token', directInfo.upload_token);
+                finalize.append('original_filename', file.name);
+                finalize.append('name', name);
+                finalize.append('is_360', String(is360));
+                finalize.append('width', String(width || 0));
+                finalize.append('height', String(height || 0));
+                if (ProjectId) finalize.append('workspace_id', ProjectId);
+
+                const finResp = await fetch('/api/panoramas', { method: 'POST', headers: headers, body: finalize });
+                const finPayload = await finResp.json().catch(() => null);
+                if (!finResp.ok || !finPayload) {
+                    const msg = finPayload && finPayload.error ? String(finPayload.error) : 'Upload failed (' + finResp.status + ')';
+                    throw new Error(msg);
+                }
+                onProgress(100);
+                return finPayload;
+            }
+
+            if (!allowDynoFallback) {
+                throw new Error('Direct upload is required; server upload is disabled.');
+            }
+
+            return await new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('name', name);
+                formData.append('is_360', String(is360));
+                formData.append('width', String(width || 0));
+                formData.append('height', String(height || 0));
+                if (ProjectId) formData.append('workspace_id', ProjectId);
+
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', (ev) => {
+                    if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
+                });
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 201) {
+                        resolve(JSON.parse(xhr.responseText));
+                    } else {
+                        let msg = 'Upload failed (' + xhr.status + ')';
+                        try { const p = JSON.parse(xhr.responseText || '{}'); if (p && p.error) msg = String(p.error); } catch (e) {}
+                        reject(new Error(msg));
+                    }
+                });
+                xhr.addEventListener('error', () => reject(new Error('Upload failed (network error).')));
+                xhr.addEventListener('timeout', () => reject(new Error('Upload timed out.')));
+                xhr.open('POST', '/api/panoramas');
+                xhr.timeout = 4 * 60 * 1000;
+                if (headers.Authorization) xhr.setRequestHeader('Authorization', headers.Authorization);
+                xhr.send(formData);
+            });
+        }
+
+        async function uploadAllFiles() {
+            const wsSelect = document.getElementById('multi-upload-workspace-select');
+            const ProjectId = (wsSelect && wsSelect.value) ? wsSelect.value : getSelectedOwnedProjectId();
+            const files = selectedFiles.slice();
+            const total = files.length;
+
+            multiUploadForm.classList.remove('visible');
+            uploadProgress.classList.add('visible');
+            uploadZone.classList.add('uploading');
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < total; i++) {
+                const item = files[i];
+                progressText.textContent = 'Uploading ' + (i + 1) + ' of ' + total + ': ' + item.file.name;
+                progressFill.style.width = Math.round((i / total) * 100) + '%';
+                try {
+                    await uploadSingleFile(item, ProjectId, (pct) => {
+                        const overall = Math.round(((i + pct / 100) / total) * 100);
+                        progressFill.style.width = overall + '%';
+                    });
+                    successCount++;
+                } catch (err) {
+                    failCount++;
+                    const msg = err && err.message ? String(err.message) : 'Unknown error';
+                    showToast('Failed to upload "' + item.name + '": ' + msg, 'error');
+                }
+            }
+
+            progressFill.style.width = '100%';
+            progressText.textContent = 'Done! ' + successCount + ' uploaded' + (failCount ? ', ' + failCount + ' failed' : '') + '.';
+
+            cleanupMultiFiles();
+            await Promise.all([loadWorkspaces(), loadProjects()]);
+            renderWorkspaces();
+            renderProjects();
+            renderRecents();
+
+            setTimeout(() => {
+                var um = document.getElementById('upload-modal');
+                if (um) um.classList.remove('visible');
+                resetUploadForm();
+                if (successCount > 0) {
+                    showToast(successCount + ' panorama' + (successCount !== 1 ? 's' : '') + ' uploaded successfully!', 'success');
+                }
+            }, 1200);
+        }
+
+        // workspaces (user-scoped; send auth token). Does not render; initializeDashboard renders once after load.
+        async function loadProjects() {
+            projectsLoadFailed = false;
+            try {
+                if (window.pmApi && typeof window.pmApi.fetchJsonWithRetry === 'function') {
+                    const data = await window.pmApi.fetchJsonWithRetry('/api/panoramas', {}, {
+                        retries: 2,
+                        baseDelayMs: 220,
+                        waitAttempts: 8,
+                        waitDelayMs: 140
+                    });
+                    projects = Array.isArray(data) ? data : [];
+                } else {
+                    const headers = await ensureAuthHeadersOrRedirect();
+                    if (!headers) return;
+                    const response = await fetch('/api/panoramas', { headers });
+                    if (response.status === 401) {
+                        const retryHeaders = await ensureAuthHeadersOrRedirect();
+                        if (!retryHeaders) return;
+                        const retryResponse = await fetch('/api/panoramas', { headers: retryHeaders });
+                        if (retryResponse.status === 401) {
+                            window.location.replace('/login');
+                            return;
+                        }
+                        if (!retryResponse.ok) {
+                            let retryDetail = '';
+                            try { retryDetail = await retryResponse.text(); } catch (e) { }
+                            console.warn('workspaces retry load failed', retryResponse.status, retryDetail.slice(0, 200));
+                            throw new Error(`Failed to load projects (${retryResponse.status})`);
+                        }
+                        projects = await retryResponse.json();
+                        updateCrmNavVisibility();
+                        return;
+                    }
+                    if (!response.ok) {
+                        let detail = '';
+                        try { detail = await response.text(); } catch (e) { }
+                        console.warn('workspaces load failed', response.status, detail.slice(0, 200));
+                        throw new Error(`Failed to load projects (${response.status})`);
+                    }
+                    projects = await response.json();
+                }
+                updateCrmNavVisibility();
+            } catch (error) {
+                if (!Array.isArray(projects)) projects = [];
+                projectsLoadFailed = true;
+                updateCrmNavVisibility();
+            }
+        }
+
+        // ── Lazy image loading via IntersectionObserver ──
+        var _lazyImageObserver = null;
+        (function initLazyObserver() {
+            if (!('IntersectionObserver' in window)) return;
+            _lazyImageObserver = new IntersectionObserver(function (entries) {
+                for (var i = 0; i < entries.length; i++) {
+                    if (entries[i].isIntersecting) {
+                        var img = entries[i].target;
+                        var src = img.getAttribute('data-src');
+                        if (src) {
+                            img.src = src;
+                            img.removeAttribute('data-src');
+                            img.onload = function () {
+                                this.classList.remove('loading-placeholder', 'lazy-hidden');
+                                this.classList.add('lazy-loaded');
+                            };
+                        }
+                        _lazyImageObserver.unobserve(img);
+                    }
+                }
+            }, { rootMargin: '200px 0px', threshold: 0.01 });
+        })();
+
+        function observeLazyImages(container) {
+            if (!_lazyImageObserver || !container) return;
+            var images = container.querySelectorAll('img[data-src]');
+            for (var i = 0; i < images.length; i++) {
+                _lazyImageObserver.observe(images[i]);
+            }
+        }
+
+        function renderRecents() {
+            var track = document.getElementById('recents-track');
+            if (!track) return;
+            var list = projects.slice().sort(function (a, b) {
+                var ta = (a.updated_at && new Date(a.updated_at).getTime()) || 0;
+                var tb = (b.updated_at && new Date(b.updated_at).getTime()) || 0;
+                return tb - ta;
+            }).slice(0, 4);
+            if (list.length === 0) {
+                track.innerHTML = '';
+                return;
+            }
+            var html = list.map(function (project) {
+                var openFn = 'openEditor(' + project.id + ')';
+                return '<div class="topbar-recent-item" onclick="' + openFn + '" title="' + escapeHtml(project.name || 'Untitled') + '">' +
+                    '<img data-src="/uploads/' + escapeHtml(project.filename) + '?size=thumb" alt="" class="topbar-recent-thumb loading-placeholder lazy-hidden" decoding="async">' +
+                    '<span class="topbar-recent-name">' + escapeHtml(project.name || 'Untitled') + '</span>' +
+                    '</div>';
+            }).join('');
+            track.innerHTML = html;
+            observeLazyImages(track);
+        }
+
+        var _renderProjectsRAF = null;
+        function renderProjects() {
+            if (_renderProjectsRAF) cancelAnimationFrame(_renderProjectsRAF);
+            _renderProjectsRAF = requestAnimationFrame(_renderProjectsNow);
+        }
+        function _renderProjectsNow() {
+            _renderProjectsRAF = null;
+            const visibleProjects = getFilteredProjects();
+            var isDashboardAdmin = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+                var emptyHint = isDashboardAdmin ? 'Upload a panorama or drag an existing one into this folder' : 'Projects you have access to will appear here';
+            if (visibleProjects.length === 0) {
+                projectsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🗺️</div>
+                        <div class="empty-text">No projects in this view</div>
+                        <div class="empty-hint">` + emptyHint + `</div>
+                    </div>
+                `;
+                return;
+            }
+            var accessType = function (p) { return p.access_type || 'owner'; };
+            var selectedWsId = getSelectedOwnedProjectId();
+            var currentWs = selectedWsId ? getProjectById(selectedWsId) : null;
+            var mainPanoramaId = (currentWs && currentWs.main_panorama_id != null) ? String(currentWs.main_panorama_id) : null;
+            // Build HTML as array for fast concatenation
+            var parts = ['<div class="projects-grid">'];
+            for (var i = 0; i < visibleProjects.length; i++) {
+                var project = visibleProjects[i];
+                var at = accessType(project);
+                var isOwner = at === 'owner';
+                var isClient = at === 'client';
+                var isBroker = at === 'broker';
+                var isMain = mainPanoramaId && String(project.id) === mainPanoramaId;
+                var isInsideProject = selectedProjectKey && selectedProjectKey.indexOf('ws:') === 0;
+                var mainBadge = isMain ? '<span class="project-main-badge">Main</span>' : '';
+                var dragAttr = (isOwner && isDashboardAdmin) ? ' draggable="true" ondragstart="onProjectDragStart(event,' + project.id + ')" ondragend="onProjectDragEnd(event)"' : '';
+                var dragClass = (isOwner && isDashboardAdmin) ? ' owner-draggable' : '';
+                var mainClass = isMain ? ' is-main-panorama' : '';
+                // Build config menu items
+                var menuItems = '';
+                var openLabel = isOwner ? 'Open Editor' : (isClient ? 'Open as Client' : (isBroker ? 'Open Customer View' : 'View'));
+                menuItems += '<button class="project-config-menu-item" onclick="event.stopPropagation(); openEditor(' + project.id + ')">' + openLabel + '</button>';
+                if (isOwner && isDashboardAdmin) {
+                    if (selectedWsId && !isMain) menuItems += '<button class="project-config-menu-item" onclick="event.stopPropagation(); setAsMain(' + project.id + ', event)">Set as main</button>';
+                    menuItems += '<button class="project-config-menu-item" onclick="event.stopPropagation(); window.location.href=\'/panorama/' + project.id + '/access\'">Manage access</button>';
+                    if (isInsideProject) {
+                        menuItems += '<button class="project-config-menu-item" onclick="event.stopPropagation(); showRenameModal(' + project.id + ', event)">Rename</button>';
+                        menuItems += '<button class="project-config-menu-item danger" onclick="event.stopPropagation(); showDeleteModal(' + project.id + ', event)">Delete</button>';
+                    }
+                }
+                parts.push('<div class="project-card' + dragClass + mainClass + '" data-id="' + project.id + '"' + dragAttr + ' onclick="openEditor(' + project.id + ')">');
+                parts.push('<img data-src="/uploads/' + escapeHtml(project.filename) + '?size=thumb" alt="' + escapeHtml(project.name) + '" class="project-image loading-placeholder lazy-hidden" decoding="async">');
+                parts.push('<div class="project-content">');
+                parts.push('<div class="project-name">' + escapeHtml(project.name) + ' ' + mainBadge + '</div>');
+                parts.push('<div class="project-meta"><span class="project-plots"><span>📍</span><span>' + (project.plot_count || 0) + '</span></span>');
+                parts.push('<span class="project-date">' + formatDate(project.updated_at) + '</span>');
+                if (!isOwner) parts.push('<span style="font-size:0.65rem;color:var(--color-text-dim);">(' + at + ')</span>');
+                parts.push('</div>');
+                parts.push('</div>');
+                parts.push('<div class="project-config-wrap">');
+                parts.push('<button class="project-config-btn" type="button" onclick="event.stopPropagation(); toggleProjectMenu(this)" aria-label="Actions">&#8942;</button>');
+                parts.push('<div class="project-config-menu">' + menuItems + '</div>');
+                parts.push('</div>');
+                parts.push('</div>');
+            }
+            parts.push('</div>');
+            projectsContainer.innerHTML = parts.join('');
+            observeLazyImages(projectsContainer);
+        }
+
+        async function movePanoramaProject(panoramaId, targetKey) {
+            const project = projects.find(function (p) { return String(p.id) === String(panoramaId); });
+            if (!project || String(project.access_type || 'owner') !== 'owner') {
+                showToast('Only owner can move projects', 'error');
+                return;
+            }
+            let ProjectId = null;
+            if (targetKey && targetKey.indexOf('ws:') === 0) ProjectId = targetKey.slice(3);
+            if (targetKey === 'all') {
+                showToast('Drop into a project or Unlinked Panoramas', 'error');
+                return;
+            }
+            try {
+                const headers = await getAuthHeaders();
+                headers['Content-Type'] = 'application/json';
+                const response = await fetch('/api/panoramas/' + panoramaId + '/workspace', {
+                    method: 'PATCH',
+                    headers,
+                    body: JSON.stringify({ workspace_id: ProjectId })
+                });
+                if (!response.ok) {
+                    const err = await response.json().catch(() => null);
+                    throw new Error((err && err.error) || 'Failed to move project');
+                }
+                showToast('Project moved', 'success');
+                await Promise.all([loadWorkspaces(), loadProjects()]);
+                renderWorkspaces();
+                renderProjects();
+            } catch (err) {
+                showToast(err.message || 'Failed to move project', 'error');
+            }
+        }
+
+        function onProjectDragStart(event, panoramaId) {
+            draggingPanoramaId = panoramaId;
+            if (event.dataTransfer) {
+                event.dataTransfer.setData('text/plain', String(panoramaId));
+                event.dataTransfer.effectAllowed = 'move';
+            }
+            if (event.currentTarget) event.currentTarget.classList.add('is-dragging');
+        }
+
+        function onProjectDragEnd(event) {
+            draggingPanoramaId = null;
+            if (event.currentTarget) event.currentTarget.classList.remove('is-dragging');
+            document.querySelectorAll('.folder-card.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+        }
+
+        function onProjectDragOver(event) {
+            if (!draggingPanoramaId) return;
+            event.preventDefault();
+            if (event.currentTarget) event.currentTarget.classList.add('drop-target');
+        }
+
+        function onProjectDragLeave(event) {
+            if (event.currentTarget) event.currentTarget.classList.remove('drop-target');
+        }
+
+        function onProjectDrop(event, targetKey) {
+            event.preventDefault();
+            const raw = (event.dataTransfer && event.dataTransfer.getData('text/plain')) || '';
+            const panoramaId = draggingPanoramaId || Number(raw || 0);
+            if (event.currentTarget) event.currentTarget.classList.remove('drop-target');
+            if (!panoramaId) return;
+            movePanoramaProject(panoramaId, targetKey);
+        }
+
+        function projectEditorPath(base, id, is360) {
+            return is360 ? ('/' + base + '/3d/' + id) : ('/' + base + '/' + id);
+        }
+
+        async function openProjectWithAccessToken(base, id, is360) {
+            const path = projectEditorPath(base, id, !!is360);
+            if (base === 'customer') {
+                window.location.href = path;
+                return;
+            }
+            try {
+                const headers = await ensureAuthHeadersOrRedirect();
+                if (!headers) return;
+                const response = await fetch('/api/panoramas/' + id + '/page-token', {
+                    method: 'POST',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                    body: JSON.stringify({ mode: base })
+                });
+                const data = await response.json().catch(() => null);
+                if (!response.ok || !data || !data.token) {
+                    const msg = (data && data.error) ? data.error : ('Access denied (' + response.status + ')');
+                    throw new Error(msg);
+                }
+                window.location.href = path + '?pt=' + encodeURIComponent(data.token);
+            } catch (error) {
+                showToast((error && error.message) ? error.message : 'Failed to open project', 'error');
+            }
+        }
+
+        async function openEditor(id) {
+            var project = projects.find(function (p) { return String(p.id) === String(id); });
+            var at = project && (project.access_type || 'owner');
+            var is360 = project && project.is_360;
+            var base = (at === 'owner') ? 'admin' : (at === 'client') ? 'client' : 'customer';
+            await openProjectWithAccessToken(base, id, !!is360);
+        }
+
+        function showDeleteModal(id, event) {
+            if (event) event.stopPropagation();
+            deleteTargetId = id;
+            // Check if this is the main panorama of the current workspace
+            var selectedWsId = getSelectedOwnedProjectId();
+            if (selectedWsId) {
+                var currentWs = getProjectById(selectedWsId);
+                var mainId = currentWs && currentWs.main_panorama_id != null ? String(currentWs.main_panorama_id) : null;
+                if (mainId && String(id) === mainId) {
+                    // Get other panoramas in this project
+                    var others = projects.filter(function (p) {
+                        return String(p.workspace_id || '') === String(selectedWsId)
+                            && String(p.id) !== String(id)
+                    });
+                    if (others.length > 0) {
+                        // Show choose-new-main modal
+                        chooseMainList.innerHTML = others.map(function (p) {
+                            return '<label style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.6rem; border-radius:6px; cursor:pointer; border:1px solid var(--color-border); margin-bottom:0.4rem;">' +
+                                '<input type="radio" name="new-main-panorama" value="' + p.id + '"' + (others.length === 1 ? ' checked' : '') + '>' +
+                                '<img src="/uploads/' + escapeHtml(p.filename) + '?size=thumb" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" alt="">' +
+                                '<span>' + escapeHtml(p.name || 'Untitled') + '</span>' +
+                                '</label>';
+                        }).join('');
+                        chooseMainError.style.display = 'none';
+                        chooseMainModal.classList.add('visible');
+                        return;
+                    }
+                    // No other 360° panoramas — proceed with normal delete (main will be cleared)
+                }
+            }
+            deleteModal.classList.add('visible');
+        }
+
+        function showRenameProjectError(message) {
+            if (!renameProjectError) return;
+            renameProjectError.textContent = message || '';
+            renameProjectError.style.display = message ? 'block' : 'none';
+        }
+
+        function closeRenameModal() {
+            if (!renameModal) return;
+            renameModal.classList.remove('visible');
+            renameTargetId = null;
+            if (renameProjectInput) renameProjectInput.value = '';
+            showRenameProjectError('');
+        }
+
+        function showRenameModal(id, event) {
+            if (event) event.stopPropagation();
+            renameTargetId = id;
+            const project = projects.find((p) => String(p.id) === String(id));
+            if (renameProjectInput) {
+                renameProjectInput.value = project && project.name ? project.name : '';
+                renameProjectInput.focus();
+                renameProjectInput.select();
+            }
+            showRenameProjectError('');
+            renameModal.classList.add('visible');
+        }
+
+        cancelDelete.addEventListener('click', () => {
+            deleteModal.classList.remove('visible');
+            deleteTargetId = null;
+        });
+
+        confirmDelete.addEventListener('click', async () => {
+            if (!deleteTargetId) return;
+            try {
+                const headers = await getAuthHeaders();
+                const response = await fetch(`/api/panoramas/${deleteTargetId}`, { method: 'DELETE', headers });
+                if (!response.ok) throw new Error('Delete failed');
+                showToast('Project deleted', 'success');
+                deleteModal.classList.remove('visible');
+                deleteTargetId = null;
+                await Promise.all([loadWorkspaces(), loadProjects()]);
+                renderWorkspaces();
+                renderProjects();
+            } catch (error) {
+                showToast('Failed to delete project', 'error');
+            }
+        });
+
+        cancelChooseMain.addEventListener('click', () => {
+            chooseMainModal.classList.remove('visible');
+            deleteTargetId = null;
+        });
+
+        confirmChooseMain.addEventListener('click', async () => {
+            if (!deleteTargetId) return;
+            var selected = chooseMainList.querySelector('input[name="new-main-panorama"]:checked');
+            if (!selected) {
+                chooseMainError.textContent = 'Please select a panorama to be the new main.';
+                chooseMainError.style.display = 'block';
+                return;
+            }
+            var newMainId = parseInt(selected.value, 10);
+            confirmChooseMain.disabled = true;
+            try {
+                const headers = await getAuthHeaders();
+                headers['Content-Type'] = 'application/json';
+                const response = await fetch(`/api/panoramas/${deleteTargetId}`, {
+                    method: 'DELETE',
+                    headers,
+                    body: JSON.stringify({ new_main_panorama_id: newMainId })
+                });
+                if (!response.ok) {
+                    var err = await response.json().catch(() => ({}));
+                    throw new Error(err.error || 'Delete failed');
+                }
+                showToast('Project deleted and main panorama updated', 'success');
+                chooseMainModal.classList.remove('visible');
+                deleteTargetId = null;
+                await Promise.all([loadWorkspaces(), loadProjects()]);
+                renderWorkspaces();
+                renderProjects();
+            } catch (error) {
+                chooseMainError.textContent = error.message || 'Failed to delete project';
+                chooseMainError.style.display = 'block';
+            } finally {
+                confirmChooseMain.disabled = false;
+            }
+        });
+
+        chooseMainModal.addEventListener('click', (e) => {
+            if (e.target === chooseMainModal) {
+                chooseMainModal.classList.remove('visible');
+                deleteTargetId = null;
+            }
+        });
+
+        if (cancelRename) cancelRename.addEventListener('click', closeRenameModal);
+
+        if (confirmRename) {
+            confirmRename.addEventListener('click', async () => {
+                if (!renameTargetId) return;
+                const nextName = (renameProjectInput ? renameProjectInput.value : '').trim();
+                showRenameProjectError('');
+                if (!nextName) {
+                    showRenameProjectError('Project name is required.');
+                    if (renameProjectInput) renameProjectInput.focus();
+                    return;
+                }
+                if (nextName.length > 120) {
+                    showRenameProjectError('Project name must be 120 characters or fewer.');
+                    if (renameProjectInput) renameProjectInput.focus();
+                    return;
+                }
+
+                confirmRename.disabled = true;
+                try {
+                    const headers = await getAuthHeaders();
+                    headers['Content-Type'] = 'application/json';
+                    const response = await fetch(`/api/panoramas/${renameTargetId}`, {
+                        method: 'PUT',
+                        headers,
+                        body: JSON.stringify({ name: nextName }),
+                    });
+                    if (!response.ok) {
+                        let errorText = 'Failed to rename project';
+                        try {
+                            const err = await response.json();
+                            if (err && err.error) errorText = err.error;
+                        } catch (_) { }
+                        throw new Error(errorText);
+                    }
+                    showToast('Project renamed successfully!', 'success');
+                    closeRenameModal();
+                    await loadProjects();
+                    renderWorkspaces();
+                    renderProjects();
+                } catch (error) {
+                    showRenameProjectError(error.message || 'Failed to rename project');
+                } finally {
+                    confirmRename.disabled = false;
+                }
+            });
+        }
+
+        if (renameProjectInput) {
+            renameProjectInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (confirmRename) confirmRename.click();
+                }
+            });
+        }
+
+        if (createProjectBtn) createProjectBtn.addEventListener('click', openCreateProjectModal);
+        if (cancelCreateProject) cancelCreateProject.addEventListener('click', closeCreateProjectModal);
+
+        if (confirmCreateProject) {
+            confirmCreateProject.addEventListener('click', async () => {
+                const payload = getCreateProjectPayload();
+                showProjectCreateError('');
+                if (!payload) {
+                    showProjectCreateError('Project name is required');
+                    return;
+                }
+                confirmCreateProject.disabled = true;
+                try {
+                    const headers = await getAuthHeaders();
+                    headers['Content-Type'] = 'application/json';
+                    let response;
+                    if (editWorkspaceTargetId) {
+                        response = await fetch('/api/workspaces/' + encodeURIComponent(editWorkspaceTargetId), {
+                            method: 'PATCH',
+                            headers,
+                            body: JSON.stringify(payload),
+                        });
+                    } else {
+                        response = await fetch('/api/workspaces', {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify(payload),
+                        });
+                    }
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => null);
+                        throw new Error((err && err.error) || (editWorkspaceTargetId ? 'Failed to save project' : 'Failed to create project'));
+                    }
+                    const wasEdit = !!editWorkspaceTargetId;
+                    closeCreateProjectModal();
+                    showToast(wasEdit ? 'Project updated' : 'Project created', 'success');
+                    await loadWorkspaces();
+                    renderWorkspaces();
+                    renderProjects();
+                } catch (error) {
+                    showProjectCreateError(error.message || (editWorkspaceTargetId ? 'Failed to save project' : 'Failed to create project'));
+                } finally {
+                    confirmCreateProject.disabled = false;
+                }
+            });
+        }
+
+        if (cancelRenameProject) cancelRenameProject.addEventListener('click', closeRenameProjectModal);
+        if (confirmRenameProject) {
+            confirmRenameProject.addEventListener('click', async () => {
+                if (!renameProjectTargetId) return;
+                const name = (projectRenameInput ? projectRenameInput.value : '').trim();
+                showProjectRenameError('');
+                if (!name) {
+                    showProjectRenameError('Folder name is required');
+                    return;
+                }
+                confirmRenameProject.disabled = true;
+                try {
+                    const headers = await getAuthHeaders();
+                    headers['Content-Type'] = 'application/json';
+                    const response = await fetch('/api/workspaces/' + renameProjectTargetId, {
+                        method: 'PATCH',
+                        headers,
+                        body: JSON.stringify({ name: name }),
+                    });
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => null);
+                        throw new Error((err && err.error) || 'Failed to rename folder');
+                    }
+                    closeRenameProjectModal();
+                    showToast('Folder renamed', 'success');
+                    await loadWorkspaces();
+                    renderWorkspaces();
+                    renderProjects();
+                } catch (error) {
+                    showProjectRenameError(error.message || 'Failed to rename folder');
+                } finally {
+                    confirmRenameProject.disabled = false;
+                }
+            });
+        }
+
+        if (cancelDeleteProject) cancelDeleteProject.addEventListener('click', closeDeleteProjectModal);
+        if (confirmDeleteProject) {
+            confirmDeleteProject.addEventListener('click', async () => {
+                if (!deleteProjectTargetId) return;
+                showProjectDeleteError('');
+                confirmDeleteProject.disabled = true;
+                try {
+                    const headers = await getAuthHeaders();
+                    const response = await fetch('/api/workspaces/' + deleteProjectTargetId, {
+                        method: 'DELETE',
+                        headers,
+                    });
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => null);
+                        throw new Error((err && err.error) || 'Failed to delete folder');
+                    }
+                    closeDeleteProjectModal();
+                    showToast('Folder deleted', 'success');
+                    if (selectedProjectKey === 'ws:' + deleteProjectTargetId) selectedProjectKey = 'unfiled';
+                    await Promise.all([loadWorkspaces(), loadProjects()]);
+                    renderWorkspaces();
+                    renderProjects();
+                } catch (error) {
+                    showProjectDeleteError(error.message || 'Failed to delete folder');
+                } finally {
+                    confirmDeleteProject.disabled = false;
+                }
+            });
+        }
+
+        if (projectNameInput) {
+            projectNameInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (confirmCreateProject) confirmCreateProject.click();
+                }
+            });
+        }
+
+        // Also support Enter in the optional details inputs for edit/create
+        ['ws-builder-name', 'ws-location-address', 'ws-amenities'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('keydown', function(ev) {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        if (confirmCreateProject) confirmCreateProject.click();
+                    }
+                });
+            }
+        });
+
+        if (projectRenameInput) {
+            projectRenameInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (confirmRenameProject) confirmRenameProject.click();
+                }
+            });
+        }
+
+        // Utilities
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' min ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + ' days ago';
+
+            return date.toLocaleDateString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function toggleProjectMenu(btn) {
+            var menu = btn.nextElementSibling;
+            if (!menu) return;
+            var wasVisible = menu.classList.contains('visible');
+            closeAllProjectMenus();
+            if (!wasVisible) {
+                menu.classList.add('visible');
+                btn.classList.add('active');
+            }
+        }
+        function closeAllProjectMenus() {
+            document.querySelectorAll('.project-config-menu.visible').forEach(function (m) {
+                m.classList.remove('visible');
+            });
+            document.querySelectorAll('.project-config-btn.active').forEach(function (b) {
+                b.classList.remove('active');
+            });
+        }
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.project-config-wrap')) closeAllProjectMenus();
+        });
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✓' : '✕'}</span>
+                <span>${message}</span>
+            `;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Close modal on backdrop click
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) {
+                deleteModal.classList.remove('visible');
+                deleteTargetId = null;
+            }
+        });
+
+        if (renameModal) {
+            renameModal.addEventListener('click', (e) => {
+                if (e.target === renameModal) closeRenameModal();
+            });
+        }
+
+        if (createProjectModal) {
+            createProjectModal.addEventListener('click', (e) => {
+                if (e.target === createProjectModal) closeCreateProjectModal();
+            });
+        }
+
+        if (renameProjectModal) {
+            renameProjectModal.addEventListener('click', (e) => {
+                if (e.target === renameProjectModal) closeRenameProjectModal();
+            });
+        }
+
+        if (deleteProjectModal) {
+            deleteProjectModal.addEventListener('click', (e) => {
+                if (e.target === deleteProjectModal) closeDeleteProjectModal();
+            });
+        }
+        initShareWorkspaceModal({
+            getAuthHeaders: function () { return getAuthHeaders(); },
+            showToast: showToast,
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ sales_map.name or 'Sales Route Map' }} - MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Oswald:wght@400;500;600&family=Poppins:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/sales_route_map_view.css">
+</head>
+<body class="{{ 'preview-mobile ' if preview_mode == 'mobile' else '' }}{% if embed %}srv-embed{% endif %}">
+    <div class="srv-page">
+        {% if not embed %}
+        <header class="srv-header">
+            <h1 class="srv-title">{{ sales_map.name or 'Sales Route Map' }}</h1>
+            <p class="srv-subtitle">Tap any pointer to animate the route from the main pointer, or hover highway labels to preview independent routes.</p>
+        </header>
+        {% endif %}
+
+        <div class="srv-stage" id="srv-stage">
+            <div id="srv-map-canvas" class="srv-map-canvas">
+                <img id="srv-image" class="srv-image" src="{{ sales_map.image_url or '' }}" alt="{{ sales_map.name or 'Route map' }}">
+                <svg id="srv-routes-svg" class="srv-routes-svg" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
+                <svg id="srv-hover-routes-svg" class="srv-routes-svg srv-hover-routes-svg" viewBox="0 0 1 1" preserveAspectRatio="none"></svg>
+                <div id="srv-markers-layer" class="srv-markers-layer"></div>
+                <div id="srv-hover-routes-layer" class="srv-hover-routes-layer"></div>
+            </div>
+
+            <div id="srv-filter-panel" class="srv-filter-panel" hidden>
+                <div class="srv-filter-panel-header">
+                    <h2 class="srv-filter-panel-title">Map Menu</h2>
+                    <button type="button" class="srv-filter-panel-collapse" id="srv-filter-panel-collapse" aria-label="Collapse map menu" aria-expanded="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                </div>
+                <div id="srv-type-filters" class="srv-type-filters"></div>
+                <button type="button" class="srv-filter-panel-expand" id="srv-filter-panel-expand" aria-label="Expand map menu" aria-expanded="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    Map Menu
+                </button>
+            </div>
+
+            <div id="srv-route-modal" class="srv-route-modal" hidden>
+                <div class="srv-route-modal-media">
+                    <div id="srv-route-modal-icon" class="srv-route-modal-icon"></div>
+                </div>
+                <div class="srv-route-modal-content">
+                    <div id="srv-route-modal-eyebrow" class="srv-route-modal-eyebrow"></div>
+                    <div id="srv-route-modal-title" class="srv-route-modal-title"></div>
+                    <div class="srv-route-modal-meta">
+                        <div id="srv-route-modal-pointer-type" class="srv-route-modal-pointer-type"></div>
+                        <div id="srv-route-modal-distance" class="srv-route-modal-distance"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="srv-status" id="srv-status">Click a normal pointer to view its route.</div>
+    </div>
+
+<script>
+(function() {
+    var INITIAL_STYLE = {{ (fv_style or {}) | tojson }};
+    var DEFAULT_MODAL = {
+        bg: '#1e1e1e',
+        bg_opacity_pct: 82,
+        backdrop_blur_px: 18,
+        border: '#d6dee6',
+        glow_color: '#a4c1ea',
+        glow_opacity_pct: 34,
+        title_text: '#ffffff',
+        item_text: '#f2f6ff',
+        item_active_bg: '#3e567f',
+        item_active_border: '#a4c1ea',
+        modal_padding_pct: 100,
+        width: 260,
+        max_height_vh: 72,
+        left_offset: 24,
+        bottom_offset: 24,
+        title_font_family: 'Syne',
+        item_font_family: 'Syne',
+        title_font_size_px: 13,
+        item_font_size_px: 12
+    };
+    var FONT_FAMILIES = ['Syne', 'Inter', 'Poppins', 'Montserrat', 'Lora', 'Merriweather', 'Oswald'];
+
+    function clampInt(value, min, max, fallback) {
+        var n = parseInt(value, 10);
+        if (Number.isNaN(n)) return fallback;
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+    }
+
+    function sanitizeHex(value, fallback) {
+        var s = String(value || '').trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+        if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+            return '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+        }
+        return fallback;
+    }
+
+    function sanitizeFontFamily(value, fallback) {
+        var v = String(value || '').trim();
+        if (!v) return fallback;
+        for (var i = 0; i < FONT_FAMILIES.length; i++) {
+            if (FONT_FAMILIES[i].toLowerCase() === v.toLowerCase()) return FONT_FAMILIES[i];
+        }
+        return fallback;
+    }
+
+    function hexToRgba(hex, alpha) {
+        var clean = sanitizeHex(hex, '#000000').replace('#', '');
+        var r = parseInt(clean.slice(0, 2), 16);
+        var g = parseInt(clean.slice(2, 4), 16);
+        var b = parseInt(clean.slice(4, 6), 16);
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+    }
+
+    function currentStyleMode(mode) {
+        var explicit = String(mode || '').trim().toLowerCase();
+        if (explicit === 'mobile' || explicit === 'desktop') return explicit;
+        try {
+            var preview = new URL(window.location.href).searchParams.get('preview');
+            if (String(preview || '').toLowerCase() === 'mobile') return 'mobile';
+        } catch (e) { }
+        try {
+            if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return 'mobile';
+        } catch (e) { }
+        return 'desktop';
+    }
+
+    function styleForMode(raw, mode) {
+        var style = raw && typeof raw === 'object' ? raw : {};
+        var key = currentStyleMode(mode);
+        if (style[key] && typeof style[key] === 'object') return style[key];
+        return style;
+    }
+
+    function normalizeModalStyle(raw, mode) {
+        raw = styleForMode(raw, mode);
+        var modal = {};
+        if (raw && raw.modal_sales_map && typeof raw.modal_sales_map === 'object') {
+            modal = raw.modal_sales_map;
+        } else if (raw && raw.modal && typeof raw.modal === 'object') {
+            modal = raw.modal;
+        }
+        return {
+            bg: sanitizeHex(modal.bg, DEFAULT_MODAL.bg),
+            bg_opacity_pct: clampInt(modal.bg_opacity_pct, 0, 100, DEFAULT_MODAL.bg_opacity_pct),
+            backdrop_blur_px: clampInt(modal.backdrop_blur_px, 0, 40, DEFAULT_MODAL.backdrop_blur_px),
+            border: sanitizeHex(modal.border, DEFAULT_MODAL.border),
+            glow_color: sanitizeHex(modal.glow_color, modal.item_active_border || DEFAULT_MODAL.glow_color),
+            glow_opacity_pct: clampInt(modal.glow_opacity_pct, 0, 100, DEFAULT_MODAL.glow_opacity_pct),
+            title_text: sanitizeHex(modal.title_text, DEFAULT_MODAL.title_text),
+            item_text: sanitizeHex(modal.item_text, DEFAULT_MODAL.item_text),
+            item_active_bg: sanitizeHex(modal.item_active_bg, DEFAULT_MODAL.item_active_bg),
+            item_active_border: sanitizeHex(modal.item_active_border, DEFAULT_MODAL.item_active_border),
+            modal_padding_pct: clampInt(modal.modal_padding_pct, 60, 160, DEFAULT_MODAL.modal_padding_pct),
+            width: clampInt(modal.width, 220, 2200, DEFAULT_MODAL.width),
+            max_height_vh: clampInt(modal.max_height_vh, 20, 100, DEFAULT_MODAL.max_height_vh),
+            left_offset: clampInt(modal.left_offset, 0, 2400, DEFAULT_MODAL.left_offset),
+            bottom_offset: clampInt(modal.bottom_offset, 0, 240, DEFAULT_MODAL.bottom_offset),
+            title_font_family: sanitizeFontFamily(modal.title_font_family, DEFAULT_MODAL.title_font_family),
+            item_font_family: sanitizeFontFamily(modal.item_font_family, DEFAULT_MODAL.item_font_family),
+            title_font_size_px: clampInt(modal.title_font_size_px, 11, 24, DEFAULT_MODAL.title_font_size_px),
+            item_font_size_px: clampInt(modal.item_font_size_px, 10, 22, DEFAULT_MODAL.item_font_size_px)
+        };
+    }
+
+    function setCssVar(name, value) {
+        document.documentElement.style.setProperty(name, value);
+    }
+
+    function applyModalStyle(raw, mode) {
+        var m = normalizeModalStyle(raw, mode);
+        var bgAlpha = m.bg_opacity_pct / 100;
+        var borderAlpha = Math.min(0.38, Math.max(0.10, 0.10 + (bgAlpha * 0.28)));
+        var shadowAlpha = Math.min(0.35, Math.max(0.08, 0.06 + (bgAlpha * 0.29)));
+        setCssVar('--fv-salesmap-modal-bg', hexToRgba(m.bg, bgAlpha));
+        setCssVar('--fv-salesmap-modal-border', hexToRgba(m.border, borderAlpha));
+        setCssVar('--fv-salesmap-modal-backdrop-blur', m.backdrop_blur_px + 'px');
+        setCssVar('--fv-salesmap-modal-glow', hexToRgba(m.glow_color, m.glow_opacity_pct / 100));
+        setCssVar('--fv-salesmap-modal-shadow', 'rgba(0, 0, 0, ' + shadowAlpha.toFixed(3) + ')');
+        setCssVar('--fv-salesmap-modal-title', m.title_text);
+        setCssVar('--fv-salesmap-modal-item-text', hexToRgba(m.item_text, 0.9));
+        setCssVar('--fv-salesmap-modal-item-active-bg', hexToRgba(m.item_active_bg, 0.35));
+        setCssVar('--fv-salesmap-modal-item-active-border', hexToRgba(m.item_active_border, 0.62));
+        setCssVar('--fv-modal-padding-scale', String(m.modal_padding_pct / 100));
+        setCssVar('--fv-salesmap-modal-width', m.width + 'px');
+        setCssVar('--fv-salesmap-modal-height', m.max_height_vh + 'vh');
+        setCssVar('--fv-salesmap-modal-max-height', m.max_height_vh + 'vh');
+        setCssVar('--fv-salesmap-modal-left', m.left_offset + 'px');
+        setCssVar('--fv-salesmap-modal-bottom', m.bottom_offset + 'px');
+        setCssVar('--fv-salesmap-modal-title-font-family', "'" + m.title_font_family + "', sans-serif");
+        setCssVar('--fv-salesmap-modal-item-font-family', "'" + m.item_font_family + "', sans-serif");
+        setCssVar('--fv-salesmap-modal-title-font-size', m.title_font_size_px + 'px');
+        setCssVar('--fv-salesmap-modal-item-font-size', m.item_font_size_px + 'px');
+    }
+
+    applyModalStyle(INITIAL_STYLE);
+
+    window.addEventListener('message', function (evt) {
+        if (evt.origin !== window.location.origin) return;
+        var data = evt.data || {};
+        if (data.type === 'fv-style-preview' && data.style && typeof data.style === 'object') {
+            applyModalStyle(data.style, data.mode);
+        }
+    });
+})();
+</script>
+<script>
+window.__SRV_BOOTSTRAP__ = {
+    markers: {{ (markers or [])|tojson }},
+    routes: {{ (routes or [])|tojson }},
+    hoverRoutes: {{ (hover_routes or [])|tojson }}
+};
+</script>
+<script src="/static/js/sales_route_map_icons.js"></script>
+<script src="/static/js/sales_route_map_view.js"></script>
+</body>
+</html>

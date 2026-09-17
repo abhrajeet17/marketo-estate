@@ -1,0 +1,222 @@
+.srm-page {
+    display: flex;
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.srm-main {
+    flex: 1;
+    min-width: 0;
+    padding: 2rem 2rem 3rem;
+}
+
+.srm-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.srm-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+}
+
+.srm-title {
+    margin: 0.35rem 0;
+    font-size: 1.7rem;
+    line-height: 1.1;
+}
+
+.srm-subtitle {
+    margin: 0;
+    max-width: 66ch;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.srm-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 1.15rem;
+}
+
+.srm-inline-status {
+    margin: -0.45rem 0 0.9rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-dim);
+    font-size: 0.78rem;
+}
+
+.srm-inline-status--warn {
+    background: rgba(234, 179, 8, 0.14);
+    border-color: rgba(217, 119, 6, 0.25);
+    color: #854d0e;
+}
+
+.srm-inline-status--error {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.22);
+    color: #991b1b;
+}
+
+.srm-toolbar label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+    color: var(--color-text-dim);
+}
+
+.srm-select,
+.srm-input {
+    width: 100%;
+    padding: 0.58rem 0.7rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+.srm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 0.9rem;
+}
+
+.srm-card {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.srm-thumb {
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+    display: block;
+    background: var(--color-surface-strong);
+}
+
+.srm-thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+}
+
+.srm-card-body {
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.srm-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.srm-name {
+    font-size: 0.92rem;
+    font-weight: 700;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.srm-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.68rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.srm-badge.ok {
+    color: #166534;
+    border-color: rgba(22, 101, 52, 0.2);
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.srm-badge.warn {
+    color: #854d0e;
+    border-color: rgba(133, 77, 14, 0.2);
+    background: rgba(234, 179, 8, 0.2);
+}
+
+.srm-meta {
+    display: flex;
+    gap: 0.8rem;
+    color: var(--color-muted);
+    font-size: 0.77rem;
+}
+
+.srm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.srm-empty {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-muted);
+    text-align: center;
+    background: var(--color-bg-elevated);
+}
+
+.srm-modal {
+    max-width: 460px;
+}
+
+.srm-field {
+    margin-bottom: 0.8rem;
+}
+
+.srm-field label {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--color-text-dim);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+}
+
+.srm-error {
+    padding: 0.5rem 0.65rem;
+    border-radius: var(--radius-sm);
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #991b1b;
+    font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+    .srm-main {
+        padding: 1rem 1rem 2rem;
+    }
+
+    .srm-header {
+        flex-direction: column;
+    }
+}

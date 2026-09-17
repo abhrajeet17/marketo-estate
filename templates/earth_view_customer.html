@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ earth_view.name or 'Earth View' }} - MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="https://unpkg.com/cesium@1.127.0/Build/Cesium/Widgets/widgets.css">
+    <style>
+        html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+        #earth-map { width: 100%; height: 100%; }
+        .overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1600; }
+        .header { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.65rem; pointer-events: auto; }
+        .pill { background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 999px; padding: 0.36rem 0.62rem; display: inline-flex; align-items: center; gap: 0.45rem; }
+        .view-name { font-size: 0.9rem; font-weight: 700; }
+        .mode-badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: var(--color-text); color: var(--color-bg-elevated); border-radius: 999px; padding: 0.3rem 0.6rem; }
+        .panel { position: absolute; right: 1rem; top: 4.2rem; width: 310px; max-height: calc(100vh - 5.2rem); background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius); box-shadow: 0 12px 30px rgba(0,0,0,0.22); overflow: hidden; pointer-events: auto; display: flex; flex-direction: column; }
+        .panel-head { padding: 0.76rem 0.88rem; border-bottom: 1px solid var(--color-border); background: var(--color-surface); font-size: 0.83rem; font-weight: 700; }
+        .panel-body { padding: 0.8rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.74rem; }
+        .subtitle { font-size: 0.7rem; color: var(--color-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .list { display: flex; flex-direction: column; gap: 0.35rem; }
+        .item { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.5rem 0.6rem; cursor: pointer; }
+        .item:hover { border-color: rgba(22,35,56,0.24); }
+        .item-name { font-size: 0.82rem; font-weight: 700; }
+        .item-meta { font-size: 0.73rem; color: var(--color-muted); margin-top: 0.14rem; }
+        .empty { font-size: 0.78rem; color: var(--color-muted); font-style: italic; }
+        .switch-wrap { position: absolute; left: 1rem; bottom: 1rem; pointer-events: auto; }
+        .switch-btn { border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-bg-elevated); color: var(--color-text); font-size: 0.78rem; padding: 0.44rem 0.75rem; cursor: pointer; }
+        .switch-menu { margin-top: 0.44rem; min-width: 240px; max-height: 220px; overflow-y: auto; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius); display: none; }
+        .switch-item { display: block; text-decoration: none; color: var(--color-text); font-size: 0.8rem; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--color-border); }
+        .switch-item:last-child { border-bottom: none; }
+        .switch-item:hover { background: var(--color-surface); }
+        .switch-item.active { background: var(--color-surface); font-weight: 700; }
+        .cesium-widget-credits { display: none !important; }
+        .ev-popup {
+            position: fixed;
+            z-index: 3000;
+            pointer-events: none;
+            transform: translate(-50%, calc(-100% - 10px));
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.24);
+            padding: 0.6rem 0.75rem;
+            max-width: 320px;
+        }
+        .ev-popup-title { font-size: 0.86rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .ev-popup-meta { font-size: 0.75rem; color: var(--color-muted); }
+    </style>
+</head>
+<body>
+    <div id="earth-map"></div>
+    <div id="ev-popup" class="ev-popup" style="display:none;">
+        <div class="ev-popup-title" id="ev-popup-title"></div>
+        <div class="ev-popup-meta" id="ev-popup-meta"></div>
+    </div>
+
+    <div class="overlay">
+        <div class="header">
+            <span class="pill"><span class="view-name">{{ earth_view.name }}</span></span>
+            <span class="mode-badge" id="projection-badge">Globe</span>
+        </div>
+        <div class="panel">
+            <div class="panel-head">Earth View</div>
+            <div class="panel-body">
+                <div class="subtitle">Plots</div>
+                <div class="list" id="plots-list"></div>
+                <div class="subtitle">Markers</div>
+                <div class="list" id="markers-list"></div>
+            </div>
+        </div>
+        {% if siblings|length > 1 %}
+        <div class="switch-wrap">
+            <button class="switch-btn" id="switch-trigger" type="button">Switch Earth View</button>
+            <div class="switch-menu" id="switch-menu">
+                {% for s in siblings %}
+                <a class="switch-item{% if s.active %} active{% endif %}" href="/earth-view/view/{{ s.share_token }}">{{ s.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://unpkg.com/cesium@1.127.0/Build/Cesium/Cesium.js"></script>
+    <script>
+        const earthView = {{ earth_view|tojson }};
+        const plots = {{ plots|tojson }};
+        const markers = {{ markers|tojson }};
+        const MAX_SAT_ZOOM = 19;
+        const COLOR_MAP = { green: '#22c55e', orange: '#f97316', red: '#ef4444', blue: '#3b82f6', purple: '#8b5cf6' };
+        const MORPH_TO_2D_HEIGHT_M = 9000;
+        const MORPH_BACK_TO_3D_HEIGHT_M = 12500;
+        const MIN_CAMERA_HEIGHT_M = 18;
+        const MAX_CAMERA_HEIGHT_M = 40000000;
+        let viewMode = 'globe';
+
+        const projectionBadge = document.getElementById('projection-badge');
+        const plotsList = document.getElementById('plots-list');
+        const markersList = document.getElementById('markers-list');
+        const popupEl = document.getElementById('ev-popup');
+        const popupTitleEl = document.getElementById('ev-popup-title');
+        const popupMetaEl = document.getElementById('ev-popup-meta');
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = String(text || '');
+            return div.innerHTML;
+        }
+
+        function normalizeHex(hex) {
+            const raw = String(hex || '').trim().toLowerCase();
+            return /^#[0-9a-f]{6}$/.test(raw) ? raw : '#4ade80';
+        }
+
+        Cesium.Ion.defaultAccessToken = undefined;
+        const viewer = new Cesium.Viewer('earth-map', {
+            timeline: false,
+            animation: false,
+            baseLayerPicker: false,
+            geocoder: false,
+            homeButton: true,
+            sceneModePicker: false,
+            navigationHelpButton: false,
+            fullscreenButton: false,
+            infoBox: false,
+            selectionIndicator: false,
+        });
+        viewer.scene.globe.maximumScreenSpaceError = 2;
+        viewer.scene.skyAtmosphere.show = true;
+        viewer.scene.globe.depthTestAgainstTerrain = false;
+        viewer.scene.screenSpaceCameraController.enableZoom = true;
+        viewer.scene.screenSpaceCameraController.minimumZoomDistance = MIN_CAMERA_HEIGHT_M;
+        viewer.scene.screenSpaceCameraController.maximumZoomDistance = MAX_CAMERA_HEIGHT_M;
+
+        const imageryLayers = viewer.imageryLayers;
+        imageryLayers.removeAll(true);
+        imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+            url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            maximumLevel: MAX_SAT_ZOOM
+        }));
+
+        function getCameraHeight() {
+            try {
+                const carto = viewer.camera.positionCartographic;
+                if (!carto) return null;
+                return Number(carto.height);
+            } catch (e) { return null; }
+        }
+
+        function enforceMinCameraHeight() {
+            const h = getCameraHeight();
+            if (h === null) return;
+            if (h < MIN_CAMERA_HEIGHT_M) {
+                const carto = viewer.camera.positionCartographic;
+                viewer.camera.setView({
+                    destination: Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, MIN_CAMERA_HEIGHT_M)
+                });
+            }
+        }
+
+        function morphTo2D() {
+            if (viewer.scene.mode !== Cesium.SceneMode.SCENE2D) viewer.scene.morphTo2D(0.7);
+            viewMode = 'flat';
+            projectionBadge.textContent = 'Flat';
+        }
+
+        function morphTo3D(immediate) {
+            if (viewer.scene.mode !== Cesium.SceneMode.SCENE3D) viewer.scene.morphTo3D(immediate ? 0.0 : 0.7);
+            viewMode = 'globe';
+            projectionBadge.textContent = 'Globe';
+        }
+
+        function applyProjectionMode() {
+            const height = getCameraHeight();
+            if (height === null) return;
+            if (viewMode === 'globe' && height <= MORPH_TO_2D_HEIGHT_M) morphTo2D();
+            else if (viewMode === 'flat' && height >= MORPH_BACK_TO_3D_HEIGHT_M) morphTo3D();
+        }
+
+        function createPinDataUrl(colorHex) {
+            const c = String(colorHex || '#4ade80');
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><path d="M18 1c6.6 0 12 5.4 12 12 0 9-12 22-12 22S6 22 6 13C6 6.4 11.4 1 18 1z" fill="${c}" stroke="white" stroke-width="2"/><circle cx="18" cy="13" r="5" fill="rgba(255,255,255,0.92)"/></svg>`;
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        }
+
+        function hidePopup() { popupEl.style.display = 'none'; }
+
+        function showPopup(title, meta, windowPosition) {
+            popupTitleEl.textContent = title || '';
+            popupMetaEl.textContent = meta || '';
+            popupEl.style.left = `${windowPosition.x}px`;
+            popupEl.style.top = `${windowPosition.y}px`;
+            popupEl.style.display = 'block';
+        }
+
+        function zoomToHeightMeters(zoom) {
+            const z = Math.max(1, Math.min(MAX_SAT_ZOOM, Number(zoom) || 3));
+            return Math.max(MIN_CAMERA_HEIGHT_M, (40075016 / (Math.pow(2, z) * 2.2)));
+        }
+
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(
+                Number(earthView.center_lng || 0),
+                Number(earthView.center_lat || 20),
+                zoomToHeightMeters(Number(earthView.zoom || 3))
+            )
+        });
+        morphTo3D(true);
+
+        const plotEntitiesById = new Map();
+        const markerEntitiesById = new Map();
+
+        plots.forEach((plot) => {
+            if (!Array.isArray(plot.points) || plot.points.length < 3) return;
+            const positions = plot.points.map((p) => Cesium.Cartesian3.fromDegrees(Number(p.lng), Number(p.lat)));
+            const hex = COLOR_MAP[plot.color] || COLOR_MAP.green;
+            const ent = viewer.entities.add({
+                polygon: {
+                    hierarchy: positions,
+                    material: Cesium.Color.fromCssColorString(hex).withAlpha(0.22),
+                    outline: true,
+                    outlineColor: Cesium.Color.fromCssColorString(hex),
+                }
+            });
+            ent.__evType = 'plot';
+            ent.__evId = String(plot.id);
+            plotEntitiesById.set(String(plot.id), ent);
+        });
+
+        markers.forEach((marker) => {
+            const lng = Number(marker.longitude);
+            const lat = Number(marker.latitude);
+            if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+            const ent = viewer.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(lng, lat),
+                billboard: {
+                    image: createPinDataUrl(normalizeHex(marker.marker_color || '#4ade80')),
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                    scale: 0.9
+                }
+            });
+            ent.__evType = 'marker';
+            ent.__evId = String(marker.id);
+            markerEntitiesById.set(String(marker.id), ent);
+        });
+
+        function flyToPlot(plot) {
+            if (!Array.isArray(plot.points) || plot.points.length < 1) return;
+            const center = plot.points.reduce((acc, p) => ({ lng: acc.lng + Number(p.lng), lat: acc.lat + Number(p.lat) }), { lng: 0, lat: 0 });
+            center.lng /= plot.points.length;
+            center.lat /= plot.points.length;
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(center.lng, center.lat, 900),
+                duration: 0.8
+            });
+        }
+
+        function flyToMarker(marker) {
+            const lng = Number(marker.longitude);
+            const lat = Number(marker.latitude);
+            if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(lng, lat, 650),
+                duration: 0.8
+            });
+        }
+
+        plots.forEach((plot) => {
+            if (!Array.isArray(plot.points) || plot.points.length < 3) return;
+            const row = document.createElement('div');
+            row.className = 'item';
+            row.dataset.plotId = String(plot.id);
+            row.innerHTML = `<div class="item-name">${escapeHtml(plot.name || 'Untitled Plot')}</div><div class="item-meta">${escapeHtml(plot.status || 'available')}</div>`;
+            row.addEventListener('click', () => {
+                flyToPlot(plot);
+                showPopup(
+                    plot.name || 'Plot',
+                    `${plot.status || 'available'}${plot.area ? ' • ' + plot.area : ''}${plot.price ? ' • ' + plot.price : ''}`,
+                    { x: window.innerWidth / 2, y: 140 }
+                );
+            });
+            plotsList.appendChild(row);
+        });
+        if (!plotsList.childElementCount) plotsList.innerHTML = '<div class="empty">No plots available.</div>';
+
+        markers.forEach((marker) => {
+            const row = document.createElement('div');
+            row.className = 'item';
+            row.innerHTML = `<div class="item-name">${escapeHtml(marker.name || 'Untitled Marker')}</div><div class="item-meta">Marker</div>`;
+            row.addEventListener('click', () => {
+                flyToMarker(marker);
+                showPopup(marker.name || 'Marker', marker.description || '', { x: window.innerWidth / 2, y: 140 });
+            });
+            markersList.appendChild(row);
+        });
+        if (!markersList.childElementCount) markersList.innerHTML = '<div class="empty">No markers available.</div>';
+
+        const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        handler.setInputAction((click) => {
+            const picked = viewer.scene.pick(click.position);
+            if (picked && picked.id && picked.id.__evType && picked.id.__evId) {
+                const type = picked.id.__evType;
+                const id = picked.id.__evId;
+                if (type === 'plot') {
+                    const plot = plots.find((p) => String(p.id) === String(id));
+                    if (!plot) return;
+                    showPopup(
+                        plot.name || 'Plot',
+                        `${plot.status || 'available'}${plot.area ? ' • ' + plot.area : ''}${plot.price ? ' • ' + plot.price : ''}`,
+                        click.position
+                    );
+                } else if (type === 'marker') {
+                    const m = markers.find((x) => String(x.id) === String(id));
+                    if (!m) return;
+                    showPopup(m.name || 'Marker', m.description || '', click.position);
+                }
+            } else {
+                hidePopup();
+            }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        viewer.camera.changed.addEventListener(() => {
+            enforceMinCameraHeight();
+            applyProjectionMode();
+        });
+        applyProjectionMode();
+
+        const switchTrigger = document.getElementById('switch-trigger');
+        const switchMenu = document.getElementById('switch-menu');
+        if (switchTrigger && switchMenu) {
+            switchTrigger.addEventListener('click', () => {
+                switchMenu.style.display = switchMenu.style.display === 'block' ? 'none' : 'block';
+            });
+            document.addEventListener('click', (event) => {
+                if (!switchTrigger.contains(event.target) && !switchMenu.contains(event.target)) {
+                    switchMenu.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

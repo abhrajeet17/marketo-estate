@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Map Editor – MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/building_map_admin.css">
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading building map...</div>
+</div>
+
+<!-- Full-screen image container with canvas overlay -->
+<div class="bma-container" id="bma-container">
+    <div class="bma-image-wrap" id="bma-image-wrap">
+        <img class="bma-image" id="bma-image" src="" alt="Building Map" draggable="false">
+        <canvas class="bma-canvas" id="bma-canvas"></canvas>
+    </div>
+</div>
+
+<!-- Top-left header bar -->
+<div class="bma-ui-overlay">
+    <div class="bma-header">
+        <div class="bma-header-left">
+            <a href="/salestools?tab=building-maps" class="bma-back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                Back
+            </a>
+            <span class="bma-map-name" id="bma-map-name"></span>
+        </div>
+        <div class="bma-header-right">
+            <span class="bma-mode-badge" id="bma-mode-badge" style="display:none;">DRAW MODE</span>
+        </div>
+    </div>
+
+    <!-- Zoom controls (top-right) -->
+    <div class="bma-zoom-controls">
+        <button class="bma-zoom-btn" id="bma-zoom-in" title="Zoom in">+</button>
+        <button class="bma-zoom-btn" id="bma-zoom-out" title="Zoom out">&minus;</button>
+        <button class="bma-zoom-btn" id="bma-zoom-reset" title="Reset zoom" style="font-size:0.72rem;">&#8634;</button>
+    </div>
+</div>
+
+<!-- Edit panel (bottom-left floating) -->
+<div class="bma-edit-panel floating-panel" id="bma-edit-panel">
+    <div class="panel-header">
+        <span class="panel-title">Editor</span>
+        <button class="panel-toggle-btn" id="bma-panel-toggle" title="Collapse">&minus;</button>
+    </div>
+    <div class="panel-body" id="bma-panel-body">
+
+        <!-- Catalogue link -->
+        <div class="form-group" style="margin-bottom:0.75rem;">
+            <label class="form-label" style="font-size:0.75rem; margin-bottom:0.25rem;">Floor Plan Catalogue</label>
+            <select class="form-input" id="bma-catalogue-select" style="font-size:0.8rem; padding:0.35rem 0.5rem;">
+                <option value="">— None —</option>
+            </select>
+        </div>
+
+        <div class="bma-sep"></div>
+
+        <!-- Zones section -->
+        <div class="bma-section-header">
+            <span class="bma-section-title">Zones</span>
+            <span class="bma-section-badge" id="bma-zone-count">0</span>
+        </div>
+
+        <div class="bma-edit-instruction" id="bma-edit-instruction">Toggle draw mode to start drawing zones.</div>
+        <div class="bma-edit-actions">
+            <button class="bma-edit-btn primary" id="bma-draw-toggle">Draw Zone</button>
+        </div>
+        <div class="bma-draw-controls" id="bma-draw-controls" style="display:none;">
+            <div class="bma-edit-actions">
+                <button class="bma-edit-btn secondary" id="bma-complete-draw" disabled>Complete</button>
+                <button class="bma-edit-btn secondary" id="bma-cancel-draw">Cancel</button>
+            </div>
+            <div class="bma-color-row">
+                <span class="bma-color-label">Color:</span>
+                <div class="bma-color-options">
+                    <div class="bma-color-opt selected" data-color="green" style="background:#22c55e;" title="Green"></div>
+                    <div class="bma-color-opt" data-color="orange" style="background:#f97316;" title="Orange"></div>
+                    <div class="bma-color-opt" data-color="red" style="background:#ef4444;" title="Red"></div>
+                    <div class="bma-color-opt" data-color="blue" style="background:#3b82f6;" title="Blue"></div>
+                    <div class="bma-color-opt" data-color="purple" style="background:#a855f7;" title="Purple"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bma-sep"></div>
+
+        <!-- Floor filter -->
+        <div class="bma-floor-filter">
+            <span class="bma-panel-subtitle">Floor</span>
+            <select class="bma-floor-select" id="bma-floor-filter">
+                <option value="all">All Floors</option>
+            </select>
+        </div>
+
+        <!-- Zones list -->
+        <div class="bma-zones-list" id="bma-zones-list"></div>
+    </div>
+</div>
+
+<!-- Zone form modal (floating, draggable, collapsible — NO backdrop) -->
+<div class="bma-modal-float" id="bma-zone-modal" style="display:none;">
+    <div class="bma-modal-titlebar" data-drag-handle="bma-zone-modal">
+        <span class="bma-modal-titlebar-text" id="bma-zone-modal-title">New Zone</span>
+        <button class="bma-modal-titlebar-btn" data-collapse="bma-zone-modal" title="Collapse">&minus;</button>
+        <button class="bma-modal-titlebar-btn close-btn" data-close="bma-zone-modal" title="Close">&times;</button>
+    </div>
+    <div class="bma-modal-content">
+        <div class="bma-modal-body">
+            <div class="form-group">
+                <label class="form-label">Zone Name</label>
+                <input type="text" class="form-input" id="bma-zone-name" maxlength="200" placeholder="e.g., Floor 1 - Unit A">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Floor Number</label>
+                <select class="form-input" id="bma-zone-floor">
+                    <script>for(var i=0;i<=100;i++){document.write('<option value="'+i+'">'+i+'</option>');}</script>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Color</label>
+                <div class="bma-color-options" id="bma-zone-color-options">
+                    <div class="bma-color-opt selected" data-color="green" style="background:#22c55e;"></div>
+                    <div class="bma-color-opt" data-color="orange" style="background:#f97316;"></div>
+                    <div class="bma-color-opt" data-color="red" style="background:#ef4444;"></div>
+                    <div class="bma-color-opt" data-color="blue" style="background:#3b82f6;"></div>
+                    <div class="bma-color-opt" data-color="purple" style="background:#a855f7;"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Link to Panorama</label>
+                <select class="form-input" id="bma-zone-panorama">
+                    <option value="">— None —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Link to Floor Plan</label>
+                <select class="form-input" id="bma-zone-floorplan">
+                    <option value="">— None —</option>
+                </select>
+            </div>
+        </div>
+        <div class="bma-modal-actions">
+            <button class="bma-modal-btn secondary" data-close="bma-zone-modal">Cancel</button>
+            <button class="bma-modal-btn primary" id="bma-zone-save">Save Zone</button>
+        </div>
+    </div>
+</div>
+
+<!-- Replicate modal (floating, draggable, collapsible — NO backdrop) -->
+<div class="bma-modal-float" id="bma-replicate-modal" style="display:none;">
+    <div class="bma-modal-titlebar" data-drag-handle="bma-replicate-modal">
+        <span class="bma-modal-titlebar-text">Replicate Zone</span>
+        <button class="bma-modal-titlebar-btn" data-collapse="bma-replicate-modal" title="Collapse">&minus;</button>
+        <button class="bma-modal-titlebar-btn close-btn" data-close="bma-replicate-modal" title="Close">&times;</button>
+    </div>
+    <div class="bma-modal-content">
+        <div class="bma-modal-body">
+            <div style="font-size:0.82rem; color:var(--color-muted); margin-bottom:1rem; line-height:1.5;">
+                Drag the highlighted copy on the image to reposition it.
+            </div>
+            <div class="form-group">
+                <label class="form-label">New Zone Name</label>
+                <input type="text" class="form-input" id="bma-rep-name" maxlength="200" placeholder="e.g., Floor 2 - Unit A">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Floor Number</label>
+                <select class="form-input" id="bma-rep-floor">
+                    <script>for(var i=0;i<=100;i++){document.write('<option value="'+i+'">'+i+'</option>');}</script>
+                </select>
+            </div>
+        </div>
+        <div class="bma-modal-actions">
+            <button class="bma-modal-btn secondary" data-close="bma-replicate-modal">Cancel</button>
+            <button class="bma-modal-btn primary" id="bma-rep-confirm">Save Copy</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="bma-toast-container" id="bma-toast-container"></div>
+
+<script src="/static/js/supabase.min.js"></script>
+<script>
+(function() {
+    var MAP_ID = {{ map_id|tojson }};
+    var SUPABASE_URL = {{ (supabase_url or '')|tojson }};
+    var SUPABASE_ANON_KEY = {{ (supabase_anon_key or '')|tojson }};
+
+    // ── Auth ──
+    var accessToken = null;
+    var sb = null;
+
+    function initAuth() {
+        return new Promise(function(resolve, reject) {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { reject('No config'); return; }
+            sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            sb.auth.getSession().then(function(res) {
+                var s = res && res.data && res.data.session;
+                if (!s || !s.access_token) {
+                    window.location.href = '/login';
+                    reject('No session');
+                    return;
+                }
+                accessToken = s.access_token;
+                resolve();
+            });
+        });
+    }
+
+    function authHeaders() {
+        return { 'Authorization': 'Bearer ' + accessToken };
+    }
+
+    // ── State ──
+    var mapData = null;
+    var zones = [];
+    var panoramas = [];
+    var floorPlanItems = [];
+
+    var isDrawMode = false;
+    var isDrawing = false;
+    var currentPoints = [];
+    var selectedColor = 'green';
+    var editingZoneId = null;
+
+    var scale = 1;
+    var panX = 0, panY = 0;
+    var isDragging = false;
+    var dragStartX, dragStartY, startPanX, startPanY;
+    var imgNatW = 0, imgNatH = 0;
+
+    var CLOSE_DISTANCE = 20;
+    var CLICK_DELAY_MS = 220;
+    var clickTimer = null;
+    var ignoreClick = false;
+
+    var replicateSourceZone = null;
+    var replicatePreviewPoints = null;
+    var isReplicateDragging = false;
+    var replicateDragStartCoords = null;
+    var replicateOriginalPoints = null;
+
+    // ── DOM refs ──
+    var container = document.getElementById('bma-container');
+    var imageWrap = document.getElementById('bma-image-wrap');
+    var imgEl = document.getElementById('bma-image');
+    var canvas = document.getElementById('bma-canvas');
+    var ctx = canvas.getContext('2d');
+    var loading = document.getElementById('loading-overlay');
+
+    // ── Color map ──
+    var COLOR_MAP = {
+        green:  { stroke: 'rgba(34,197,94,0.5)',  fill: 'rgba(34,197,94,0.12)' },
+        orange: { stroke: 'rgba(249,115,22,0.5)', fill: 'rgba(249,115,22,0.12)' },
+        red:    { stroke: 'rgba(239,68,68,0.5)',  fill: 'rgba(239,68,68,0.12)' },
+        blue:   { stroke: 'rgba(59,130,246,0.5)', fill: 'rgba(59,130,246,0.12)' },
+        purple: { stroke: 'rgba(168,85,247,0.5)', fill: 'rgba(168,85,247,0.12)' }
+    };
+
+    // ── Init ──
+    initAuth().then(function() {
+        loadMapData();
+        loadPanoramas();
+        loadFloorPlanItems();
+    });
+
+    function loadMapData() {
+        fetch('/api/building-maps/' + MAP_ID, { headers: authHeaders() })
+            .then(function(r) { if (!r.ok) throw new Error('Not found'); return r.json(); })
+            .then(function(data) {
+                mapData = data;
+                zones = data.zones || [];
+                document.getElementById('bma-map-name').textContent = data.name || 'Building Map';
+                imgEl.src = data.image_url;
+                imgEl.onload = function() {
+                    imgNatW = imgEl.naturalWidth;
+                    imgNatH = imgEl.naturalHeight;
+                    canvas.width = imgNatW;
+                    canvas.height = imgNatH;
+                    resetTransform();
+                    renderAllZones();
+                    updateZonesList();
+                    updateFloorFilter();
+                    loading.classList.add('hidden');
+                };
+            })
+            .catch(function() {
+                loading.querySelector('.loading-text').textContent = 'Failed to load building map.';
+            });
+    }
+
+    // ── Load panoramas and floor plan items ──
+    function loadPanoramas() {
+        fetch('/api/panoramas', { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(data) {
+                panoramas = Array.isArray(data) ? data : (data.panoramas || []);
+                populatePanoramaSelect();
+            })
+            .catch(function() { panoramas = []; });
+    }
+
+    var allCatalogues = [];
+
+    function loadFloorPlanItems() {
+        fetch('/api/floorplans/catalogues', { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(cats) {
+                allCatalogues = cats;
+                populateCatalogueSelect();
+                var promises = cats.map(function(c) {
+                    return fetch('/api/floorplans/catalogues/' + c.id + '/items', { headers: authHeaders() })
+                        .then(function(r) { return r.ok ? r.json() : []; })
+                        .then(function(items) {
+                            return items.map(function(it) {
+                                it._catalogue_name = c.name;
+                                it._catalogue_id = c.id;
+                                return it;
+                            });
+                        });
+                });
+                return Promise.all(promises);
+            })
+            .then(function(results) {
+                floorPlanItems = [];
+                results.forEach(function(arr) { floorPlanItems = floorPlanItems.concat(arr); });
+                populateFloorPlanSelect();
+            })
+            .catch(function() { floorPlanItems = []; });
+    }
+
+    function populateCatalogueSelect() {
+        var sel = document.getElementById('bma-catalogue-select');
+        sel.innerHTML = '<option value="">— None —</option>';
+        allCatalogues.forEach(function(c) {
+            sel.innerHTML += '<option value="' + c.id + '">' + esc(c.name) + ' (' + (c.item_count || 0) + ' plans)</option>';
+        });
+        // Set current value from mapData
+        if (mapData && mapData.catalogue_id) {
+            sel.value = mapData.catalogue_id;
+        }
+    }
+
+    // Save catalogue change
+    document.getElementById('bma-catalogue-select').addEventListener('change', function() {
+        var catId = this.value || null;
+        fetch('/api/building-maps/' + MAP_ID, {
+            method: 'PATCH',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({ catalogue_id: catId })
+        }).then(function(r) { return r.json(); })
+          .then(function(data) {
+              if (data && data.catalogue_id !== undefined) {
+                  mapData.catalogue_id = data.catalogue_id;
+                  populateFloorPlanSelect();
+              }
+          });
+    });
+
+    function populatePanoramaSelect() {
+        var sel = document.getElementById('bma-zone-panorama');
+        sel.innerHTML = '<option value="">— None —</option>';
+        panoramas.forEach(function(p) {
+            sel.innerHTML += '<option value="' + p.id + '">' + esc(p.name) + '</option>';
+        });
+    }
+
+    function populateFloorPlanSelect() {
+        var sel = document.getElementById('bma-zone-floorplan');
+        sel.innerHTML = '<option value="">— None —</option>';
+        var linkedCatId = mapData ? mapData.catalogue_id : null;
+        floorPlanItems.forEach(function(fp) {
+            // If a catalogue is linked, only show items from that catalogue
+            if (linkedCatId && fp._catalogue_id !== linkedCatId) return;
+            var label = linkedCatId ? fp.name : (fp._catalogue_name ? fp._catalogue_name + ' / ' + fp.name : fp.name);
+            sel.innerHTML += '<option value="' + fp.id + '">' + esc(label) + '</option>';
+        });
+    }
+
+    // ── Zoom & Pan ──
+    function resetTransform() {
+        if (!imgNatW || !imgNatH) return;
+        var cw = container.clientWidth;
+        var ch = container.clientHeight;
+        scale = Math.min(cw / imgNatW, ch / imgNatH, 1);
+        panX = (cw - imgNatW * scale) / 2;
+        panY = (ch - imgNatH * scale) / 2;
+        applyTransform();
+    }
+
+    function applyTransform() {
+        imageWrap.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+    }
+
+    document.getElementById('bma-zoom-in').addEventListener('click', function() {
+        scale = Math.min(scale * 1.3, 5);
+        applyTransform();
+    });
+    document.getElementById('bma-zoom-out').addEventListener('click', function() {
+        scale = Math.max(scale / 1.3, 0.1);
+        applyTransform();
+    });
+    document.getElementById('bma-zoom-reset').addEventListener('click', resetTransform);
+
+    container.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var factor = e.deltaY > 0 ? 0.9 : 1.1;
+        var rect = container.getBoundingClientRect();
+        var mx = e.clientX - rect.left;
+        var my = e.clientY - rect.top;
+        var newScale = Math.max(0.1, Math.min(5, scale * factor));
+        panX = mx - (mx - panX) * (newScale / scale);
+        panY = my - (my - panY) * (newScale / scale);
+        scale = newScale;
+        applyTransform();
+    }, { passive: false });
+
+    // Pan with mouse drag (when not in draw mode or when right-click)
+    container.addEventListener('mousedown', function(e) {
+        if (isDrawMode && e.button === 0) return; // left click reserved for drawing
+        // Replicate preview drag
+        if (replicatePreviewPoints && replicatePreviewPoints.length >= 3 && e.button === 0) {
+            var repCoords = clientToImageCoords(e.clientX, e.clientY);
+            if (pointInPolygon(repCoords, replicatePreviewPoints)) {
+                isReplicateDragging = true;
+                replicateDragStartCoords = repCoords;
+                replicateOriginalPoints = replicatePreviewPoints.map(function(p) { return {x: p.x, y: p.y}; });
+                container.style.cursor = 'move';
+                e.preventDefault();
+                return;
+            }
+        }
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        startPanX = panX;
+        startPanY = panY;
+        container.classList.add('dragging');
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e) {
+        // Replicate preview drag
+        if (isReplicateDragging && replicateOriginalPoints) {
+            var coords = clientToImageCoords(e.clientX, e.clientY);
+            var dx = coords.x - replicateDragStartCoords.x;
+            var dy = coords.y - replicateDragStartCoords.y;
+            replicatePreviewPoints = replicateOriginalPoints.map(function(p) {
+                return { x: Math.round(p.x + dx), y: Math.round(p.y + dy) };
+            });
+            renderAllZones();
+            return;
+        }
+        if (!isDragging) return;
+        panX = startPanX + (e.clientX - dragStartX);
+        panY = startPanY + (e.clientY - dragStartY);
+        applyTransform();
+    });
+    window.addEventListener('mouseup', function() {
+        if (isReplicateDragging) {
+            isReplicateDragging = false;
+            container.style.cursor = '';
+            return;
+        }
+        if (isDragging) {
+            isDragging = false;
+            container.classList.remove('dragging');
+        }
+    });
+
+    // Touch support for pan and pinch
+    var touchStartDist = 0, touchStartScale = 1;
+    container.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            touchStartScale = scale;
+        } else if (e.touches.length === 1 && !isDrawMode) {
+            isDragging = true;
+            dragStartX = e.touches[0].clientX;
+            dragStartY = e.touches[0].clientY;
+            startPanX = panX;
+            startPanY = panY;
+        }
+    }, { passive: true });
+    container.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            scale = Math.max(0.1, Math.min(5, touchStartScale * (dist / touchStartDist)));
+            applyTransform();
+        } else if (isDragging && e.touches.length === 1) {
+            panX = startPanX + (e.touches[0].clientX - dragStartX);
+            panY = startPanY + (e.touches[0].clientY - dragStartY);
+            applyTransform();
+        }
+    }, { passive: false });
+    container.addEventListener('touchend', function() { isDragging = false; });
+
+    // ── Coordinate conversion: client coords → image pixel coords ──
+    function clientToImageCoords(clientX, clientY) {
+        var rect = container.getBoundingClientRect();
+        var x = (clientX - rect.left - panX) / scale;
+        var y = (clientY - rect.top - panY) / scale;
+        return { x: Math.round(x), y: Math.round(y) };
+    }
+
+    // ── Canvas rendering ──
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawPolygon(points, color, highlight) {
+        if (!points || points.length < 2) return;
+        var c = COLOR_MAP[color] || COLOR_MAP.green;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (var i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        if (points.length >= 3) {
+            ctx.closePath();
+            ctx.fillStyle = highlight ? c.fill.replace('0.12', '0.28') : c.fill;
+            ctx.fill();
+        }
+        ctx.strokeStyle = highlight ? 'rgba(255,255,255,0.7)' : c.stroke;
+        ctx.lineWidth = highlight ? 1.5 : 1;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    }
+
+    function getFilteredZones() {
+        var filterFloor = document.getElementById('bma-floor-filter').value;
+        return zones.filter(function(z) {
+            if (filterFloor !== 'all' && String(z.floor_number) !== filterFloor) return false;
+            return true;
+        });
+    }
+
+    function renderAllZones() {
+        clearCanvas();
+        var filtered = getFilteredZones();
+        filtered.forEach(function(z) {
+            var pts = typeof z.points === 'string' ? JSON.parse(z.points) : z.points;
+            if (pts && pts.length >= 3) {
+                drawPolygon(pts, z.color || 'green', false);
+                // Draw label
+                var cx = 0, cy = 0;
+                pts.forEach(function(p) { cx += p.x; cy += p.y; });
+                cx /= pts.length; cy /= pts.length;
+                ctx.font = 'bold 13px Syne, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fff';
+                ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
+                ctx.strokeText(z.name, cx, cy);
+                ctx.fillText(z.name, cx, cy);
+            }
+        });
+        // Draw replicate preview if active
+        if (replicatePreviewPoints && replicatePreviewPoints.length >= 3) {
+            var repColor = replicateSourceZone ? (replicateSourceZone.color || 'green') : 'green';
+            drawPolygon(replicatePreviewPoints, repColor, true);
+            // Label
+            var rcx = 0, rcy = 0;
+            replicatePreviewPoints.forEach(function(p) { rcx += p.x; rcy += p.y; });
+            rcx /= replicatePreviewPoints.length; rcy /= replicatePreviewPoints.length;
+            ctx.font = 'bold 13px Syne, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 3;
+            var repName = document.getElementById('bma-rep-name').value || '(copy)';
+            ctx.strokeText(repName, rcx, rcy);
+            ctx.fillText(repName, rcx, rcy);
+        }
+        // NOTE: currentPoints draft is NOT drawn here — handled separately
+        // in mousemove preview and addPointAt to avoid double-alpha overlap
+    }
+
+    function renderDraft() {
+        // Draw the current in-progress polygon (without hover point)
+        if (currentPoints.length > 0) {
+            drawPolygon(currentPoints, selectedColor, true);
+            // Draw vertex dots
+            currentPoints.forEach(function(p) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.strokeStyle = (COLOR_MAP[selectedColor] || COLOR_MAP.green).stroke;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+    }
+
+    // ── Draw mode ──
+    var drawToggleBtn = document.getElementById('bma-draw-toggle');
+    var drawControls = document.getElementById('bma-draw-controls');
+    var completeDrawBtn = document.getElementById('bma-complete-draw');
+    var cancelDrawBtn = document.getElementById('bma-cancel-draw');
+    var modeBadge = document.getElementById('bma-mode-badge');
+    var editInstruction = document.getElementById('bma-edit-instruction');
+
+    drawToggleBtn.addEventListener('click', function() {
+        isDrawMode = !isDrawMode;
+        if (isDrawMode) {
+            drawToggleBtn.textContent = 'Exit Draw Mode';
+            drawControls.style.display = '';
+            modeBadge.style.display = '';
+            container.classList.add('edit-mode');
+            editInstruction.textContent = 'Click on the image to start drawing a zone boundary.';
+        } else {
+            cancelDrawing();
+            drawToggleBtn.textContent = 'Draw Zone';
+            drawControls.style.display = 'none';
+            modeBadge.style.display = 'none';
+            container.classList.remove('edit-mode');
+            editInstruction.textContent = 'Toggle draw mode to start drawing zones.';
+        }
+    });
+
+    function cancelDrawing() {
+        currentPoints = [];
+        isDrawing = false;
+        completeDrawBtn.disabled = true;
+        renderAllZones();
+        if (isDrawMode) {
+            editInstruction.textContent = 'Click on the image to start drawing a zone boundary.';
+        }
+    }
+
+    function completeDrawing() {
+        if (currentPoints.length < 3) return;
+        currentPoints = simplifyPoints(currentPoints);
+        isDrawing = false;
+        completeDrawBtn.disabled = true;
+        // Open zone form
+        openZoneForm(null);
+    }
+
+    cancelDrawBtn.addEventListener('click', cancelDrawing);
+    completeDrawBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        completeDrawing();
+    });
+
+    function simplifyPoints(points, minDist) {
+        minDist = minDist || 4;
+        if (points.length <= 2) return points;
+        var simplified = [points[0]];
+        for (var i = 1; i < points.length - 1; i++) {
+            var prev = simplified[simplified.length - 1];
+            if (Math.hypot(points[i].x - prev.x, points[i].y - prev.y) >= minDist) {
+                simplified.push(points[i]);
+            }
+        }
+        simplified.push(points[points.length - 1]);
+        return simplified;
+    }
+
+    // ── Click handling on canvas for drawing ──
+    container.addEventListener('click', function(e) {
+        if (!isDrawMode || ignoreClick || e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var coords = clientToImageCoords(e.clientX, e.clientY);
+        if (coords.x < 0 || coords.y < 0 || coords.x > imgNatW || coords.y > imgNatH) return;
+
+        if (clickTimer) clearTimeout(clickTimer);
+        clickTimer = setTimeout(function() {
+            addPointAt(coords);
+            clickTimer = null;
+        }, CLICK_DELAY_MS);
+    });
+
+    container.addEventListener('dblclick', function(e) {
+        if (!isDrawMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+        ignoreClick = true;
+        setTimeout(function() { ignoreClick = false; }, CLICK_DELAY_MS + 30);
+        if (currentPoints.length >= 3) completeDrawing();
+    });
+
+    container.addEventListener('mousemove', function(e) {
+        if (!isDrawMode || currentPoints.length === 0 || isDragging) return;
+        var coords = clientToImageCoords(e.clientX, e.clientY);
+        // Redraw saved zones, then draw preview polygon (current points + hover)
+        renderAllZones();
+        var previewPts = currentPoints.concat([coords]);
+        drawPolygon(previewPts, selectedColor, true);
+        // Draw vertex dots on existing points
+        currentPoints.forEach(function(p) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = (COLOR_MAP[selectedColor] || COLOR_MAP.green).stroke;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+    });
+
+    // Cursor change for replicate preview hover
+    container.addEventListener('mousemove', function(e) {
+        if (isDrawMode || isDragging || isReplicateDragging) return;
+        if (replicatePreviewPoints && replicatePreviewPoints.length >= 3) {
+            var coords = clientToImageCoords(e.clientX, e.clientY);
+            container.style.cursor = pointInPolygon(coords, replicatePreviewPoints) ? 'move' : 'grab';
+        }
+    });
+
+    function addPointAt(coords) {
+        if (!isDrawMode) return;
+        if (currentPoints.length >= 3) {
+            var first = currentPoints[0];
+            if (Math.hypot(coords.x - first.x, coords.y - first.y) < CLOSE_DISTANCE) {
+                completeDrawing();
+                return;
+            }
+        }
+        currentPoints.push(coords);
+        isDrawing = true;
+        completeDrawBtn.disabled = currentPoints.length < 3;
+        // Redraw: saved zones + draft (no hover point)
+        renderAllZones();
+        renderDraft();
+        updateEditInstructionText();
+    }
+
+    function updateEditInstructionText() {
+        if (!isDrawMode) return;
+        if (currentPoints.length === 0) {
+            editInstruction.textContent = 'Click on the image to start drawing a zone boundary.';
+        } else if (currentPoints.length < 3) {
+            editInstruction.textContent = currentPoints.length + ' point(s) added. Click to add more.';
+        } else {
+            editInstruction.textContent = currentPoints.length + ' points. Click first point or press Complete to finish.';
+        }
+    }
+
+    // ── Color picker (draw controls) ──
+    document.querySelectorAll('#bma-draw-controls .bma-color-opt').forEach(function(el) {
+        el.addEventListener('click', function() {
+            document.querySelectorAll('#bma-draw-controls .bma-color-opt').forEach(function(o) { o.classList.remove('selected'); });
+            el.classList.add('selected');
+            selectedColor = el.dataset.color;
+        });
+    });
+
+    // ── Zone form modal ──
+    function openZoneForm(zone) {
+        editingZoneId = zone ? zone.id : null;
+        document.getElementById('bma-zone-modal-title').textContent = zone ? 'Edit Zone' : 'New Zone';
+        document.getElementById('bma-zone-name').value = zone ? zone.name : '';
+        document.getElementById('bma-zone-floor').value = zone ? String(zone.floor_number || 0) : '0';
+        document.getElementById('bma-zone-panorama').value = zone && zone.linked_panorama_id ? String(zone.linked_panorama_id) : '';
+        document.getElementById('bma-zone-floorplan').value = zone && zone.linked_floor_plan_item_id ? String(zone.linked_floor_plan_item_id) : '';
+
+        // Set color
+        var col = (zone ? zone.color : selectedColor) || 'green';
+        document.querySelectorAll('#bma-zone-color-options .bma-color-opt').forEach(function(o) {
+            o.classList.toggle('selected', o.dataset.color === col);
+        });
+
+        showFloatingModal('bma-zone-modal');
+        setTimeout(function() { document.getElementById('bma-zone-name').focus(); }, 100);
+    }
+
+    document.querySelectorAll('#bma-zone-color-options .bma-color-opt').forEach(function(el) {
+        el.addEventListener('click', function() {
+            document.querySelectorAll('#bma-zone-color-options .bma-color-opt').forEach(function(o) { o.classList.remove('selected'); });
+            el.classList.add('selected');
+        });
+    });
+
+    document.getElementById('bma-zone-save').addEventListener('click', function() {
+        var name = document.getElementById('bma-zone-name').value.trim();
+        if (!name) { document.getElementById('bma-zone-name').focus(); return; }
+        var floorNumber = parseInt(document.getElementById('bma-zone-floor').value) || 0;
+        var panoramaId = document.getElementById('bma-zone-panorama').value || null;
+        var floorplanId = document.getElementById('bma-zone-floorplan').value || null;
+        var colorSel = document.querySelector('#bma-zone-color-options .bma-color-opt.selected');
+        var color = colorSel ? colorSel.dataset.color : 'green';
+
+        var btn = this;
+        btn.disabled = true;
+
+        if (editingZoneId) {
+            // Update existing zone
+            fetch('/api/building-zones/' + editingZoneId, {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                body: JSON.stringify({
+                    name: name,
+                    floor_number: floorNumber,
+                    color: color,
+                    linked_panorama_id: panoramaId,
+                    linked_floor_plan_item_id: floorplanId
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                btn.disabled = false;
+                hideFloatingModal('bma-zone-modal');
+                reloadZones();
+                showToast('Zone updated');
+            })
+            .catch(function() { btn.disabled = false; });
+        } else {
+            // Create new zone
+            var points = currentPoints.slice();
+            var body = {
+                name: name,
+                floor_number: floorNumber,
+                color: color,
+                points: points,
+                linked_panorama_id: panoramaId,
+                linked_floor_plan_item_id: floorplanId
+            };
+            fetch('/api/building-maps/' + MAP_ID + '/zones', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                body: JSON.stringify(body)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                btn.disabled = false;
+                hideFloatingModal('bma-zone-modal');
+                currentPoints = [];
+                reloadZones();
+                showToast('Zone created');
+            })
+            .catch(function() { btn.disabled = false; });
+        }
+    });
+
+    function reloadZones() {
+        fetch('/api/building-maps/' + MAP_ID + '/zones', { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(data) {
+                zones = data;
+                renderAllZones();
+                updateZonesList();
+                updateFloorFilter();
+            });
+    }
+
+    // ── Zones list panel ──
+    function updateZonesList() {
+        var filtered = getFilteredZones();
+        document.getElementById('bma-zone-count').textContent = filtered.length;
+        var list = document.getElementById('bma-zones-list');
+
+        if (!filtered.length) {
+            var floorVal = document.getElementById('bma-floor-filter').value;
+            list.innerHTML = '<div style="font-size:0.82rem; color:var(--color-muted); padding:0.5rem 0;">No zones' +
+                (floorVal !== 'all' ? ' on this floor' : '') + '.</div>';
+            return;
+        }
+
+        list.innerHTML = filtered.map(function(z) {
+            var c = COLOR_MAP[z.color] || COLOR_MAP.green;
+            return '<div class="bma-zone-item" data-id="' + z.id + '">' +
+                '<div class="bma-zone-item-name">' +
+                    '<div class="bma-zone-item-color" style="background:' + c.stroke + ';"></div>' +
+                    esc(z.name) + '<span class="bma-zone-item-floor">F' + z.floor_number + '</span>' +
+                '</div>' +
+                '<div class="bma-zone-item-actions">' +
+                    '<button class="bma-zone-action" data-action="edit" data-id="' + z.id + '" title="Edit">&#9998;</button>' +
+                    '<button class="bma-zone-action" data-action="replicate" data-id="' + z.id + '" title="Replicate">&#10697;</button>' +
+                    '<button class="bma-zone-action bma-zone-action-del" data-action="delete" data-id="' + z.id + '" title="Delete">&#10005;</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        // Bind zone item events
+        list.querySelectorAll('.bma-zone-action').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var action = btn.dataset.action;
+                var zoneId = parseInt(btn.dataset.id);
+                var zone = zones.find(function(z) { return z.id === zoneId; });
+                if (!zone) return;
+                if (action === 'edit') openZoneForm(zone);
+                else if (action === 'replicate') openReplicateModal(zone);
+                else if (action === 'delete') deleteZone(zone);
+            });
+        });
+
+        // Hover highlight
+        list.querySelectorAll('.bma-zone-item').forEach(function(el) {
+            el.addEventListener('mouseenter', function() {
+                var zoneId = parseInt(el.dataset.id);
+                renderAllZones();
+                var zone = zones.find(function(z) { return z.id === zoneId; });
+                if (zone) {
+                    var pts = typeof zone.points === 'string' ? JSON.parse(zone.points) : zone.points;
+                    if (pts && pts.length >= 3) drawPolygon(pts, zone.color || 'green', true);
+                }
+            });
+            el.addEventListener('mouseleave', function() {
+                renderAllZones();
+            });
+        });
+    }
+
+    // Floor filter
+    function updateFloorFilter() {
+        var sel = document.getElementById('bma-floor-filter');
+        var current = sel.value;
+        var floors = [];
+        zones.forEach(function(z) {
+            var f = z.floor_number || 0;
+            if (floors.indexOf(f) === -1) floors.push(f);
+        });
+        floors.sort(function(a, b) { return a - b; });
+        sel.innerHTML = '<option value="all">All Floors</option>';
+        floors.forEach(function(f) {
+            sel.innerHTML += '<option value="' + f + '"' + (String(f) === current ? ' selected' : '') + '>Floor ' + f + '</option>';
+        });
+    }
+
+    document.getElementById('bma-floor-filter').addEventListener('change', function() {
+        renderAllZones();
+        updateZonesList();
+    });
+
+    // ── Delete zone ──
+    function deleteZone(zone) {
+        if (!confirm('Delete zone "' + zone.name + '"?')) return;
+        fetch('/api/building-zones/' + zone.id, { method: 'DELETE', headers: authHeaders() })
+            .then(function() {
+                reloadZones();
+                showToast('Zone deleted');
+            });
+    }
+
+    // ── Replicate modal ──
+    function openReplicateModal(zone) {
+        replicateSourceZone = zone;
+        var srcPts = typeof zone.points === 'string' ? JSON.parse(zone.points) : zone.points;
+        // Create a copy offset 60px to the right
+        replicatePreviewPoints = srcPts.map(function(p) {
+            return { x: Math.round(p.x + 60), y: Math.round(p.y) };
+        });
+        document.getElementById('bma-rep-name').value = zone.name + ' (copy)';
+        document.getElementById('bma-rep-floor').value = String((zone.floor_number || 0) + 1);
+        renderAllZones();
+        showFloatingModal('bma-replicate-modal');
+    }
+
+    // Live-update the preview label as user types the name
+    document.getElementById('bma-rep-name').addEventListener('input', function() {
+        if (replicatePreviewPoints) renderAllZones();
+    });
+
+    document.getElementById('bma-rep-confirm').addEventListener('click', function() {
+        if (!replicateSourceZone || !replicatePreviewPoints || replicatePreviewPoints.length < 3) return;
+        var name = document.getElementById('bma-rep-name').value.trim() || 'Zone (copy)';
+        var floor = parseInt(document.getElementById('bma-rep-floor').value) || 0;
+
+        var btn = this;
+        btn.disabled = true;
+
+        var body = {
+            name: name,
+            floor_number: floor,
+            color: replicateSourceZone.color || 'green',
+            points: replicatePreviewPoints,
+            linked_panorama_id: replicateSourceZone.linked_panorama_id || null,
+            linked_floor_plan_item_id: replicateSourceZone.linked_floor_plan_item_id || null
+        };
+
+        fetch('/api/building-maps/' + MAP_ID + '/zones', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify(body)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function() {
+            btn.disabled = false;
+            replicatePreviewPoints = null;
+            hideFloatingModal('bma-replicate-modal');
+            reloadZones();
+            showToast('Zone replicated');
+        })
+        .catch(function() { btn.disabled = false; });
+    });
+
+    // ── Panel collapse ──
+    var panelCollapsed = false;
+    document.getElementById('bma-panel-toggle').addEventListener('click', function() {
+        panelCollapsed = !panelCollapsed;
+        var body = document.getElementById('bma-panel-body');
+        if (panelCollapsed) {
+            body.style.display = 'none';
+            this.textContent = '+';
+        } else {
+            body.style.display = '';
+            this.textContent = '\u2212';
+        }
+    });
+
+    // ── Panel drag ──
+    (function() {
+        var panel = document.getElementById('bma-edit-panel');
+        var header = panel.querySelector('.panel-header');
+        var dragging = false, startX, startY, startLeft, startTop;
+
+        // Switch from fixed bottom/left positioning to top/left for drag
+        function ensureTopLeft() {
+            if (panel.style.top) return;
+            var rect = panel.getBoundingClientRect();
+            panel.style.top = rect.top + 'px';
+            panel.style.left = rect.left + 'px';
+            panel.style.bottom = 'auto';
+            panel.style.right = 'auto';
+        }
+
+        header.addEventListener('pointerdown', function(e) {
+            if (e.target.closest('.panel-toggle-btn')) return;
+            ensureTopLeft();
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            var rect = panel.getBoundingClientRect();
+            startLeft = rect.left;
+            startTop = rect.top;
+            header.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        });
+        header.addEventListener('pointermove', function(e) {
+            if (!dragging) return;
+            var dx = e.clientX - startX;
+            var dy = e.clientY - startY;
+            var newLeft = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, startLeft + dx));
+            var newTop = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, startTop + dy));
+            panel.style.left = newLeft + 'px';
+            panel.style.top = newTop + 'px';
+        });
+        header.addEventListener('pointerup', function() { dragging = false; });
+    })();
+
+    // ── Click on canvas to select zone (when NOT in draw mode) ──
+    container.addEventListener('click', function(e) {
+        if (isDrawMode || isDragging) return;
+        var coords = clientToImageCoords(e.clientX, e.clientY);
+        var filtered = getFilteredZones();
+        // Find zone that contains this point
+        for (var i = filtered.length - 1; i >= 0; i--) {
+            var z = filtered[i];
+            var pts = typeof z.points === 'string' ? JSON.parse(z.points) : z.points;
+            if (pts && pointInPolygon(coords, pts)) {
+                openZoneForm(z);
+                break;
+            }
+        }
+    });
+
+    function pointInPolygon(point, polygon) {
+        var x = point.x, y = point.y;
+        var inside = false;
+        for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            var xi = polygon[i].x, yi = polygon[i].y;
+            var xj = polygon[j].x, yj = polygon[j].y;
+            var intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // ═══════════════════════════════════════════════
+    // Floating modal system (no backdrop, draggable, collapsible)
+    // ═══════════════════════════════════════════════
+
+    function showFloatingModal(id) {
+        var modal = document.getElementById(id);
+        modal.style.display = '';
+        modal.classList.remove('collapsed');
+        // Center the modal
+        var w = modal.offsetWidth || 400;
+        var h = modal.offsetHeight || 300;
+        modal.style.left = Math.max(16, (window.innerWidth - w) / 2) + 'px';
+        modal.style.top = Math.max(16, (window.innerHeight - h) / 2) + 'px';
+    }
+
+    function hideFloatingModal(id) {
+        var modal = document.getElementById(id);
+        modal.style.display = 'none';
+        // If closing zone modal and we were creating (not editing), clear draft
+        if (id === 'bma-zone-modal' && !editingZoneId) {
+            currentPoints = [];
+            renderAllZones();
+        }
+        // If closing replicate modal, clear preview
+        if (id === 'bma-replicate-modal') {
+            replicatePreviewPoints = null;
+            replicateSourceZone = null;
+            renderAllZones();
+        }
+    }
+
+    // Close buttons
+    document.querySelectorAll('[data-close]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            hideFloatingModal(btn.dataset.close);
+        });
+    });
+
+    // Collapse buttons
+    document.querySelectorAll('[data-collapse]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var modal = document.getElementById(btn.dataset.collapse);
+            modal.classList.toggle('collapsed');
+            btn.textContent = modal.classList.contains('collapsed') ? '+' : '\u2212';
+        });
+    });
+
+    // Drag handles
+    (function initDragHandles() {
+        var dragState = { active: false, modal: null, offsetX: 0, offsetY: 0 };
+
+        document.querySelectorAll('[data-drag-handle]').forEach(function(handle) {
+            handle.addEventListener('mousedown', function(e) {
+                // Don't drag if clicking a button inside the titlebar
+                if (e.target.closest('button')) return;
+                var modal = document.getElementById(handle.dataset.dragHandle);
+                var rect = modal.getBoundingClientRect();
+                dragState.active = true;
+                dragState.modal = modal;
+                dragState.offsetX = e.clientX - rect.left;
+                dragState.offsetY = e.clientY - rect.top;
+                e.preventDefault();
+            });
+        });
+
+        window.addEventListener('mousemove', function(e) {
+            if (!dragState.active) return;
+            var x = e.clientX - dragState.offsetX;
+            var y = e.clientY - dragState.offsetY;
+            // Clamp to viewport
+            x = Math.max(0, Math.min(window.innerWidth - 60, x));
+            y = Math.max(0, Math.min(window.innerHeight - 40, y));
+            dragState.modal.style.left = x + 'px';
+            dragState.modal.style.top = y + 'px';
+        });
+
+        window.addEventListener('mouseup', function() {
+            dragState.active = false;
+        });
+    })();
+
+    // ── Utility ──
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    function showToast(msg) {
+        var tc = document.getElementById('bma-toast-container');
+        var el = document.createElement('div');
+        el.className = 'bma-toast';
+        el.textContent = msg;
+        tc.appendChild(el);
+        setTimeout(function() { el.remove(); }, 3000);
+    }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+{% set page_title = 'Customer Dashboard - MarketoState' %}
+{% set active_nav = 'dashboard' %}
+{% set use_marketostate_brand_theme = true %}
+{% set portal_show_plot_search = true %}
+{% set portal_extra_css = '/static/css/customer_dashboard_portal.css?v=20260623-11' %}
+{% include 'components/portal_shell_start.html' %}
+
+<div class="dashboard-page-shell dashboard-page-shell--loading" id="dashboard-page-shell">
+{% set loader_id = 'dash-tab-loader' %}
+{% set arc_id = 'dash-loader-arc' %}
+{% set percent_id = 'dash-loader-percent' %}
+{% set steps_id = 'dash-loader-steps' %}
+{% set caption_id = 'dash-loader-caption' %}
+{% set label_id = 'dash-loader-label' %}
+{% set initial_caption = 'Loading dashboard' %}
+{% set initial_label = 'Preparing workspace' %}
+{% set steps = ['profile', 'metrics', 'clients'] %}
+{% include 'components/portal_tab_loader.html' %}
+
+<div class="dashboard-page max-w-7xl mx-auto space-y-6 portal-page-shell__content" id="dashboard-page">
+  <div class="dash-card p-5">
+    <h2 class="text-xl font-bold text-ms-primary mb-2" id="welcome-headline">Welcome back!</h2>
+    <p class="text-gray-500 mb-4" id="welcome-subtitle">Track your allotted clients, projects and leads in one place.</p>
+    <a href="/crm" class="dashboard-open-crm-btn dashboard-open-crm-btn--outline py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg">Open CRM</a>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="dash-card p-4">
+      <div class="dash-kpi-icon mb-3"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
+      <p class="text-sm text-gray-500 mb-1" id="kpi-primary-label">Clients</p>
+      <p class="text-2xl font-bold" id="kpi-clients">0</p>
+      <p class="text-xs text-gray-400 mt-1" id="kpi-primary-subtitle">Allotted to you</p>
+    </div>
+    <div class="dash-card p-4">
+      <div class="dash-kpi-icon mb-3"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg></div>
+      <p class="text-sm text-gray-500 mb-1" id="kpi-secondary-label">Projects</p>
+      <p class="text-2xl font-bold" id="kpi-projects">0</p>
+      <p class="text-xs text-gray-400 mt-1" id="kpi-secondary-subtitle">Across clients</p>
+    </div>
+    <div class="dash-card p-4">
+      <div class="dash-kpi-icon warning mb-3"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+      <p class="text-sm text-gray-500 mb-1" id="kpi-tertiary-label">Leads</p>
+      <p class="text-2xl font-bold" id="kpi-leads">0</p>
+      <p class="text-xs text-gray-400 mt-1" id="kpi-tertiary-subtitle">From your interests</p>
+    </div>
+    <div class="dash-card p-4">
+      <div class="dash-kpi-icon secondary mb-3"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
+      <p class="text-sm text-gray-500 mb-1" id="kpi-quaternary-label">Contacts</p>
+      <p class="text-2xl font-bold" id="kpi-contacts">0</p>
+      <p class="text-xs text-gray-400 mt-1" id="kpi-quaternary-subtitle">Unique contacts</p>
+    </div>
+  </div>
+
+  <div class="dash-card overflow-hidden">
+    <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">
+      <div>
+        <h3 class="font-semibold text-gray-800" id="clients-title">Your Clients</h3>
+        <p class="text-sm text-gray-500" id="clients-subtitle">All client groups allotted to you</p>
+      </div>
+      <a href="/crm" class="dashboard-open-crm-btn dashboard-open-crm-btn--solid py-2 px-3 inline-flex items-center text-sm font-semibold rounded-lg">Open CRM</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="dash-table w-full">
+        <thead id="clients-thead">
+          <tr>
+            <th class="text-left">Client</th>
+            <th class="text-left">Role</th>
+            <th class="text-right">Projects</th>
+            <th class="text-right">Leads</th>
+            <th class="text-right">Contacts</th>
+          </tr>
+        </thead>
+        <tbody id="clients-tbody">
+          <tr><td colspan="5" class="text-center text-gray-400 py-8">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+{% include 'components/portal_shell_end.html' %}
+<script>
+  window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+  window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+</script>
+<script src="/static/js/sidebar.js?v=20260623-1"></script>
+<script src="/static/js/portal_tab_loader.js?v=20260623-3"></script>
+<script>
+(function () {
+  var url = window.__SUPABASE_URL__;
+  var key = window.__SUPABASE_ANON_KEY__;
+  if (!url || !key || !window.supabase) {
+    window.location.replace('/login');
+    return;
+  }
+  if (!window._supabase) {
+    window._supabase = window.supabase.createClient(url, key);
+  }
+
+  function waitForAuthSession(maxAttempts, delayMs) {
+    if (window.pmApi && typeof window.pmApi.waitForSession === 'function') {
+      return window.pmApi.waitForSession(maxAttempts, delayMs);
+    }
+    var sb = window._supabase;
+    var remaining = Number(maxAttempts || 0);
+    function step() {
+      return sb.auth.getSession().then(function (r) {
+        var session = (r && r.data && r.data.session) ? r.data.session : null;
+        if (session || remaining <= 0) return session;
+        remaining -= 1;
+        return new Promise(function (resolve) { setTimeout(resolve, delayMs); }).then(step);
+      });
+    }
+    return step();
+  }
+
+  function api(path, opts) {
+    return waitForAuthSession(12, 220).then(function (session) {
+      if (!session || !session.access_token) throw new Error('Not authenticated');
+      var headers = { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' };
+      var merged = Object.assign({ headers: headers }, opts || {});
+      merged.headers = Object.assign({}, headers, (opts && opts.headers) || {});
+      return fetch(path, merged);
+    });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function initials(name) {
+    var text = String(name || '').trim();
+    if (!text) return '--';
+    var parts = text.split(/\s+/).filter(Boolean);
+    return (((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || (parts[0] || '')[1] || '')).toUpperCase();
+  }
+
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  var dashLoader = window.PortalTabLoader ? new window.PortalTabLoader({
+    shellId: 'dashboard-page-shell',
+    loaderId: 'dash-tab-loader',
+    shellLoadingClass: 'dashboard-page-shell--loading',
+    stepOrder: ['profile', 'metrics', 'clients'],
+    finalStep: 'clients',
+    ids: {
+      percent: 'dash-loader-percent',
+      steps: 'dash-loader-steps',
+      caption: 'dash-loader-caption',
+      label: 'dash-loader-label',
+      arc: 'dash-loader-arc'
+    }
+  }) : null;
+
+  function setDashboardLoaderStep(step, srCaption, progress, label) {
+    if (dashLoader) dashLoader.setStep(step, srCaption, progress, label || srCaption);
+  }
+
+  function setDashboardLoading(isLoading) {
+    if (!dashLoader) return;
+    if (!isLoading) {
+      dashLoader.setLoading(false, { finalCaption: 'Dashboard ready', finalLabel: 'All set' });
+      return;
+    }
+    dashLoader.setLoading(true);
+  }
+
+  if (dashLoader) {
+    dashLoader.boot('profile', 'Loading dashboard', 18, 'Preparing workspace');
+  }
+
+  function setVisible(selector, visible) {
+    document.querySelectorAll(selector).forEach(function (el) {
+      el.style.display = visible ? '' : 'none';
+    });
+  }
+
+  function roleName(role) {
+    var normalized = String(role || '').trim().toLowerCase();
+    if (normalized === 'client_admin') return 'Client Admin';
+    if (normalized === 'broker') return 'Broker';
+    return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'User';
+  }
+
+  function configureDashboard(isClientAdmin) {
+    var searchWrap = document.getElementById('dashboard-search-wrap');
+    if (searchWrap) searchWrap.style.display = isClientAdmin ? '' : 'none';
+    setVisible('[data-broker-only]', !isClientAdmin);
+    setVisible('[data-client-admin-only]', isClientAdmin);
+    var search = document.getElementById('navbar-client-search');
+    if (isClientAdmin) {
+      document.title = 'Client Admin Dashboard - MarketoState';
+      setText('welcome-subtitle', 'Track group-wide plots, interests and contacts in one place.');
+      setText('kpi-primary-label', 'Sold Plots');
+      setText('kpi-primary-subtitle', 'Across your client groups');
+      setText('kpi-secondary-label', 'Pending Plots');
+      setText('kpi-secondary-subtitle', 'Reserved or on hold');
+      setText('kpi-tertiary-label', 'Total Interests');
+      setText('kpi-tertiary-subtitle', 'Across your client groups');
+      setText('kpi-quaternary-label', 'Contacts');
+      setText('kpi-quaternary-subtitle', 'Unique interested contacts');
+      setText('clients-title', 'Client Portfolio');
+      if (search) {
+        search.placeholder = 'Search plots...';
+        search.setAttribute('aria-label', 'Search plots...');
+      }
+      var adminHead = document.getElementById('clients-thead');
+      if (adminHead) {
+        adminHead.innerHTML = '<tr><th class="text-left">Client</th><th class="text-left">Role</th><th class="text-right">Projects</th><th class="text-right">Sold</th><th class="text-right">Pending</th><th class="text-right">Interests</th></tr>';
+      }
+    }
+  }
+
+  function renderProfile(profile, isClientAdmin) {
+    var fallbackName = isClientAdmin ? 'Client Admin' : 'Broker';
+    var displayName = String((profile && (profile.display_name || profile.name || profile.email)) || fallbackName).trim() || fallbackName;
+    var roleLabel = isClientAdmin ? 'Client Admin' : roleName((profile && profile.role) || 'broker');
+    var first = displayName.split(/\s+/)[0] || displayName;
+    setText('welcome-headline', 'Welcome back, ' + first + '!');
+    if (typeof window.configurePortalShell === 'function') {
+      window.configurePortalShell(profile, !isClientAdmin, false, isClientAdmin);
+    }
+  }
+
+  function renderClients(rows, isClientAdmin) {
+    var tbody = document.getElementById('clients-tbody');
+    if (!tbody) return;
+    if (!rows || !rows.length) {
+      var colspan = isClientAdmin ? 6 : 5;
+      tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="text-center text-gray-400 py-8">No client groups available yet.</td></tr>';
+      setText('clients-subtitle', 'No client groups available yet');
+      setText('kpi-clients', '0');
+      setText('kpi-projects', '0');
+      setText('kpi-leads', '0');
+      setText('kpi-contacts', '0');
+      return;
+    }
+    var totals = { projects: 0, interests: 0, contacts: 0, sold: 0, pending: 0 };
+    tbody.innerHTML = rows.map(function (row) {
+      var name = row.client_name || row.client_id || '-';
+      var role = row.member_role || 'broker';
+      var p = Number(row.project_count || 0);
+      var l = Number(row.interest_count || row.lead_count || 0);
+      var c = Number(row.contact_count || 0);
+      var sold = Number(row.sold_plot_count || 0);
+      var pending = Number(row.pending_plot_count || 0);
+      totals.projects += p;
+      totals.interests += l;
+      totals.contacts += c;
+      totals.sold += sold;
+      totals.pending += pending;
+      var metricCells = isClientAdmin
+        ? '<td class="text-right">' + p + '</td><td class="text-right">' + sold + '</td><td class="text-right">' + pending + '</td><td class="text-right">' + l + '</td>'
+        : '<td class="text-right">' + p + '</td><td class="text-right">' + l + '</td><td class="text-right">' + c + '</td>';
+      return '<tr><td><div class="flex items-center gap-3"><span class="dash-avatar">' + esc(initials(name)) + '</span><span class="font-medium">' + esc(name) + '</span></div></td><td><span class="dash-badge">' + esc(roleName(role)) + '</span></td>' + metricCells + '</tr>';
+    }).join('');
+    setText('kpi-clients', String(isClientAdmin ? totals.sold : rows.length));
+    setText('kpi-projects', String(isClientAdmin ? totals.pending : totals.projects));
+    setText('kpi-leads', String(totals.interests));
+    setText('kpi-contacts', String(totals.contacts));
+    setText('clients-subtitle', rows.length + ' client group' + (rows.length === 1 ? '' : 's') + (isClientAdmin ? ' under your administration' : ' allotted to you'));
+  }
+
+  function loadClients(isClientAdmin) {
+    return api('/api/crm/allotted-clients').then(function (response) {
+      return response.json().catch(function () { return []; }).then(function (data) {
+        if (!response.ok) throw new Error((data && data.error) || 'Failed to load clients');
+        renderClients(Array.isArray(data) ? data : [], isClientAdmin);
+      });
+    }).catch(function () { renderClients([], isClientAdmin); });
+  }
+
+  function bindPlotSearch() {
+    var input = document.getElementById('navbar-client-search');
+    var dropdown = document.getElementById('navbar-plot-search-dropdown');
+    var list = document.getElementById('navbar-plot-search-list');
+    var empty = document.getElementById('navbar-plot-search-empty');
+    if (!input || !dropdown || !list) return;
+    var debounceTimer = null;
+    var blurTimer = null;
+    var requestId = 0;
+    function hideDropdown() {
+      dropdown.setAttribute('hidden', '');
+      input.setAttribute('aria-expanded', 'false');
+      list.innerHTML = '';
+      if (empty) empty.setAttribute('hidden', '');
+    }
+    function plotStatusLabel(status) {
+      var key = String(status || '').trim().toLowerCase();
+      if (key === 'sold') return 'Sold';
+      if (key === 'hold' || key === 'pending') return 'Pending';
+      return 'Available';
+    }
+    function renderPlotResults(plots) {
+      list.innerHTML = '';
+      if (!plots.length) {
+        dropdown.removeAttribute('hidden');
+        input.setAttribute('aria-expanded', 'true');
+        if (empty) empty.removeAttribute('hidden');
+        return;
+      }
+      if (empty) empty.setAttribute('hidden', '');
+      plots.forEach(function (plot) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'dashboard-plot-search-item';
+        btn.setAttribute('role', 'option');
+        var title = document.createElement('span');
+        title.className = 'dashboard-plot-search-item-title';
+        title.textContent = String(plot.name || 'Unnamed plot');
+        var sub = document.createElement('span');
+        sub.className = 'dashboard-plot-search-item-sub';
+        var parts = [];
+        if (plot.panorama_name) parts.push(String(plot.panorama_name));
+        if (plot.area) parts.push(String(plot.area));
+        parts.push(plotStatusLabel(plot.status));
+        sub.textContent = parts.join(' · ');
+        btn.appendChild(title);
+        btn.appendChild(sub);
+        btn.addEventListener('mousedown', function (e) { e.preventDefault(); window.location.href = '/crm'; });
+        list.appendChild(btn);
+      });
+      dropdown.removeAttribute('hidden');
+      input.setAttribute('aria-expanded', 'true');
+    }
+    function fetchPlots(query) {
+      var q = String(query || '').trim();
+      if (!q) { hideDropdown(); return; }
+      var currentRequest = ++requestId;
+      api('/api/crm/plots?q=' + encodeURIComponent(q) + '&limit=8&page=1').then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (data) {
+          if (currentRequest !== requestId) return;
+          if (!response.ok) throw new Error((data && data.error) || 'Search failed');
+          var items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+          renderPlotResults(items);
+        });
+      }).catch(function () { if (currentRequest !== requestId) return; renderPlotResults([]); });
+    }
+    input.addEventListener('input', function () {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () { fetchPlots(input.value); }, 280);
+    });
+    input.addEventListener('focus', function () { if (String(input.value || '').trim()) fetchPlots(input.value); });
+    input.addEventListener('blur', function () { if (blurTimer) clearTimeout(blurTimer); blurTimer = setTimeout(hideDropdown, 160); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideDropdown(); });
+    document.addEventListener('mousedown', function (e) {
+      var wrap = document.getElementById('dashboard-search-wrap');
+      if (wrap && !wrap.contains(e.target)) hideDropdown();
+    });
+  }
+
+  api('/api/crm/me').then(function (response) {
+    return response.json().catch(function () { return {}; }).then(function (data) {
+      if (!response.ok) throw new Error((data && data.error) || 'Failed to load profile');
+      var isBrokerUser = !!(data && (data.is_broker || String(data.role || '') === 'broker'));
+      var isClientAdmin = !!(data && data.is_client_admin);
+      try { window.localStorage.setItem('portal_is_broker', isBrokerUser ? '1' : '0'); } catch (e) {}
+      if (!isBrokerUser && !isClientAdmin) {
+        window.location.replace('/crm');
+        return;
+      }
+      setDashboardLoaderStep('metrics', 'Loading metrics', 48, 'Loading metrics');
+      configureDashboard(isClientAdmin);
+      renderProfile(data || {}, isClientAdmin);
+      if (isClientAdmin) bindPlotSearch();
+      setDashboardLoaderStep('clients', 'Loading clients', 72, 'Loading clients');
+      return loadClients(isClientAdmin).then(function () {
+        setDashboardLoaderStep('clients', 'Finalizing', 94, 'Almost ready');
+        window.setTimeout(function () { setDashboardLoading(false); }, 320);
+      });
+    });
+  }).catch(function () { window.location.replace('/login'); });
+})();
+</script>

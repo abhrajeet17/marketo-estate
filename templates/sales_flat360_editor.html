@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Sales 360 Editor - MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<link rel="stylesheet" href="/static/css/sales_flat360_editor.css">
+{% endblock %}
+{% block content %}
+<div class="sf3e-page">
+    {% set active_page = 'floorplans' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="sf3e-main">
+        <div class="sf3e-header">
+            <a href="/salestools?tab=flat360" class="sf3e-back-link">Back to 360 Tool</a>
+            <div>
+                <h1 class="sf3e-title" id="sf3e-title">Sales 360 Editor</h1>
+                <p class="sf3e-subtitle">Upload a flat 360 strip image. Drag left or right to rotate the view.</p>
+            </div>
+            <a class="btn btn-secondary" id="sf3e-preview-link" href="#" target="_blank" rel="noopener">Preview</a>
+        </div>
+
+        <div class="sf3e-status" id="sf3e-status">Loading 360 view...</div>
+
+        <div class="sf3e-toolbar">
+            <button type="button" class="btn btn-secondary btn-sm" id="sf3e-reset">Reset Heading</button>
+            <span class="sf3e-meta" id="sf3e-heading">Heading: 0°</span>
+        </div>
+
+        <div class="sf3e-stage-wrap">
+            <div class="sf3e-stage" id="sf3e-stage">
+                <canvas id="sf3e-canvas" class="sf3e-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    'use strict';
+
+    var VIEW_ID = {{ view_id|tojson }};
+    var viewData = null;
+    var state = {
+        image: null,
+        dragging: false,
+        startX: 0,
+        startOffsetPx: 0,
+        offsetPx: 0,
+        scale: 1
+    };
+
+    var stageEl = null;
+    var canvasEl = null;
+    var ctx = null;
+    var statusEl = null;
+    var headingEl = null;
+
+    function setStatus(message, tone) {
+        statusEl.textContent = message;
+        statusEl.classList.remove('ok', 'warn');
+        if (tone === 'ok') statusEl.classList.add('ok');
+        if (tone === 'warn') statusEl.classList.add('warn');
+    }
+
+    function authHeaders() {
+        if (!window._supabase) return Promise.resolve({});
+        return window._supabase.auth.getSession().then(function (result) {
+            var headers = { 'Content-Type': 'application/json' };
+            if (result.data.session && result.data.session.access_token) {
+                headers.Authorization = 'Bearer ' + result.data.session.access_token;
+            }
+            return headers;
+        });
+    }
+
+    async function apiFetch(url, opts) {
+        var headers = await authHeaders();
+        var merged = Object.assign({ headers: headers }, opts || {});
+        var response = await fetch(url, merged);
+        if (!response.ok) {
+            var payload = await response.text();
+            throw new Error(payload || response.statusText);
+        }
+        return response.json();
+    }
+
+    function getHeadingDeg() {
+        if (!state.image || !state.image.width) return 0;
+        var norm = ((state.offsetPx % state.image.width) + state.image.width) % state.image.width;
+        return Math.round((norm / state.image.width) * 360);
+    }
+
+    function updateHeadingText() {
+        if (!headingEl) return;
+        headingEl.textContent = 'Heading: ' + getHeadingDeg() + '\u00b0';
+    }
+
+    function resizeCanvas() {
+        var rect = stageEl.getBoundingClientRect();
+        var dpr = Math.max(1, window.devicePixelRatio || 1);
+        canvasEl.width = Math.max(1, Math.round(rect.width * dpr));
+        canvasEl.height = Math.max(1, Math.round(rect.height * dpr));
+        canvasEl.style.width = rect.width + 'px';
+        canvasEl.style.height = rect.height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        render();
+    }
+
+    function render() {
+        var rect = stageEl.getBoundingClientRect();
+        var drawW = Math.max(1, Math.round(rect.width));
+        var drawH = Math.max(1, Math.round(rect.height));
+        ctx.clearRect(0, 0, drawW, drawH);
+
+        if (!state.image || !state.image.width || !state.image.height) {
+            ctx.fillStyle = 'rgba(22, 35, 56, 0.22)';
+            ctx.fillRect(0, 0, drawW, drawH);
+            return;
+        }
+
+        state.scale = drawH / state.image.height;
+        var scaledW = state.image.width * state.scale;
+        if (!Number.isFinite(scaledW) || scaledW < 1) return;
+
+        var wrapOffset = ((state.offsetPx % state.image.width) + state.image.width) % state.image.width;
+        var drawOffset = wrapOffset * state.scale;
+        for (var x = -drawOffset; x < drawW; x += scaledW) {
+            ctx.drawImage(state.image, x, 0, scaledW, drawH);
+        }
+        updateHeadingText();
+    }
+
+    function onPointerDown(event) {
+        if (!state.image) return;
+        state.dragging = true;
+        state.startX = event.clientX;
+        state.startOffsetPx = state.offsetPx;
+        canvasEl.setPointerCapture(event.pointerId);
+    }
+
+    function onPointerMove(event) {
+        if (!state.dragging || !state.image) return;
+        var dx = event.clientX - state.startX;
+        var pxDelta = dx / Math.max(0.0001, state.scale);
+        state.offsetPx = state.startOffsetPx - pxDelta;
+        render();
+    }
+
+    function onPointerUp(event) {
+        if (!state.dragging) return;
+        state.dragging = false;
+        try { canvasEl.releasePointerCapture(event.pointerId); } catch (_e) {}
+    }
+
+    async function loadView() {
+        var data = await apiFetch('/api/sales-flat360/' + encodeURIComponent(VIEW_ID));
+        viewData = data;
+        document.getElementById('sf3e-title').textContent = data.name || 'Sales 360 Editor';
+        document.getElementById('sf3e-preview-link').href = data.share_url || '#';
+
+        var image = new Image();
+        image.onload = function () {
+            state.image = image;
+            state.offsetPx = 0;
+            render();
+            setStatus('Ready. Drag left/right to rotate the 360 strip view.', 'ok');
+        };
+        image.onerror = function () {
+            setStatus('Failed to load image.', 'warn');
+        };
+        image.src = data.image_url || '';
+    }
+
+    function bindEvents() {
+        canvasEl.addEventListener('pointerdown', onPointerDown);
+        canvasEl.addEventListener('pointermove', onPointerMove);
+        canvasEl.addEventListener('pointerup', onPointerUp);
+        canvasEl.addEventListener('pointercancel', onPointerUp);
+        window.addEventListener('resize', resizeCanvas);
+
+        document.getElementById('sf3e-reset').addEventListener('click', function () {
+            state.offsetPx = 0;
+            render();
+        });
+    }
+
+    async function init() {
+        stageEl = document.getElementById('sf3e-stage');
+        canvasEl = document.getElementById('sf3e-canvas');
+        ctx = canvasEl.getContext('2d');
+        statusEl = document.getElementById('sf3e-status');
+        headingEl = document.getElementById('sf3e-heading');
+
+        bindEvents();
+        resizeCanvas();
+        await loadView();
+    }
+
+    window.__sf3eInit = init;
+})();
+</script>
+<script>
+    window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+    window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+</script>
+<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
+<script>
+    window.sidebarReady.then(function () {
+        if (window.__sf3eInit) window.__sf3eInit();
+    });
+</script>
+{% endblock %}

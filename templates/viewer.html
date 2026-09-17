@@ -10,36 +10,14 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/components/buttons.css">
+    <link rel="stylesheet" href="/static/css/components/cards.css">
+    <link rel="stylesheet" href="/static/css/components/modals.css">
+    <link rel="stylesheet" href="/static/css/components/forms.css">
+    <link rel="stylesheet" href="/static/css/components/layout.css">
     <style>
-        :root {
-            --color-bg: #0a0a0b;
-            --color-text: #f5f5f0;
-            --color-accent: #c9a962;
-            --color-accent-dim: rgba(201, 169, 98, 0.3);
-            --color-muted: #6b6b6b;
-            --font-display: 'Instrument Serif', Georgia, serif;
-            --font-body: 'Syne', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            height: 100%;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background: var(--color-bg);
-            color: var(--color-text);
-            touch-action: none;
-        }
-
+        html, body { height: 100%; overflow: hidden; touch-action: none; }
         .image-container {
             width: 100vw;
             height: 100vh;
@@ -79,6 +57,62 @@
             top: 0;
             left: 0;
             pointer-events: auto;
+        }
+
+        .plots-overlay .plot-boundary {
+            transition: fill 180ms ease, stroke-width 180ms ease;
+        }
+
+        .plots-overlay .plot-outline {
+            pointer-events: none;
+            transition: stroke-opacity 180ms ease;
+        }
+
+        .plots-overlay .plot-label-group {
+            pointer-events: none;
+            transform-box: fill-box;
+            transform-origin: center;
+            transition: transform 180ms ease;
+        }
+
+        .plots-overlay .plot-label-group.is-active {
+            transform: translateY(-2px);
+        }
+
+        .plots-overlay .plot-label-bg {
+            fill: rgba(9, 10, 12, 0.8);
+            stroke: rgba(255, 255, 255, 0.28);
+            stroke-width: 1.2;
+        }
+
+        .plots-overlay .plot-label-text {
+            fill: #fbfaf7;
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            paint-order: stroke;
+            stroke: rgba(0, 0, 0, 0.26);
+            stroke-width: 0.7;
+        }
+
+        .plots-overlay .plot-label-group.is-available .plot-label-bg {
+            stroke: rgba(34, 197, 94, 0.58);
+        }
+
+        .plots-overlay .plot-label-group.is-hold .plot-label-bg {
+            stroke: rgba(249, 115, 22, 0.62);
+        }
+
+        .plots-overlay .plot-label-group.is-sold .plot-label-bg {
+            stroke: rgba(239, 68, 68, 0.62);
+        }
+
+        @media (max-width: 900px) {
+            .plots-overlay .plot-label-text {
+                font-size: 13px;
+            }
         }
 
         .overlay-gradient {
@@ -122,7 +156,7 @@
         .project-info {
             background: rgba(10, 10, 11, 0.8);
             padding: 0.75rem 1.25rem;
-            border-radius: 8px;
+            border-radius: 16px;
             backdrop-filter: blur(10px);
             border: 1px solid var(--color-accent-dim);
         }
@@ -153,7 +187,7 @@
             border: 1px solid var(--color-accent-dim);
             color: var(--color-text);
             padding: 0.6rem 1rem;
-            border-radius: 6px;
+            border-radius: 12px;
             cursor: pointer;
             font-family: var(--font-body);
             font-size: 0.75rem;
@@ -183,7 +217,7 @@
             pointer-events: auto;
             background: rgba(10, 10, 11, 0.8);
             padding: 0.75rem;
-            border-radius: 8px;
+            border-radius: 16px;
             backdrop-filter: blur(10px);
         }
 
@@ -199,7 +233,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
-            border-radius: 4px;
+            border-radius: 8px;
         }
 
         .zoom-btn:hover {
@@ -218,7 +252,7 @@
             pointer-events: auto;
             background: rgba(10, 10, 11, 0.8);
             padding: 1rem;
-            border-radius: 8px;
+            border-radius: 16px;
             backdrop-filter: blur(10px);
             border: 1px solid var(--color-accent-dim);
             max-width: 200px;
@@ -475,6 +509,13 @@
             gap: 2.5rem;
             align-items: start;
             padding: 2.5rem;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .details-modal .modal-actions {
+            flex-shrink: 0;
         }
 
         .detail-item {
@@ -723,6 +764,10 @@
         .details-modal .modal {
             max-width: 600px;
             width: 90%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .share-url-container {
@@ -784,9 +829,18 @@
             }
         }
     </style>
+    <script src="/static/js/supabase.min.js"></script>
 </head>
 
 <body>
+    <script>
+    (function(){var url={{ (supabase_url or '')|tojson }};var key={{ (supabase_anon_key or '')|tojson }};
+    if(!url||!key||!window.supabase)return;
+    var s=window.supabase.createClient(url,key);
+    window._supabase=s;
+    window.getAuthHeaders=function(){return s.auth.getSession().then(function(r){var h={};if(r.data.session&&r.data.session.access_token)h['Authorization']='Bearer '+r.data.session.access_token;return h;});};
+    })();
+    </script>
     <div class="loading-overlay" id="loading">
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading panorama...</div>
@@ -811,6 +865,10 @@
                 </div>
             </div>
             <div class="header-right">
+                <button class="share-btn" id="back-btn" type="button" hidden>
+                    <span>←</span>
+                    <span>Back</span>
+                </button>
                 <button class="share-btn" id="share-btn">
                     <span>🔗</span>
                     <span>Share Link</span>
@@ -959,10 +1017,12 @@
 
     <script>
         const PANORAMA_ID = {{ panorama.id }};
-        const IS_360 = 0; // Normal panoramas only (360° images use /customer/3d routes)
+        const IS_360 = 0; // Normal panoramas only (360° images use /customer/<org>/3d routes)
+        const ORG_SLUG = {{ (org_slug or '')|tojson }};
 
         const loading = document.getElementById('loading');
         const shareBtn = document.getElementById('share-btn');
+        const backBtn = document.getElementById('back-btn');
         const shareModal = document.getElementById('share-modal');
         const shareUrl = document.getElementById('share-url');
         const copyBtn = document.getElementById('copy-btn');
@@ -970,6 +1030,59 @@
 
         // Shared variables and functions (available in both modes)
         let plots = [];
+
+        const NAV_STACK_KEY = 're_customer_nav_stack_v1';
+
+        function readNavStack() {
+            try {
+                const raw = sessionStorage.getItem(NAV_STACK_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function writeNavStack(stack) {
+            try {
+                sessionStorage.setItem(NAV_STACK_KEY, JSON.stringify(Array.isArray(stack) ? stack : []));
+            } catch (e) {}
+        }
+
+        function popNavStack() {
+            const stack = readNavStack();
+            const value = stack.length ? String(stack.pop()) : '';
+            writeNavStack(stack);
+            return value;
+        }
+
+        function hasNavStack() {
+            const stack = readNavStack();
+            return stack.length > 0;
+        }
+
+        (function initBackButton() {
+            if (!backBtn) return;
+            const params = new URLSearchParams(window.location.search || '');
+            const fromId = String(params.get('from') || '').trim();
+            const fromMode = String(params.get('from_mode') || '').trim().toLowerCase();
+            const canUseFrom = Boolean(fromId && /^[0-9]+$/.test(fromId));
+            if (!hasNavStack() && !canUseFrom) return;
+            backBtn.hidden = false;
+            backBtn.addEventListener('click', () => {
+                const prevUrl = popNavStack();
+                if (prevUrl) {
+                    window.location.href = prevUrl;
+                    return;
+                }
+                if (!canUseFrom) return;
+                const slug = String(ORG_SLUG || '').trim();
+                const path = fromMode === '3d'
+                    ? (slug ? `/customer/${encodeURIComponent(slug)}/3d/${encodeURIComponent(fromId)}` : `/customer/3d/${encodeURIComponent(fromId)}`)
+                    : (slug ? `/customer/${encodeURIComponent(slug)}/${encodeURIComponent(fromId)}` : `/customer/${encodeURIComponent(fromId)}`);
+                window.location.href = path;
+            });
+        })();
 
         const statusLabels = { available: 'Available', reserved: 'On Hold', on_hold: 'On Hold', sold: 'Sold' };
         const statusColorMap = {
@@ -1007,11 +1120,82 @@
             return id ? `https://drive.google.com/file/d/${id}/preview` : url;
         }
 
+        function normalizeExternalUrl(rawUrl) {
+            const url = String(rawUrl || '').trim();
+            if (!url) return '';
+            if (/^https?:\/\//i.test(url)) return url;
+            if (url.startsWith('//')) return `https:${url}`;
+            if (/^(www\.|youtu\.be\/|youtube\.com\/|m\.youtube\.com\/|drive\.google\.com\/)/i.test(url)) {
+                return `https://${url}`;
+            }
+            return url;
+        }
+
+        function parseTimeToSeconds(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return 0;
+            if (/^\d+$/.test(raw)) return Math.max(0, parseInt(raw, 10) || 0);
+            if (raw.includes(':')) {
+                const parts = raw.split(':').map((v) => parseInt(v, 10));
+                if (parts.some((n) => Number.isNaN(n))) return 0;
+                return parts.reduce((acc, n) => acc * 60 + n, 0);
+            }
+            const match = raw.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+            if (!match) return 0;
+            const h = parseInt(match[1] || '0', 10) || 0;
+            const m = parseInt(match[2] || '0', 10) || 0;
+            const s = parseInt(match[3] || '0', 10) || 0;
+            return Math.max(0, (h * 3600) + (m * 60) + s);
+        }
+
+        function extractYouTubeId(rawUrl) {
+            const normalized = normalizeExternalUrl(rawUrl);
+            if (!normalized) return null;
+            let url = null;
+            try {
+                url = new URL(normalized);
+            } catch (e) {
+                return null;
+            }
+            const host = String(url.hostname || '').replace(/^www\./, '').toLowerCase();
+            const path = String(url.pathname || '');
+            let id = null;
+            if (host === 'youtu.be') {
+                id = path.split('/').filter(Boolean)[0] || null;
+            } else if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+                if (path === '/watch') id = url.searchParams.get('v');
+                else if (path.startsWith('/embed/')) id = path.split('/')[2] || null;
+                else if (path.startsWith('/shorts/')) id = path.split('/')[2] || null;
+                else if (path.startsWith('/live/')) id = path.split('/')[2] || null;
+            } else if (host === 'm.youtube.com') {
+                if (path === '/watch') id = url.searchParams.get('v');
+            }
+            if (!id) return null;
+            id = String(id).trim();
+            if (!/^[a-zA-Z0-9_-]{6,20}$/.test(id)) return null;
+            return id;
+        }
+
+        function normalizeYouTubeEmbedUrl(rawUrl) {
+            const normalized = normalizeExternalUrl(rawUrl);
+            const id = extractYouTubeId(normalized);
+            if (!id) return '';
+            let start = 0;
+            try {
+                const url = new URL(normalized);
+                start = parseTimeToSeconds(url.searchParams.get('start') || url.searchParams.get('t') || '');
+            } catch (e) {}
+            const params = [];
+            if (start > 0) params.push(`start=${start}`);
+            params.push('rel=0');
+            return `https://www.youtube-nocookie.com/embed/${id}?${params.join('&')}`;
+        }
+
         function isLikelyVideoFile(url) {
             return /\.(mp4|webm|ogg)(\?.*)?$/.test(url || '');
         }
 
-        function renderPlotMedia(plot) {
+        async function renderPlotMedia(plot) {
             const container = document.getElementById('details-media');
             const wrapper = document.getElementById('details-media-container');
             if (!container || !wrapper) return;
@@ -1021,29 +1205,42 @@
             const videoUrl = (plot.media_video || '').trim();
             const mediaElements = [];
 
-            if (photoUrl) {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'media-wrapper';
-
+            if (plot.has_image && plot.id) {
+                const mediaWrapper = document.createElement('div');
+                mediaWrapper.className = 'media-wrapper';
+                const img = document.createElement('img');
+                img.alt = (plot.name || 'Plot') + ' photo';
+                img.style.maxWidth = '100%'; img.style.height = 'auto';
+                try {
+                    const headers = await (window.getAuthHeaders ? window.getAuthHeaders() : Promise.resolve({}));
+                    const r = await fetch('/api/public/plots/' + plot.id + '/image', { headers });
+                    if (r.ok) { const blob = await r.blob(); img.src = URL.createObjectURL(blob); }
+                } catch (e) { console.warn('Plot image load failed', e); }
+                mediaWrapper.appendChild(img);
+                mediaElements.push(mediaWrapper);
+            } else if (photoUrl) {
+                const mediaWrapper = document.createElement('div');
+                mediaWrapper.className = 'media-wrapper';
                 const iframe = document.createElement('iframe');
-                iframe.src = normalizeDriveVideoUrl(photoUrl);
-                iframe.allow = 'autoplay';
+                const ytEmbed = normalizeYouTubeEmbedUrl(photoUrl);
+                iframe.src = ytEmbed || normalizeDriveVideoUrl(photoUrl);
+                iframe.allow = 'autoplay; encrypted-media';
                 iframe.allowFullscreen = true;
                 iframe.loading = 'lazy';
                 iframe.title = `${plot.name || 'Plot'} photo`;
-
-                wrapper.appendChild(iframe);
-                mediaElements.push(wrapper);
+                mediaWrapper.appendChild(iframe);
+                mediaElements.push(mediaWrapper);
             }
 
             if (videoUrl) {
+                const ytEmbed = normalizeYouTubeEmbedUrl(videoUrl);
                 const driveId = extractDriveId(videoUrl);
                 const wrapper = document.createElement('div');
                 wrapper.className = 'media-wrapper';
 
-                if (driveId || !isLikelyVideoFile(videoUrl)) {
+                if (ytEmbed || driveId || !isLikelyVideoFile(videoUrl)) {
                     const iframe = document.createElement('iframe');
-                    iframe.src = normalizeDriveVideoUrl(videoUrl);
+                    iframe.src = ytEmbed || normalizeDriveVideoUrl(videoUrl);
                     iframe.allow = 'autoplay; encrypted-media';
                     iframe.allowFullscreen = true;
                     iframe.loading = 'lazy';
@@ -1070,8 +1267,10 @@
 
         async function loadPlots() {
             try {
-                const response = await fetch(`/api/panoramas/${PANORAMA_ID}/plots`);
-                plots = await response.json();
+                const headers = await (window.getAuthHeaders ? window.getAuthHeaders() : Promise.resolve({}));
+                const response = await fetch(`/api/public/panoramas/${PANORAMA_ID}/plots`, { headers });
+                const data = await response.json();
+                plots = Array.isArray(data) ? data : [];
                 {% if not panorama.is_360 %}
                 renderPlots();
                 {% endif %}
@@ -1090,7 +1289,7 @@
             const descContainer = document.getElementById('details-description-container');
             descContainer.style.display = plot.description ? 'block' : 'none';
             document.getElementById('details-description').textContent = plot.description || '';
-            renderPlotMedia(plot);
+            renderPlotMedia(plot).then(() => {});
             plotDetailsModal.classList.add('visible');
         }
 
@@ -1152,8 +1351,10 @@
 
         async function loadPlots() {
             try {
-                const response = await fetch(`/api/panoramas/${PANORAMA_ID}/plots`);
-                plots = await response.json();
+                const headers = await (window.getAuthHeaders ? window.getAuthHeaders() : Promise.resolve({}));
+                const response = await fetch(`/api/public/panoramas/${PANORAMA_ID}/plots`, { headers });
+                const data = await response.json();
+                plots = Array.isArray(data) ? data : [];
                 renderPlots();
             } catch (error) {
                 console.error('Failed to load plots:', error);
@@ -1183,38 +1384,159 @@
             });
             plotsOverlay.appendChild(defs);
 
-            plots.forEach(plot => {
-                const statusKey = getStatusKey(plot.status);
-                const colors = statusColorMap[statusKey];
-                const pointsStr = plot.points.map(p => `${p.x},${p.y}`).join(' ');
+            plots
+                .filter(plot => Array.isArray(plot.points) && plot.points.length >= 3)
+                .forEach(plot => {
+                    const statusKey = getStatusKey(plot.status);
+                    const colors = statusColorMap[statusKey];
+                    const pointsStr = plot.points.map(p => `${p.x},${p.y}`).join(' ');
 
-                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                polygon.setAttribute('points', pointsStr);
-                polygon.setAttribute('fill', colors.fill);
-                polygon.setAttribute('stroke', `url(#gradient-${statusKey})`);
-                polygon.setAttribute('stroke-width', '3');
-                polygon.style.cursor = 'pointer';
-                polygon.style.pointerEvents = 'auto';
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    polygon.setAttribute('class', 'plot-boundary');
+                    polygon.setAttribute('points', pointsStr);
+                    polygon.setAttribute('fill', withFillOpacity(colors.fill, 0.3));
+                    polygon.setAttribute('stroke', `url(#gradient-${statusKey})`);
+                    polygon.setAttribute('stroke-width', '3');
+                    polygon.setAttribute('stroke-linejoin', 'round');
+                    polygon.style.cursor = 'pointer';
+                    polygon.style.pointerEvents = 'auto';
 
-                polygon.addEventListener('mouseenter', () => polygon.setAttribute('fill', colors.fill.replace('0.35', '0.5')));
-                polygon.addEventListener('mouseleave', () => polygon.setAttribute('fill', colors.fill));
-                polygon.addEventListener('click', (e) => { e.stopPropagation(); showPlotDetails(plot); });
+                    const outline = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    outline.setAttribute('class', 'plot-outline');
+                    outline.setAttribute('points', pointsStr);
+                    outline.setAttribute('fill', 'none');
+                    outline.setAttribute('stroke', 'rgba(255, 255, 255, 0.7)');
+                    outline.setAttribute('stroke-width', '1.1');
+                    outline.setAttribute('stroke-dasharray', '10 7');
+                    outline.setAttribute('stroke-linejoin', 'round');
+                    outline.setAttribute('stroke-opacity', '0.58');
 
-                plotsOverlay.appendChild(polygon);
+                    plotsOverlay.appendChild(polygon);
+                    plotsOverlay.appendChild(outline);
 
-                const centroid = getCentroid(plot.points);
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', centroid.x); text.setAttribute('y', centroid.y);
-                text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'middle');
-                text.setAttribute('fill', '#fff'); text.setAttribute('font-size', '24');
-                text.setAttribute('font-family', 'Syne, sans-serif'); text.setAttribute('font-weight', '600');
-                text.setAttribute('pointer-events', 'none');
-                text.textContent = plot.name;
-                plotsOverlay.appendChild(text);
-            });
+                    const centroid = getCentroid(plot.points);
+                    const label = createPlotLabel(plotsOverlay, plot, centroid, statusKey);
+
+                    const setActiveState = (active) => {
+                        polygon.setAttribute('fill', withFillOpacity(colors.fill, active ? 0.48 : 0.3));
+                        polygon.setAttribute('stroke-width', active ? '4' : '3');
+                        outline.setAttribute('stroke-opacity', active ? '0.9' : '0.58');
+                        label.bg.setAttribute('fill', active ? 'rgba(9, 10, 12, 0.92)' : 'rgba(9, 10, 12, 0.8)');
+                        label.group.classList.toggle('is-active', Boolean(active));
+                    };
+
+                    polygon.addEventListener('mouseenter', () => setActiveState(true));
+                    polygon.addEventListener('mouseleave', () => setActiveState(false));
+                    polygon.addEventListener('click', (e) => { e.stopPropagation(); showPlotDetails(plot); });
+                });
+        }
+
+        function createPlotLabel(plotsOverlay, plot, centroid, statusKey) {
+            const labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            labelGroup.setAttribute('class', `plot-label-group ${getStatusClass(statusKey)}`);
+
+            const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            labelBg.setAttribute('class', 'plot-label-bg');
+            labelBg.setAttribute('rx', '13');
+            labelBg.setAttribute('ry', '13');
+
+            const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            labelText.setAttribute('class', 'plot-label-text');
+            labelText.setAttribute('x', centroid.x);
+            labelText.setAttribute('y', centroid.y);
+            labelText.setAttribute('text-anchor', 'middle');
+            labelText.setAttribute('dominant-baseline', 'middle');
+            labelText.textContent = String(plot.name || '').toUpperCase();
+
+            labelGroup.appendChild(labelBg);
+            labelGroup.appendChild(labelText);
+            plotsOverlay.appendChild(labelGroup);
+
+            const bbox = labelText.getBBox();
+            const paddingX = 16;
+            const paddingY = 9;
+            const width = Math.max(84, bbox.width + (paddingX * 2));
+            const height = bbox.height + (paddingY * 2);
+            labelBg.setAttribute('x', centroid.x - (width / 2));
+            labelBg.setAttribute('y', centroid.y - (height / 2));
+            labelBg.setAttribute('width', width);
+            labelBg.setAttribute('height', height);
+
+            return { group: labelGroup, bg: labelBg };
+        }
+
+        function getStatusClass(statusKey) {
+            if (statusKey === 'sold') return 'is-sold';
+            if (statusKey === 'on_hold') return 'is-hold';
+            return 'is-available';
+        }
+
+        function withFillOpacity(fillColor, alpha) {
+            const match = String(fillColor || '').match(/^rgba?\(([^)]+)\)$/i);
+            if (!match) return fillColor;
+            const parts = match[1].split(',').map(part => part.trim());
+            if (parts.length < 3) return fillColor;
+            return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
+        }
+
+        function pointOnSegment(px, py, ax, ay, bx, by) {
+            const cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax);
+            if (Math.abs(cross) > 1e-6) return false;
+            const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+            if (dot < -1e-6) return false;
+            const lenSq = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+            if (dot - lenSq > 1e-6) return false;
+            return true;
+        }
+
+        function pointInPolygon(pt, poly) {
+            const x = Number(pt && pt.x);
+            const y = Number(pt && pt.y);
+            if (!Number.isFinite(x) || !Number.isFinite(y) || !Array.isArray(poly) || poly.length < 3) return false;
+
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const a = poly[j];
+                const b = poly[i];
+                if (pointOnSegment(x, y, a.x, a.y, b.x, b.y)) return true;
+            }
+
+            let inside = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const xi = poly[i].x, yi = poly[i].y;
+                const xj = poly[j].x, yj = poly[j].y;
+                const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function polygonAreaCentroid(points) {
+            if (!Array.isArray(points) || points.length < 3) return null;
+            let area = 0;
+            let cx = 0;
+            let cy = 0;
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const p1 = points[j];
+                const p2 = points[i];
+                const cross = (p1.x * p2.y) - (p2.x * p1.y);
+                area += cross;
+                cx += (p1.x + p2.x) * cross;
+                cy += (p1.y + p2.y) * cross;
+            }
+            area *= 0.5;
+            if (Math.abs(area) < 1e-7) return null;
+            cx /= (6 * area);
+            cy /= (6 * area);
+            if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+            return { x: cx, y: cy };
         }
 
         function getCentroid(points) {
+            if (!Array.isArray(points) || points.length === 0) return null;
+            // Always use polygon area centroid so the label is at the geometric center of the plot.
+            const c = polygonAreaCentroid(points);
+            if (c) return c;
+            // Fallback only for degenerate polygons (zero area).
             let x = 0, y = 0;
             points.forEach(p => { x += p.x; y += p.y; });
             return { x: x / points.length, y: y / points.length };
@@ -1222,13 +1544,15 @@
 
         // Share button handlers (available in both modes)
         shareBtn.addEventListener('click', () => {
-            const viewUrl = `${window.location.origin}/customer/${PANORAMA_ID}`;
+            const slug = String(ORG_SLUG || '').trim();
+            const viewUrl = `${window.location.origin}${slug ? `/customer/${encodeURIComponent(slug)}/${PANORAMA_ID}` : `/customer/${PANORAMA_ID}`}`;
             shareUrl.textContent = viewUrl;
             shareModal.classList.add('visible');
         });
 
         copyBtn.addEventListener('click', () => {
-            const viewUrl = `${window.location.origin}/customer/${PANORAMA_ID}`;
+            const slug = String(ORG_SLUG || '').trim();
+            const viewUrl = `${window.location.origin}${slug ? `/customer/${encodeURIComponent(slug)}/${PANORAMA_ID}` : `/customer/${PANORAMA_ID}`}`;
             navigator.clipboard.writeText(viewUrl).then(() => {
                 copyBtn.textContent = 'Copied!';
                 setTimeout(() => {

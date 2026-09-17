@@ -1,0 +1,15 @@
+alter table if exists public.crm_normal_projects
+  add column if not exists builder_name text,
+  add column if not exists location_address text,
+  add column if not exists location_city text,
+  add column if not exists location_state text,
+  add column if not exists google_maps_link text,
+  add column if not exists location_lat double precision,
+  add column if not exists location_lng double precision,
+  add column if not exists rera_registration text,
+  add column if not exists total_area text,
+  add column if not exists launch_date date,
+  add column if not exists possession_date text,
+  add column if not exists contact_phone text,
+  add column if not exists contact_email text,
+  add column if not exists amenities jsonb not null default '[]'::jsonb;

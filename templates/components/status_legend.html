@@ -1,0 +1,26 @@
+{# Usage: {% include 'components/status_legend.html' with available_count=5, hold_count=2, sold_count=1 %} #}
+<div class="status-legend" aria-label="Plot status legend">
+    <div class="legend-head">
+        <span>Status</span>
+        {% if available_count is defined or hold_count is defined or sold_count is defined %}
+        <span class="legend-total">{{ (available_count|default(0)) + (hold_count|default(0)) + (sold_count|default(0)) }} total</span>
+        {% endif %}
+    </div>
+    <div class="legend-grid">
+        <div class="status-pill available">
+            <span class="status-dot"></span>
+            <span>Available</span>
+            <strong>{{ available_count|default(0) }}</strong>
+        </div>
+        <div class="status-pill hold">
+            <span class="status-dot"></span>
+            <span>Hold</span>
+            <strong>{{ hold_count|default(0) }}</strong>
+        </div>
+        <div class="status-pill sold">
+            <span class="status-dot"></span>
+            <span>Sold</span>
+            <strong>{{ sold_count|default(0) }}</strong>
+        </div>
+    </div>
+</div>

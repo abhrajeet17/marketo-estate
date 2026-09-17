@@ -1,0 +1,22 @@
+<div class="crm-modal-backdrop" id="share-workspace-modal" role="dialog" aria-modal="true" aria-labelledby="share-reference-modal-title">
+    <div class="crm-modal" style="max-width:560px;">
+        <div class="crm-simple-modal-head">
+            <div class="modal-title" id="share-reference-modal-title" style="margin:0;">Share Reference Link</div>
+            <button type="button" class="modal-close" id="share-reference-close" aria-label="Close">&times;</button>
+        </div>
+        <p class="modal-text" style="margin:0 0 1rem;font-size:0.9rem;color:var(--bs-secondary-color,#697a8d);">
+            Share this personal link so new interests from the customer view are mapped to you in CRM.
+        </p>
+        <div id="workspace-share-error" class="msg error" style="display:none;margin-bottom:1rem;"></div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="workspace-referral-share-link">Your reference link</label>
+            <div class="share-link-row">
+                <input type="text" id="workspace-referral-share-link" class="form-input share-link-input" readonly placeholder="Loading link…">
+                <button class="btn btn-secondary share-link-copy-btn" type="button" id="copy-referral-share-link">Copy</button>
+            </div>
+        </div>
+        <div class="modal-actions" style="margin-top:1rem;">
+            <button class="btn btn-secondary" id="cancel-share-workspace" type="button">Close</button>
+        </div>
+    </div>
+</div>

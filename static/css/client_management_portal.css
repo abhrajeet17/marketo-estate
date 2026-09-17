@@ -1,0 +1,211 @@
+@import url("./client_management_sneat.css");
+@import url("./portal_tab_loader.css");
+
+/* Bootstrap → portal compat shims for team management page */
+.team-page .card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.team-page .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+}
+
+.team-page .bg-label-primary {
+  background: rgba(255, 163, 0, 0.12);
+  color: var(--ms-brand-primary, #ffa300);
+}
+
+.team-page .bg-label-secondary {
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+}
+
+.team-page .bg-label-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.team-page .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.team-page .btn-primary {
+  background: var(--ms-brand-primary, #ffa300);
+  color: #fff;
+  border-color: var(--ms-brand-primary, #ffa300);
+}
+
+.team-page .btn-primary:hover {
+  background: var(--ms-brand-primary-dark, #e69200);
+}
+
+.team-page .btn-outline-secondary {
+  background: #fff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.team-page .btn-outline-secondary:hover {
+  background: #f9fafb;
+}
+
+.team-page .btn-sm {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.team-page .form-control,
+.team-page .form-select {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.team-page .form-control:focus,
+.team-page .form-select:focus {
+  outline: none;
+  border-color: var(--ms-brand-primary, #ffa300);
+  box-shadow: 0 0 0 2px rgba(255, 163, 0, 0.2);
+}
+
+.team-page .form-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.team-page .alert {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.team-page .alert-danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.team-page .alert-success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.team-page .spinner-border {
+  width: 2rem;
+  height: 2rem;
+  border: 0.2em solid rgba(255, 163, 0, 0.25);
+  border-right-color: var(--ms-brand-primary, #ffa300);
+  border-radius: 50%;
+  animation: portal-spin 0.75s linear infinite;
+}
+
+@keyframes portal-spin {
+  to { transform: rotate(360deg); }
+}
+
+.team-page .text-danger { color: #dc2626; }
+.team-page .text-body-secondary { color: #6b7280; }
+.team-page .text-primary { color: var(--ms-brand-primary, #ffa300); }
+.team-page .row { display: flex; flex-wrap: wrap; margin: -0.75rem; }
+.team-page .row > [class*="col-"] { padding: 0.75rem; flex: 1 1 auto; }
+.team-page .col-sm-6 { flex: 0 0 50%; max-width: 50%; }
+.team-page .col-xl-3 { flex: 0 0 25%; max-width: 25%; }
+.team-page .g-4 { gap: 0; }
+.team-page .mb-4 { margin-bottom: 1rem; }
+.team-page .mb-6 { margin-bottom: 1.5rem; }
+.team-page .mt-3 { margin-top: 0.75rem; }
+.team-page .mt-4 { margin-top: 1rem; }
+.team-page .mb-0 { margin-bottom: 0; }
+.team-page .mb-1 { margin-bottom: 0.25rem; }
+.team-page .mb-2 { margin-bottom: 0.5rem; }
+.team-page .mb-3 { margin-bottom: 0.75rem; }
+.team-page .me-1 { margin-inline-end: 0.25rem; }
+.team-page .me-3 { margin-inline-end: 0.75rem; }
+.team-page .py-6 { padding-block: 1.5rem; }
+.team-page .d-flex { display: flex; }
+.team-page .align-items-center { align-items: center; }
+.team-page .align-items-start { align-items: flex-start; }
+.team-page .justify-content-between { justify-content: space-between; }
+.team-page .gap-2 { gap: 0.5rem; }
+.team-page .h-100 { height: 100%; }
+.team-page .small { font-size: 0.8rem; }
+.team-page .text-center { text-align: center; }
+.team-page .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (max-width: 767px) {
+  .team-page .col-sm-6 { flex: 0 0 100%; max-width: 100%; }
+}
+
+@media (max-width: 1199px) {
+  .team-page .col-xl-3 { flex: 0 0 50%; max-width: 50%; }
+}
+
+/* Team Directory filters — keep above generic form shims */
+.team-page .team-filter-input,
+.team-page .team-filter-select {
+  box-shadow: none;
+}
+
+.team-page .team-filter-input:focus,
+.team-page .team-filter-select:focus {
+  border-color: var(--ms-brand-primary, #ffa300);
+  box-shadow: 0 0 0 2px rgba(255, 163, 0, 0.14);
+}
+
+/* Team roster table — portal shell has no Bootstrap .table base */
+.team-page #groups-container {
+  width: 100%;
+}
+
+.team-page .team-group-card {
+  width: 100%;
+}
+
+.team-page .table.team-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.team-page .table.team-table th,
+.team-page .table.team-table td {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.team-page .table.team-table th.team-table-col {
+  background: #f8fafc;
+}

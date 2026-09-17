@@ -1,0 +1,33 @@
+<div class="crm-modal-backdrop" id="create-share-link-modal" role="dialog" aria-modal="true" aria-labelledby="create-share-link-modal-title">
+    <div class="crm-modal" id="create-share-link-panel" style="max-width:560px;">
+        <div class="crm-simple-modal-head">
+            <div class="modal-title" id="create-share-link-modal-title" style="margin:0;">Create Link</div>
+            <button type="button" class="modal-close" id="create-share-link-close" aria-label="Close">&times;</button>
+        </div>
+        <p class="modal-text" style="margin:0 0 1rem;font-size:0.9rem;color:var(--color-muted,#697a8d);">
+            Choose a short URL suffix for this Full View. Customers open the same experience at your custom link.
+        </p>
+        <div id="create-share-link-error" class="msg error" style="display:none;margin-bottom:1rem;"></div>
+        <div id="create-share-link-status" class="workspace-share-status" style="display:none;"></div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" for="create-share-link-suffix">Custom suffix</label>
+            <div class="share-endpoint-row">
+                <span class="share-endpoint-prefix" id="create-share-link-prefix">/fullview/</span>
+                <input type="text" id="create-share-link-suffix" class="form-input" maxlength="63" placeholder="e.g. sunset-valley" autocomplete="off" spellcheck="false">
+                <button class="btn btn-secondary share-check-btn" type="button" id="create-share-link-check">Check</button>
+            </div>
+            <div style="font-size:0.72rem;color:var(--color-muted);margin-top:0.35rem;">Lowercase letters, numbers, and hyphens only (3–63 characters).</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="create-share-link-url">Share link</label>
+            <div class="share-link-row">
+                <input type="text" id="create-share-link-url" class="form-input share-link-input" readonly placeholder="Save a suffix to generate your link">
+                <button class="btn btn-secondary share-link-copy-btn" type="button" id="create-share-link-copy">Copy</button>
+            </div>
+        </div>
+        <div class="modal-actions" style="margin-top:1rem;">
+            <button class="btn btn-secondary" id="create-share-link-cancel" type="button">Close</button>
+            <button class="btn btn-primary" id="create-share-link-save" type="button">Save Link</button>
+        </div>
+    </div>
+</div>

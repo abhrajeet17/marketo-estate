@@ -1,0 +1,209 @@
+/**
+ * Layout – generous white space, clean header, branding pill.
+ */
+
+/* Brand pill – dark rectangle top-left (Bocelle-style) */
+.brand-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.5rem;
+    background: var(--color-brand-pill-bg);
+    color: var(--color-brand-pill-text);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: opacity 0.2s ease;
+}
+
+.brand-pill img {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.brand-pill:hover {
+    color: var(--color-brand-pill-text);
+    opacity: 0.9;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2.5rem;
+    left: 25px;
+    background: transparent;
+    border-bottom: none;
+    border-radius: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    pointer-events: auto;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    padding: 0.4rem 0.6rem;
+    box-shadow: 0 2px 12px rgba(22,35,56,0.08);
+    backdrop-filter: blur(10px);
+}
+
+.access-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.access-badge--admin {
+    background: rgba(201, 169, 98, 0.15);
+    border: 1px solid rgba(201, 169, 98, 0.3);
+}
+
+.access-badge--client {
+    background: rgba(100, 160, 255, 0.12);
+    border: 1px solid rgba(100, 160, 255, 0.25);
+}
+
+.header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.header-nav,
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.header-nav a,
+.nav a {
+    color: var(--color-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.header-nav a:hover,
+.nav a:hover {
+    color: var(--color-text);
+}
+
+.header-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.header-logo img {
+    height: 36px;
+    width: auto;
+    object-fit: contain;
+}
+
+.container {
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+}
+
+.page-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.35rem;
+    color: var(--color-text);
+}
+
+.page-subtitle {
+    color: var(--color-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    max-width: 640px;
+}
+
+/* Status legend (3D / full view) */
+.status-legend {
+    background: var(--color-surface-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 0.9rem;
+    box-shadow: var(--shadow);
+}
+
+.legend-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+}
+
+.legend-total {
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+}
+
+.legend-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+}
+
+.status-pill {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text);
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.status-pill.available .status-dot { background: var(--color-available); }
+.status-pill.hold .status-dot { background: var(--color-hold); }
+.status-pill.sold .status-dot { background: var(--color-sold); }
+
+.status-pill strong {
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}

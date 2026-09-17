@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earth View Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="https://unpkg.com/cesium@1.127.0/Build/Cesium/Widgets/widgets.css">
+    <style>
+        html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+        #earth-map { width: 100%; height: 100%; }
+        .ui-shell { position: fixed; inset: 0; pointer-events: none; z-index: 2000; }
+        .topbar { position: absolute; top: 1rem; left: 1rem; right: 1rem; pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+        .topbar-left { display: flex; align-items: center; gap: 0.45rem; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 999px; padding: 0.35rem 0.45rem; }
+        .btn-pill, .back-btn { border: none; text-decoration: none; color: var(--color-text); background: transparent; font-size: 0.8rem; font-weight: 600; border-radius: 999px; padding: 0.42rem 0.72rem; cursor: pointer; }
+        .btn-pill:hover, .back-btn:hover { background: var(--color-surface); }
+        .view-name { font-size: 0.9rem; font-weight: 700; padding: 0 0.2rem; }
+        .mode-badge { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: var(--color-text); color: var(--color-bg-elevated); border-radius: 999px; padding: 0.3rem 0.65rem; }
+        .panel { position: absolute; left: 1rem; bottom: 1rem; width: 340px; max-height: calc(100vh - 6rem); background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius); box-shadow: 0 12px 30px rgba(0,0,0,0.2); overflow: hidden; pointer-events: auto; display: flex; flex-direction: column; }
+        .panel-header { background: var(--color-surface); border-bottom: 1px solid var(--color-border); padding: 0.75rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+        .panel-title { font-size: 0.85rem; font-weight: 700; }
+        .panel-status { font-size: 0.73rem; color: var(--color-muted); }
+        .panel-body { padding: 0.85rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.7rem; }
+        .subtitle { font-size: 0.7rem; color: var(--color-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .row { display: flex; gap: 0.45rem; }
+        .btn { border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; padding: 0.42rem 0.65rem; cursor: pointer; background: var(--color-bg-elevated); color: var(--color-text); }
+        .btn:hover { background: var(--color-surface); }
+        .btn.primary { background: var(--color-text); border-color: var(--color-text); color: var(--color-bg-elevated); }
+        .btn.primary:hover { opacity: 0.88; }
+        .btn.active { background: var(--color-surface); border-color: rgba(22,35,56,0.3); }
+        .hint { font-size: 0.74rem; color: var(--color-muted); line-height: 1.45; }
+        .entity-list { display: flex; flex-direction: column; gap: 0.35rem; }
+        .entity-item { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.5rem 0.6rem; display: flex; justify-content: space-between; align-items: center; gap: 0.45rem; }
+        .entity-name { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .entity-actions { display: flex; gap: 0.3rem; }
+        .empty { font-size: 0.78rem; color: var(--color-muted); font-style: italic; }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.34); z-index: 2600; display: none; align-items: center; justify-content: center; pointer-events: auto; }
+        .modal-backdrop.visible { display: flex; }
+        .modal { width: 440px; max-width: 95vw; max-height: 90vh; overflow: hidden; background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 22px; box-shadow: 0 16px 48px rgba(0,0,0,0.22); display: flex; flex-direction: column; }
+        .modal-title { padding: 1rem 1.1rem; border-bottom: 1px solid var(--color-border); background: var(--color-surface); font-size: 0.94rem; font-weight: 700; }
+        .modal-body { padding: 1rem 1.1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.72rem; }
+        .field { display: flex; flex-direction: column; gap: 0.22rem; }
+        .field label { font-size: 0.7rem; color: var(--color-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .field input, .field textarea, .field select { border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg-elevated); color: var(--color-text); font-size: 0.84rem; font-family: var(--font-body); padding: 0.55rem 0.65rem; }
+        .field textarea { resize: vertical; min-height: 74px; }
+        .modal-actions { padding: 0.85rem 1.1rem; border-top: 1px solid var(--color-border); background: var(--color-surface); display: flex; justify-content: flex-end; gap: 0.5rem; }
+        .cesium-widget-credits { display: none !important; }
+        .ev-popup {
+            position: fixed;
+            z-index: 3000;
+            pointer-events: none;
+            transform: translate(-50%, calc(-100% - 10px));
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.24);
+            padding: 0.6rem 0.75rem;
+            max-width: 320px;
+        }
+        .ev-popup-title { font-size: 0.86rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .ev-popup-meta { font-size: 0.75rem; color: var(--color-muted); }
+    </style>
+</head>
+<body>
+    <div id="earth-map"></div>
+    <div id="ev-popup" class="ev-popup" style="display:none;">
+        <div class="ev-popup-title" id="ev-popup-title"></div>
+        <div class="ev-popup-meta" id="ev-popup-meta"></div>
+    </div>
+
+    <div class="ui-shell">
+        <div class="topbar">
+            <div class="topbar-left">
+                <a class="back-btn" href="/salestools?tab=earth-views">Back</a>
+                <span class="view-name" id="view-name">Earth View</span>
+                <button class="btn-pill" id="save-camera-btn" type="button">Save Viewpoint</button>
+                <button class="btn-pill" id="copy-link-btn" type="button">Copy Share Link</button>
+            </div>
+            <span class="mode-badge" id="projection-badge">Globe</span>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Earth View Editor</span>
+                <span class="panel-status" id="panel-status">Loading</span>
+            </div>
+            <div class="panel-body">
+                <div class="subtitle">Actions</div>
+                <div class="row">
+                    <button class="btn primary" id="draw-plot-btn" type="button">Draw Plot</button>
+                    <button class="btn" id="drop-marker-btn" type="button">Add Marker</button>
+                </div>
+                <div class="hint" id="interaction-hint">Select an action, then click on map.</div>
+
+                <div class="subtitle">Plots</div>
+                <div class="entity-list" id="plots-list"></div>
+
+                <div class="subtitle">Markers</div>
+                <div class="entity-list" id="markers-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="plot-modal">
+        <div class="modal">
+            <div class="modal-title" id="plot-modal-title">Plot</div>
+            <div class="modal-body">
+                <div class="field"><label>Name</label><input id="plot-name" maxlength="180"></div>
+                <div class="field"><label>Area</label><input id="plot-area" maxlength="180"></div>
+                <div class="field"><label>Price</label><input id="plot-price" maxlength="180"></div>
+                <div class="field"><label>Status</label><select id="plot-status"><option value="available">Available</option><option value="on_hold">On Hold</option><option value="sold">Sold</option></select></div>
+                <div class="field"><label>Color</label><select id="plot-color"><option value="green">Green</option><option value="orange">Orange</option><option value="red">Red</option><option value="blue">Blue</option><option value="purple">Purple</option></select></div>
+                <div class="field"><label>Description</label><textarea id="plot-description"></textarea></div>
+                <div class="field"><label>Photo Link</label><input id="plot-media-photo"></div>
+                <div class="field"><label>Video Link</label><input id="plot-media-video"></div>
+                <div class="field"><label>Linked Panorama</label><select id="plot-linked-panorama"><option value="">None</option></select></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="cancel-plot-btn" type="button">Cancel</button>
+                <button class="btn primary" id="save-plot-btn" type="button">Save Plot</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="marker-modal">
+        <div class="modal">
+            <div class="modal-title" id="marker-modal-title">Marker</div>
+            <div class="modal-body">
+                <div class="field"><label>Name</label><input id="marker-name" maxlength="180"></div>
+                <div class="field"><label>Description</label><textarea id="marker-description"></textarea></div>
+                <div class="field"><label>Color</label><input id="marker-color" type="color" value="#4ade80"></div>
+                <div class="field"><label>Photo Link</label><input id="marker-media-photo"></div>
+                <div class="field"><label>Video Link</label><input id="marker-media-video"></div>
+                <div class="field"><label>Linked Panorama</label><select id="marker-linked-panorama"><option value="">None</option></select></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="cancel-marker-btn" type="button">Cancel</button>
+                <button class="btn primary" id="save-marker-btn" type="button">Save Marker</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/supabase.min.js"></script>
+    <script src="https://unpkg.com/cesium@1.127.0/Build/Cesium/Cesium.js"></script>
+    <script>
+        const VIEW_ID = {{ view_id|tojson }};
+        const SUPABASE_URL = {{ (supabase_url or '')|tojson }};
+        const SUPABASE_ANON_KEY = {{ (supabase_anon_key or '')|tojson }};
+        const MAX_SAT_ZOOM = 19;
+        const COLOR_MAP = { green: '#22c55e', orange: '#f97316', red: '#ef4444', blue: '#3b82f6', purple: '#8b5cf6' };
+        const MORPH_TO_2D_HEIGHT_M = 9000;
+        const MORPH_BACK_TO_3D_HEIGHT_M = 12500;
+        const MIN_CAMERA_HEIGHT_M = 18;
+        const MAX_CAMERA_HEIGHT_M = 40000000;
+
+        let accessToken = '';
+        let viewer = null;
+        let earthView = null;
+        let plots = [];
+        let markers = [];
+        let pendingPlotCoords = null;
+        let pendingMarkerCoords = null;
+        let editingPlotId = null;
+        let editingMarkerId = null;
+        let drawModeEnabled = false;
+        let markerModeEnabled = false;
+        let drawVertices = [];
+        let draftEntities = [];
+        let draftLineEntity = null;
+        let draftPolygonEntity = null;
+        let plotEntitiesById = new Map();
+        let markerEntitiesById = new Map();
+        let viewMode = 'globe';
+
+        const panelStatus = document.getElementById('panel-status');
+        const interactionHint = document.getElementById('interaction-hint');
+        const projectionBadge = document.getElementById('projection-badge');
+        const plotsList = document.getElementById('plots-list');
+        const markersList = document.getElementById('markers-list');
+        const popupEl = document.getElementById('ev-popup');
+        const popupTitleEl = document.getElementById('ev-popup-title');
+        const popupMetaEl = document.getElementById('ev-popup-meta');
+
+        const drawPlotBtn = document.getElementById('draw-plot-btn');
+        const dropMarkerBtn = document.getElementById('drop-marker-btn');
+
+        const plotModal = document.getElementById('plot-modal');
+        const markerModal = document.getElementById('marker-modal');
+
+        function setStatus(value) {
+            panelStatus.textContent = value;
+        }
+
+        function authHeaders(extra = {}) {
+            return Object.assign({ Authorization: 'Bearer ' + accessToken }, extra);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = String(text || '');
+            return div.innerHTML;
+        }
+
+        function normalizeHex(hex) {
+            const raw = String(hex || '').trim().toLowerCase();
+            return /^#[0-9a-f]{6}$/.test(raw) ? raw : '#4ade80';
+        }
+
+        function closeDrawMode() {
+            drawModeEnabled = false;
+            drawPlotBtn.classList.remove('active');
+            drawVertices = [];
+            pendingPlotCoords = null;
+            clearDraftEntities();
+            hidePopup();
+        }
+
+        function closeMarkerMode() {
+            markerModeEnabled = false;
+            dropMarkerBtn.classList.remove('active');
+            pendingMarkerCoords = null;
+            hidePopup();
+        }
+
+        function setInteractionHint() {
+            if (drawModeEnabled) {
+                interactionHint.textContent = drawVertices.length < 3 ? 'Click map to add vertices. Need at least 3 points.' : 'Click on first point to close polygon and open plot form.';
+            } else if (markerModeEnabled) {
+                interactionHint.textContent = 'Click map to place a marker.';
+            } else {
+                interactionHint.textContent = 'Select an action, then click on map.';
+            }
+        }
+
+        function applyProjectionMode() {
+            if (!viewer) return;
+            const height = getCameraHeight();
+            if (height === null) return;
+            if (viewMode === 'globe' && height <= MORPH_TO_2D_HEIGHT_M) {
+                morphTo2D();
+            } else if (viewMode === 'flat' && height >= MORPH_BACK_TO_3D_HEIGHT_M) {
+                morphTo3D();
+            }
+        }
+
+        function initMap() {
+            Cesium.Ion.defaultAccessToken = undefined;
+            viewer = new Cesium.Viewer('earth-map', {
+                timeline: false,
+                animation: false,
+                baseLayerPicker: false,
+                geocoder: false,
+                homeButton: true,
+                sceneModePicker: false,
+                navigationHelpButton: false,
+                fullscreenButton: false,
+                infoBox: false,
+                selectionIndicator: false,
+            });
+
+            viewer.scene.globe.depthTestAgainstTerrain = false;
+            viewer.scene.globe.baseColor = Cesium.Color.BLACK;
+            viewer.scene.skyAtmosphere.show = true;
+            viewer.scene.globe.maximumScreenSpaceError = 2;
+            viewer.scene.screenSpaceCameraController.enableZoom = true;
+            viewer.scene.screenSpaceCameraController.minimumZoomDistance = MIN_CAMERA_HEIGHT_M;
+            viewer.scene.screenSpaceCameraController.maximumZoomDistance = MAX_CAMERA_HEIGHT_M;
+
+            const imageryLayers = viewer.imageryLayers;
+            imageryLayers.removeAll(true);
+            imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+                url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                maximumLevel: MAX_SAT_ZOOM
+            }));
+
+            const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+            handler.setInputAction((click) => {
+                const cartesian = pickWorldPosition(click.position);
+                if (!cartesian) return;
+
+                const picked = viewer.scene.pick(click.position);
+                if (picked && picked.id && picked.id.__evType && !drawModeEnabled && !markerModeEnabled) {
+                    showEntityPopup(picked.id, click.position);
+                    return;
+                }
+
+                if (drawModeEnabled) {
+                    handleDrawVertex(cartesian, click.position);
+                } else if (markerModeEnabled) {
+                    const c = Cesium.Cartographic.fromCartesian(cartesian);
+                    pendingMarkerCoords = { lng: Cesium.Math.toDegrees(c.longitude), lat: Cesium.Math.toDegrees(c.latitude) };
+                    openMarkerModal(null);
+                } else {
+                    hidePopup();
+                }
+            }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+            viewer.camera.changed.addEventListener(() => {
+                enforceMinCameraHeight();
+                applyProjectionMode();
+            });
+
+            morphTo3D(true);
+        }
+
+        function pickWorldPosition(windowPosition) {
+            const scene = viewer.scene;
+            const ray = viewer.camera.getPickRay(windowPosition);
+            if (!ray) return null;
+            return scene.globe.pick(ray, scene);
+        }
+
+        function enforceMinCameraHeight() {
+            const h = getCameraHeight();
+            if (h === null) return;
+            if (h < MIN_CAMERA_HEIGHT_M) {
+                const carto = viewer.camera.positionCartographic;
+                viewer.camera.setView({
+                    destination: Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, MIN_CAMERA_HEIGHT_M)
+                });
+            }
+        }
+
+        function getCameraHeight() {
+            try {
+                const carto = viewer.camera.positionCartographic;
+                if (!carto) return null;
+                return Number(carto.height);
+            } catch (e) { return null; }
+        }
+
+        function morphTo2D() {
+            if (!viewer) return;
+            if (viewer.scene.mode !== Cesium.SceneMode.SCENE2D) {
+                viewer.scene.morphTo2D(0.7);
+            }
+            viewMode = 'flat';
+            projectionBadge.textContent = 'Flat';
+        }
+
+        function morphTo3D(immediate) {
+            if (!viewer) return;
+            if (viewer.scene.mode !== Cesium.SceneMode.SCENE3D) {
+                viewer.scene.morphTo3D(immediate ? 0.0 : 0.7);
+            }
+            viewMode = 'globe';
+            projectionBadge.textContent = 'Globe';
+        }
+
+        function clearDraftEntities() {
+            draftEntities.forEach((e) => viewer.entities.remove(e));
+            draftEntities = [];
+            if (draftLineEntity) viewer.entities.remove(draftLineEntity);
+            if (draftPolygonEntity) viewer.entities.remove(draftPolygonEntity);
+            draftLineEntity = null;
+            draftPolygonEntity = null;
+        }
+
+        function handleDrawVertex(cartesian, windowPosition) {
+            const c = Cesium.Cartographic.fromCartesian(cartesian);
+            const lng = Cesium.Math.toDegrees(c.longitude);
+            const lat = Cesium.Math.toDegrees(c.latitude);
+
+            if (drawVertices.length >= 3) {
+                const first = drawVertices[0];
+                const firstCartesian = Cesium.Cartesian3.fromDegrees(first.lng, first.lat);
+                const firstPx = viewer.scene.cartesianToCanvasCoordinates(firstCartesian);
+                if (firstPx) {
+                    const dist = Math.hypot(firstPx.x - windowPosition.x, firstPx.y - windowPosition.y);
+                    if (dist < 14) {
+                        pendingPlotCoords = drawVertices.map((p) => ({ lng: p.lng, lat: p.lat }));
+                        openPlotModal(null);
+                        return;
+                    }
+                }
+            }
+
+            drawVertices.push({ lng, lat });
+            const pointEntity = viewer.entities.add({
+                position: Cesium.Cartesian3.fromDegrees(lng, lat),
+                point: {
+                    pixelSize: drawVertices.length === 1 ? 10 : 8,
+                    color: drawVertices.length === 1 ? Cesium.Color.fromCssColorString('#16a34a') : Cesium.Color.fromCssColorString('#c9a962'),
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 2
+                }
+            });
+            draftEntities.push(pointEntity);
+            redrawDraftGeometry();
+            setInteractionHint();
+        }
+
+        function redrawDraftGeometry() {
+            const positions = drawVertices.map((p) => Cesium.Cartesian3.fromDegrees(p.lng, p.lat));
+            if (draftLineEntity) viewer.entities.remove(draftLineEntity);
+            if (draftPolygonEntity) viewer.entities.remove(draftPolygonEntity);
+
+            if (positions.length >= 2) {
+                draftLineEntity = viewer.entities.add({
+                    polyline: {
+                        positions: positions,
+                        width: 2,
+                        material: new Cesium.PolylineDashMaterialProperty({
+                            color: Cesium.Color.fromCssColorString('#f3d9a6'),
+                            dashLength: 12
+                        })
+                    }
+                });
+            }
+            if (positions.length >= 3) {
+                draftPolygonEntity = viewer.entities.add({
+                    polygon: {
+                        hierarchy: positions,
+                        material: Cesium.Color.fromCssColorString('#f3d9a6').withAlpha(0.18),
+                        outline: true,
+                        outlineColor: Cesium.Color.fromCssColorString('#f3d9a6'),
+                    }
+                });
+            }
+        }
+
+        function renderPlots() {
+            if (!viewer) return;
+            plotEntitiesById.forEach((ent) => viewer.entities.remove(ent));
+            plotEntitiesById.clear();
+
+            if (!plots.length) {
+                plotsList.innerHTML = '<div class="empty">No plots yet.</div>';
+                return;
+            }
+            plotsList.innerHTML = plots.map((plot) => (
+                `<div class="entity-item"><span class="entity-name">${escapeHtml(plot.name || 'Untitled Plot')}</span><div class="entity-actions"><button class="btn" data-plot-edit="${plot.id}" type="button">Edit</button><button class="btn" data-plot-del="${plot.id}" type="button">Delete</button></div></div>`
+            )).join('');
+
+            plotsList.querySelectorAll('[data-plot-edit]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = String(btn.getAttribute('data-plot-edit'));
+                    const plot = plots.find((p) => String(p.id) === id);
+                    if (!plot) return;
+                    openPlotModal(plot);
+                });
+            });
+            plotsList.querySelectorAll('[data-plot-del]').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-plot-del');
+                    await fetch(`/api/earth-view-plots/${id}`, { method: 'DELETE', headers: authHeaders() });
+                    await loadData();
+                });
+            });
+
+            plots.forEach((plot) => {
+                if (!Array.isArray(plot.points) || plot.points.length < 3) return;
+                const positions = plot.points.map((p) => Cesium.Cartesian3.fromDegrees(Number(p.lng), Number(p.lat)));
+                const hex = COLOR_MAP[plot.color] || COLOR_MAP.green;
+                const ent = viewer.entities.add({
+                    __evType: 'plot',
+                    __evId: String(plot.id),
+                    polygon: {
+                        hierarchy: positions,
+                        material: Cesium.Color.fromCssColorString(hex).withAlpha(0.22),
+                        outline: true,
+                        outlineColor: Cesium.Color.fromCssColorString(hex),
+                    }
+                });
+                ent.__evType = 'plot';
+                ent.__evId = String(plot.id);
+                plotEntitiesById.set(String(plot.id), ent);
+            });
+        }
+
+        function renderMarkers() {
+            if (!viewer) return;
+            markerEntitiesById.forEach((ent) => viewer.entities.remove(ent));
+            markerEntitiesById.clear();
+            if (!markers.length) {
+                markersList.innerHTML = '<div class="empty">No markers yet.</div>';
+                return;
+            }
+            markersList.innerHTML = markers.map((marker) => (
+                `<div class="entity-item"><span class="entity-name">${escapeHtml(marker.name || 'Untitled Marker')}</span><div class="entity-actions"><button class="btn" data-marker-edit="${marker.id}" type="button">Edit</button><button class="btn" data-marker-del="${marker.id}" type="button">Delete</button></div></div>`
+            )).join('');
+            markersList.querySelectorAll('[data-marker-edit]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = String(btn.getAttribute('data-marker-edit'));
+                    const marker = markers.find((m) => String(m.id) === id);
+                    if (!marker) return;
+                    openMarkerModal(marker);
+                });
+            });
+            markersList.querySelectorAll('[data-marker-del]').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-marker-del');
+                    await fetch(`/api/earth-view-markers/${id}`, { method: 'DELETE', headers: authHeaders() });
+                    await loadData();
+                });
+            });
+
+            markers.forEach((marker) => {
+                const lng = Number(marker.longitude);
+                const lat = Number(marker.latitude);
+                if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+                const color = normalizeHex(marker.marker_color || '#4ade80');
+                const ent = viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(lng, lat),
+                    billboard: {
+                        image: createPinDataUrl(color),
+                        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                        scale: 0.9
+                    }
+                });
+                ent.__evType = 'marker';
+                ent.__evId = String(marker.id);
+                markerEntitiesById.set(String(marker.id), ent);
+            });
+        }
+
+        async function loadPanoramaOptions() {
+            const resp = await fetch('/api/panoramas', { headers: authHeaders() });
+            if (!resp.ok) return;
+            const panoramas = await resp.json();
+            const plotSelect = document.getElementById('plot-linked-panorama');
+            const markerSelect = document.getElementById('marker-linked-panorama');
+            [plotSelect, markerSelect].forEach((select) => {
+                const current = select.value;
+                select.innerHTML = '<option value="">None</option>';
+                panoramas.forEach((p) => {
+                    select.innerHTML += `<option value="${p.id}">${escapeHtml(p.name || `Panorama #${p.id}`)}</option>`;
+                });
+                select.value = current;
+            });
+        }
+
+        async function loadData() {
+            setStatus('Loading');
+            const response = await fetch(`/api/earth-views/${VIEW_ID}`, { headers: authHeaders() });
+            if (!response.ok) {
+                setStatus('Failed');
+                return;
+            }
+            earthView = await response.json();
+            plots = Array.isArray(earthView.plots) ? earthView.plots : [];
+            markers = Array.isArray(earthView.markers) ? earthView.markers : [];
+            document.getElementById('view-name').textContent = earthView.name || 'Earth View';
+            if (viewer && Number.isFinite(Number(earthView.center_lat)) && Number.isFinite(Number(earthView.center_lng))) {
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(
+                        Number(earthView.center_lng),
+                        Number(earthView.center_lat),
+                        zoomToHeightMeters(Number(earthView.zoom || 3))
+                    ),
+                    duration: 0.8
+                });
+            }
+            renderPlots();
+            renderMarkers();
+            setStatus('Ready');
+        }
+
+        function openPlotModal(plot) {
+            editingPlotId = plot ? plot.id : null;
+            document.getElementById('plot-modal-title').textContent = editingPlotId ? 'Edit Plot' : 'New Plot';
+            document.getElementById('plot-name').value = plot ? (plot.name || '') : '';
+            document.getElementById('plot-area').value = plot ? (plot.area || '') : '';
+            document.getElementById('plot-price').value = plot ? (plot.price || '') : '';
+            document.getElementById('plot-status').value = plot ? (plot.status || 'available') : 'available';
+            document.getElementById('plot-color').value = plot ? (plot.color || 'green') : 'green';
+            document.getElementById('plot-description').value = plot ? (plot.description || '') : '';
+            document.getElementById('plot-media-photo').value = plot ? (plot.media_photo || '') : '';
+            document.getElementById('plot-media-video').value = plot ? (plot.media_video || '') : '';
+            document.getElementById('plot-linked-panorama').value = plot && plot.linked_panorama_id ? String(plot.linked_panorama_id) : '';
+            if (editingPlotId) {
+                pendingPlotCoords = Array.isArray(plot.points) ? plot.points.map((p) => ({ lng: Number(p.lng), lat: Number(p.lat) })) : null;
+            }
+            plotModal.classList.add('visible');
+        }
+
+        function closePlotModal(clearPending) {
+            plotModal.classList.remove('visible');
+            editingPlotId = null;
+            if (clearPending) {
+                pendingPlotCoords = null;
+            }
+        }
+
+        function openMarkerModal(marker) {
+            editingMarkerId = marker ? marker.id : null;
+            document.getElementById('marker-modal-title').textContent = editingMarkerId ? 'Edit Marker' : 'New Marker';
+            document.getElementById('marker-name').value = marker ? (marker.name || '') : '';
+            document.getElementById('marker-description').value = marker ? (marker.description || '') : '';
+            document.getElementById('marker-color').value = marker ? normalizeHex(marker.marker_color) : '#4ade80';
+            document.getElementById('marker-media-photo').value = marker ? (marker.media_photo || '') : '';
+            document.getElementById('marker-media-video').value = marker ? (marker.media_video || '') : '';
+            document.getElementById('marker-linked-panorama').value = marker && marker.linked_panorama_id ? String(marker.linked_panorama_id) : '';
+            if (editingMarkerId) {
+                pendingMarkerCoords = { lng: Number(marker.longitude), lat: Number(marker.latitude) };
+            }
+            markerModal.classList.add('visible');
+        }
+
+        function closeMarkerModal(clearPending) {
+            markerModal.classList.remove('visible');
+            editingMarkerId = null;
+            if (clearPending) {
+                pendingMarkerCoords = null;
+            }
+        }
+
+        drawPlotBtn.addEventListener('click', () => {
+            markerModeEnabled = false;
+            dropMarkerBtn.classList.remove('active');
+            drawModeEnabled = !drawModeEnabled;
+            drawPlotBtn.classList.toggle('active', drawModeEnabled);
+            if (!drawModeEnabled) {
+                closeDrawMode();
+            }
+            setInteractionHint();
+        });
+
+        dropMarkerBtn.addEventListener('click', () => {
+            drawModeEnabled = false;
+            drawPlotBtn.classList.remove('active');
+            closeDrawMode();
+            markerModeEnabled = !markerModeEnabled;
+            dropMarkerBtn.classList.toggle('active', markerModeEnabled);
+            setInteractionHint();
+        });
+
+        document.getElementById('cancel-plot-btn').addEventListener('click', () => {
+            closePlotModal(true);
+        });
+
+        document.getElementById('cancel-marker-btn').addEventListener('click', () => {
+            closeMarkerModal(true);
+        });
+
+        document.getElementById('save-plot-btn').addEventListener('click', async () => {
+            const name = document.getElementById('plot-name').value.trim();
+            if (!name || !Array.isArray(pendingPlotCoords) || pendingPlotCoords.length < 3) return;
+            const payload = {
+                name: name,
+                area: document.getElementById('plot-area').value.trim(),
+                price: document.getElementById('plot-price').value.trim(),
+                status: document.getElementById('plot-status').value,
+                color: document.getElementById('plot-color').value,
+                description: document.getElementById('plot-description').value.trim(),
+                media_photo: document.getElementById('plot-media-photo').value.trim(),
+                media_video: document.getElementById('plot-media-video').value.trim(),
+                linked_panorama_id: document.getElementById('plot-linked-panorama').value || null,
+                points: pendingPlotCoords.map((p) => ({ lng: Number(p.lng), lat: Number(p.lat) }))
+            };
+            if (editingPlotId) {
+                await fetch(`/api/earth-view-plots/${editingPlotId}`, {
+                    method: 'PUT',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                await fetch(`/api/earth-views/${VIEW_ID}/plots`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+            }
+            closePlotModal(false);
+            closeDrawMode();
+            setInteractionHint();
+            await loadData();
+        });
+
+        document.getElementById('save-marker-btn').addEventListener('click', async () => {
+            const name = document.getElementById('marker-name').value.trim();
+            if (!name || !pendingMarkerCoords) return;
+            const payload = {
+                name: name,
+                description: document.getElementById('marker-description').value.trim(),
+                marker_color: document.getElementById('marker-color').value,
+                media_photo: document.getElementById('marker-media-photo').value.trim(),
+                media_video: document.getElementById('marker-media-video').value.trim(),
+                linked_panorama_id: document.getElementById('marker-linked-panorama').value || null,
+                longitude: Number(pendingMarkerCoords.lng),
+                latitude: Number(pendingMarkerCoords.lat)
+            };
+            if (editingMarkerId) {
+                await fetch(`/api/earth-view-markers/${editingMarkerId}`, {
+                    method: 'PUT',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                await fetch(`/api/earth-views/${VIEW_ID}/markers`, {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                });
+            }
+            closeMarkerModal(false);
+            closeMarkerMode();
+            setInteractionHint();
+            await loadData();
+        });
+
+        document.getElementById('save-camera-btn').addEventListener('click', async () => {
+            if (!viewer) return;
+            const c = viewer.camera.positionCartographic;
+            const center = { lng: Cesium.Math.toDegrees(c.longitude), lat: Cesium.Math.toDegrees(c.latitude) };
+            const zoom = heightToZoomLevel(c.height);
+            await fetch(`/api/earth-views/${VIEW_ID}`, {
+                method: 'PATCH',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ center_lng: center.lng, center_lat: center.lat, zoom: zoom })
+            });
+            setStatus('Viewpoint saved');
+        });
+
+        document.getElementById('copy-link-btn').addEventListener('click', async () => {
+            if (!earthView || !earthView.share_token) return;
+            const url = `${window.location.origin}/earth-view/view/${earthView.share_token}`;
+            await navigator.clipboard.writeText(url);
+            setStatus('Share link copied');
+        });
+
+        function initAuth() {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !window.supabase) return Promise.reject(new Error('Auth config missing'));
+            const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            window._supabase = sb;
+            return sb.auth.getSession().then((res) => {
+                const session = res && res.data && res.data.session;
+                if (!session || !session.access_token) {
+                    window.location.href = '/login';
+                    throw new Error('No session');
+                }
+                accessToken = session.access_token;
+            });
+        }
+
+        Promise.resolve()
+            .then(initAuth)
+            .then(initMap)
+            .then(loadPanoramaOptions)
+            .then(loadData)
+            .then(() => { setInteractionHint(); })
+            .catch(() => { setStatus('Failed'); });
+
+        function heightToZoomLevel(heightM) {
+            const h = Math.max(1, Number(heightM) || 1);
+            const approx = Math.log2(40075016 / (h * 2.2));
+            return Math.max(1, Math.min(MAX_SAT_ZOOM, approx));
+        }
+
+        function zoomToHeightMeters(zoom) {
+            const z = Math.max(1, Math.min(MAX_SAT_ZOOM, Number(zoom) || 3));
+            return Math.max(MIN_CAMERA_HEIGHT_M, (40075016 / (Math.pow(2, z) * 2.2)));
+        }
+
+        function createPinDataUrl(colorHex) {
+            const c = String(colorHex || '#4ade80');
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><path d="M18 1c6.6 0 12 5.4 12 12 0 9-12 22-12 22S6 22 6 13C6 6.4 11.4 1 18 1z" fill="${c}" stroke="white" stroke-width="2"/><circle cx="18" cy="13" r="5" fill="rgba(255,255,255,0.92)"/></svg>`;
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        }
+
+        function hidePopup() {
+            popupEl.style.display = 'none';
+        }
+
+        function showEntityPopup(entity, windowPosition) {
+            const type = entity.__evType;
+            const id = entity.__evId;
+            if (!type || !id) return;
+            if (type === 'plot') {
+                const plot = plots.find((p) => String(p.id) === String(id));
+                if (!plot) return;
+                popupTitleEl.textContent = plot.name || 'Plot';
+                popupMetaEl.textContent = `${plot.status || 'available'}${plot.area ? ' • ' + plot.area : ''}${plot.price ? ' • ' + plot.price : ''}`;
+            } else if (type === 'marker') {
+                const m = markers.find((x) => String(x.id) === String(id));
+                if (!m) return;
+                popupTitleEl.textContent = m.name || 'Marker';
+                popupMetaEl.textContent = m.description || '';
+            }
+            popupEl.style.left = `${windowPosition.x}px`;
+            popupEl.style.top = `${windowPosition.y}px`;
+            popupEl.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

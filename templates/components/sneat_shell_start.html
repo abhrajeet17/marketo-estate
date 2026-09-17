@@ -1,0 +1,221 @@
+{% set _nav = active_nav|default('crm') %}
+<!doctype html>
+<html
+  lang="en"
+  class="layout-menu-fixed layout-footer-fixed layout-compact"
+  data-assets-path="/static/sneat/"
+  data-template="vertical-menu-template-free">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <title>{{ page_title|default('MarketoState') }}</title>
+    <meta name="description" content="" />
+    <link rel="icon" href="/static/Marketostate/Marketostate%20Favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet" />
+    <link rel="stylesheet" href="/static/sneat/vendor/fonts/iconify-icons.css" />
+    <link rel="stylesheet" href="/static/sneat/vendor/css/core.css" />
+    <link rel="stylesheet" href="/static/sneat/css/demo.css" />
+    <link rel="stylesheet" href="/static/sneat/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="/static/css/sneat_sidebar_layout.css?v=20260623-2" />
+    <link rel="stylesheet" href="/static/css/components/tables.css?v=20260623-2" />
+    {% if sneat_extra_css %}<link rel="stylesheet" href="{{ sneat_extra_css }}" />{% endif %}
+    {% if use_marketostate_brand_theme|default(false) %}
+    <link rel="stylesheet" href="/static/css/marketostate_brand_theme.css?v=20260623-2" />
+    <script src="/static/js/marketostate_brand_theme_config.js?v=20260619-3"></script>
+    <script src="/static/js/marketostate_brand_theme.js?v=20260619-3"></script>
+    {% endif %}
+    <script src="/static/sneat/vendor/js/helpers.js"></script>
+    <script src="/static/sneat/js/config.js"></script>
+    <style>
+      html.sneat-broker-cached #sneat-nav-invites {
+        display: list-item !important;
+      }
+      html.sneat-broker-cached #sneat-dropdown-invites-wrap,
+      html.sneat-broker-cached #sneat-dropdown-invites-wrap {
+        display: block !important;
+      }
+      html.sneat-broker-cached #sneat-nav-team,
+      html.sneat-broker-cached #sneat-dropdown-team-wrap {
+        display: none !important;
+      }
+      html.sneat-client-admin-cached:not(.sneat-broker-cached) #sneat-nav-team {
+        display: list-item !important;
+      }
+      html.sneat-client-admin-cached:not(.sneat-broker-cached) #sneat-dropdown-team-wrap {
+        display: block !important;
+      }
+    </style>
+    <script>
+      (function () {
+        try {
+          var cached = JSON.parse(window.sessionStorage.getItem('sidebar_cache_v2_client_admin') || 'null');
+          var brokerFlag = window.localStorage.getItem('sneat_is_broker');
+          if ((cached && cached.isBroker) || brokerFlag === '1') {
+            document.documentElement.classList.add('sneat-broker-cached');
+          }
+          if (cached && cached.isClientAdmin && !cached.isBroker) {
+            document.documentElement.classList.add('sneat-client-admin-cached');
+          }
+        } catch (e) {}
+        try {
+          var KEY = 'sneat_layout_menu_collapsed';
+          if (window.localStorage.getItem(KEY) == null) {
+            window.localStorage.setItem(KEY, '1');
+          }
+          var collapsed = window.localStorage.getItem(KEY) === '1';
+          if (window.innerWidth >= 1200) {
+            if (collapsed) {
+              document.documentElement.classList.add('layout-menu-collapsed');
+              document.documentElement.style.setProperty('--crm-sidebar-offset', '5.25rem');
+            } else {
+              document.documentElement.style.setProperty(
+                '--crm-sidebar-offset',
+                'calc(16.25rem + 1.25rem)'
+              );
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
+    {% if sneat_merge_nav_into_crm %}
+    <style id="crm-layout-critical">
+      @media (min-width: 1200px) {
+        html.layout-menu-fixed .layout-page.layout-page--crm-merged-nav,
+        html.layout-menu-fixed-offcanvas .layout-page.layout-page--crm-merged-nav {
+          box-sizing: border-box;
+          padding-inline-start: var(--crm-sidebar-offset, 5.25rem) !important;
+        }
+      }
+    </style>
+    {% endif %}
+  </head>
+  <body>
+    <div class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+        <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+          {% set home_link_id = 'sneat-home-link' %}
+          {% include 'components/sneat_app_brand.html' %}
+          <div class="menu-divider mt-0"></div>
+          <div class="menu-inner-shadow"></div>
+          <ul class="menu-inner py-1">
+            <li class="menu-item{% if _nav == 'dashboard' %} active{% endif %}">
+              <a href="/customer-dashboard" class="menu-link" id="sneat-menu-dashboard">
+                <i class="menu-icon tf-icons bx bx-home-smile"></i>
+                <div class="text-truncate">Dashboard</div>
+              </a>
+            </li>
+            <li class="menu-header small text-uppercase">
+              <span class="menu-header-text">Workspace</span>
+            </li>
+            <li class="menu-item{% if _nav == 'crm' %} active{% endif %}">
+              <a href="/crm" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-briefcase-alt-2"></i>
+                <div class="text-truncate">CRM</div>
+              </a>
+            </li>
+            <li class="menu-item{% if _nav == 'invites' %} active{% endif %}" id="sneat-nav-invites" style="display:none;">
+              <a href="/broker/invites" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-envelope"></i>
+                <div class="text-truncate">Invites</div>
+              </a>
+            </li>
+            <li class="menu-item{% if _nav == 'team' %} active{% endif %}" id="sneat-nav-team"{% if _nav != 'team' %} style="display:none;"{% endif %}>
+              <a href="/client-management" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-group"></i>
+                <div class="text-truncate">My Team</div>
+              </a>
+            </li>
+            <li class="menu-header small text-uppercase">
+              <span class="menu-header-text">Account</span>
+            </li>
+            <li class="menu-item">
+              <a href="javascript:void(0);" class="menu-link" id="menu-signout">
+                <i class="menu-icon tf-icons bx bx-power-off"></i>
+                <div class="text-truncate">Sign Out</div>
+              </a>
+            </li>
+          </ul>
+          <a href="javascript:void(0);" class="sneat-menu-collapse-toggle menu-link text-large" id="sneat-layout-menu-toggle" aria-label="Toggle menu">
+            <i class="bx bx-chevron-left d-block align-middle"></i>
+          </a>
+        </aside>
+        <div class="layout-page{% if sneat_merge_nav_into_crm %} layout-page--crm-merged-nav{% endif %}">
+          {% if not sneat_merge_nav_into_crm %}
+          <nav
+            class="layout-navbar container-xxl navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme"
+            id="layout-navbar">
+            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
+              <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)">
+                <i class="icon-base bx bx-menu icon-md"></i>
+              </a>
+            </div>
+            <div class="navbar-nav-right d-flex align-items-center justify-content-end" id="navbar-collapse">
+              <ul class="navbar-nav flex-row align-items-center ms-md-auto">
+                <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                  <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
+                    <div class="avatar avatar-online">
+                      <span class="avatar-initial rounded-circle bg-label-primary" id="navbar-user-avatar">--</span>
+                    </div>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="javascript:void(0);">
+                        <div class="d-flex">
+                          <div class="flex-shrink-0 me-3">
+                            <div class="avatar avatar-online">
+                              <span class="avatar-initial rounded-circle bg-label-primary" id="navbar-user-avatar-2">--</span>
+                            </div>
+                          </div>
+                          <div class="flex-grow-1">
+                            <h6 class="mb-0" id="navbar-user-name">User</h6>
+                            <small class="text-body-secondary" id="navbar-user-role">Member</small>
+                          </div>
+                        </div>
+                      </a>
+                    </li>
+                    <li><div class="dropdown-divider my-1"></div></li>
+                    <li>
+                      <a class="dropdown-item" href="/customer-dashboard" id="sneat-dropdown-dashboard">
+                        <i class="icon-base bx bx-home-smile icon-md me-3"></i><span>Dashboard</span>
+                      </a>
+                    </li>
+                    <li id="sneat-dropdown-invites-wrap" style="display:none;">
+                      <a class="dropdown-item" href="/broker/invites">
+                        <i class="icon-base bx bx-envelope icon-md me-3"></i><span>Invites</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/crm">
+                        <i class="icon-base bx bx-briefcase-alt-2 icon-md me-3"></i><span>CRM</span>
+                      </a>
+                    </li>
+                    <li id="sneat-dropdown-team-wrap"{% if _nav != 'team' %} style="display:none;"{% endif %}>
+                      <a class="dropdown-item" href="/client-management">
+                        <i class="icon-base bx bx-group icon-md me-3"></i><span>My Team</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="javascript:void(0);" id="dropdown-change-password">
+                        <i class="icon-base bx bx-lock-alt icon-md me-3"></i><span>Change Password</span>
+                      </a>
+                    </li>
+                    <li><div class="dropdown-divider my-1"></div></li>
+                    <li>
+                      <a class="dropdown-item" href="javascript:void(0);" id="dropdown-signout">
+                        <i class="icon-base bx bx-power-off icon-md me-3"></i><span>Log Out</span>
+                      </a>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </nav>
+          {% endif %}
+          <div class="content-wrapper">
+            <div class="container-xxl flex-grow-1{% if sneat_merge_nav_into_crm %} p-0{% else %} container-p-y{% endif %}">

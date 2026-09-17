@@ -1,0 +1,166 @@
+{% set _nav = active_nav|default('crm') %}
+<!doctype html>
+<html lang="en" class="h-full portal-sidebar-collapsed{% if portal_merge_nav_into_crm|default(false) %} portal-crm-merged{% endif %}{% if use_marketostate_brand_theme|default(false) %} ms-brand-theme{% endif %}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title|default('MarketoState') }}</title>
+    <meta name="description" content="" />
+    <link rel="icon" href="/static/Marketostate/Marketostate%20Favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/portal.bundle.css?v=20260623-1" />
+    <link rel="stylesheet" href="/static/css/portal_layout.css?v=20260626-dropdown-nowrap" />
+    <link rel="stylesheet" href="/static/css/components/tables.css?v=20260623-2" />
+    {% if portal_extra_css %}<link rel="stylesheet" href="{{ portal_extra_css }}" />{% endif %}
+    {% if use_marketostate_brand_theme|default(false) %}
+    <link rel="stylesheet" href="/static/css/marketostate_brand_theme.css?v=20260623-7" />
+    <script src="/static/js/marketostate_brand_theme_config.js?v=20260619-3"></script>
+    <script src="/static/js/marketostate_brand_theme.js?v=20260623-1"></script>
+    {% endif %}
+    <style>
+      html.portal-broker-cached #portal-nav-invites,
+      html.portal-broker-cached #portal-dropdown-invites-wrap { display: block !important; }
+
+      html.portal-broker-cached #portal-nav-invites { display: list-item !important; }
+
+      html.portal-broker-cached #portal-nav-team,
+      html.portal-broker-cached #portal-dropdown-team-wrap { display: none !important; }
+
+      html.portal-client-admin-cached:not(.portal-broker-cached) #portal-nav-team,
+      html.portal-client-admin-cached:not(.portal-broker-cached) #portal-dropdown-team-wrap { display: block !important; }
+
+      html.portal-client-admin-cached:not(.portal-broker-cached) #portal-nav-team { display: list-item !important; }
+    </style>
+    <script>
+      (function () {
+        try {
+          var cached = JSON.parse(window.sessionStorage.getItem('sidebar_cache_v2_client_admin') || 'null');
+          var brokerFlag = window.localStorage.getItem('portal_is_broker') || window.localStorage.getItem('sneat_is_broker');
+          if ((cached && cached.isBroker) || brokerFlag === '1') {
+            document.documentElement.classList.add('portal-broker-cached');
+          }
+          if (cached && cached.isClientAdmin && !cached.isBroker) {
+            document.documentElement.classList.add('portal-client-admin-cached');
+          }
+        } catch (e) {}
+        try {
+          var KEY = 'portal_sidebar_collapsed';
+          if (window.localStorage.getItem(KEY) == null) {
+            window.localStorage.setItem(KEY, '1');
+          }
+          var collapsed = window.localStorage.getItem(KEY) === '1';
+          if (window.innerWidth >= 1024) {
+            var isCrmMerged = document.documentElement.classList.contains('portal-crm-merged');
+            document.documentElement.classList.toggle('portal-sidebar-collapsed', collapsed);
+            document.documentElement.classList.toggle('portal-sidebar-expanded', !collapsed);
+            document.documentElement.style.setProperty(
+              '--crm-sidebar-offset',
+              collapsed
+                ? 'var(--portal-sidebar-collapsed, 5.25rem)'
+                : (isCrmMerged
+                  ? 'var(--portal-sidebar-width, 16.25rem)'
+                  : 'calc(var(--portal-sidebar-width, 16.25rem) + var(--ms-sidebar-content-gap, 1.25rem))')
+            );
+          } else {
+            document.documentElement.style.setProperty('--crm-sidebar-offset', '0px');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-gray-50 font-sans text-gray-800 antialiased">
+    <!-- Unified top header: logo + page header (one bar, no seam) -->
+    <header id="portal-unified-header" class="portal-unified-header">
+      <div class="portal-unified-header__brand">
+        {% set home_link_id = 'portal-home-link' %}
+        {% include 'components/portal_app_brand.html' %}
+      </div>
+      <div class="portal-unified-header__page" id="portal-page-header">
+        {% if not portal_merge_nav_into_crm|default(false) %}
+        <div class="portal-navbar">
+          <div class="portal-navbar__start">
+            <button type="button" id="portal-mobile-menu-toggle" class="lg:hidden inline-flex items-center justify-center size-9 rounded-lg border border-gray-200 bg-white text-gray-600" aria-label="Open menu" data-hs-overlay="#portal-sidebar">
+              <svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            {% if portal_header_title|default('') %}
+            <div class="portal-header-page-title" id="portal-header-page-title">
+              {% if portal_header_icon|default('') == 'team' %}
+              <svg class="portal-header-page-title__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              {% endif %}
+              <span class="portal-header-page-title__text">{{ portal_header_title }}</span>
+            </div>
+            {% endif %}
+          </div>
+          <div class="portal-navbar__center">
+            {% if portal_show_plot_search %}{% include 'components/portal_navbar_search.html' %}{% endif %}
+          </div>
+          <div class="portal-navbar__end">
+            {% include 'components/portal_user_dropdown.html' %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- Sidebar (nav only — starts below unified header) -->
+    <div
+      id="portal-sidebar"
+      class="hs-overlay hs-overlay-open:translate-x-0 -translate-x-full transition-all duration-300 transform fixed start-0 z-[60] w-[16.25rem] lg:block lg:translate-x-0 lg:end-auto [--auto-close:lg] hidden"
+      role="dialog"
+      tabindex="-1"
+      aria-label="Sidebar"
+    >
+      <div class="relative flex flex-col h-full max-h-full">
+        <nav class="portal-sidebar-nav flex-1 overflow-y-auto px-3 py-4">
+          <ul class="space-y-1">
+            <li>
+              <a href="/customer-dashboard" id="portal-menu-dashboard" class="portal-nav-link flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm font-medium{% if _nav == 'dashboard' %} active{% endif %}">
+                <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                <span class="portal-nav-label">Dashboard</span>
+              </a>
+            </li>
+            <li class="portal-nav-section text-xs font-semibold uppercase px-3 pt-4 pb-2">Workspace</li>
+            <li>
+              <a href="/crm" class="portal-nav-link flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm font-medium{% if _nav == 'crm' %} active{% endif %}">
+                <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span class="portal-nav-label">CRM</span>
+              </a>
+            </li>
+            <li id="portal-nav-invites" style="display:none;">
+              <a href="/broker/invites" class="portal-nav-link flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm font-medium{% if _nav == 'invites' %} active{% endif %}">
+                <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span class="portal-nav-label">Invites</span>
+              </a>
+            </li>
+            <li id="portal-nav-team"{% if _nav != 'team' %} style="display:none;"{% endif %}>
+              <a href="/client-management" class="portal-nav-link flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm font-medium{% if _nav == 'team' %} active{% endif %}">
+                <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span class="portal-nav-label">My Team</span>
+              </a>
+            </li>
+            <li class="portal-nav-section text-xs font-semibold uppercase px-3 pt-4 pb-2">Account</li>
+            <li>
+              <a href="javascript:void(0);" id="menu-signout" class="portal-nav-link flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm font-medium">
+                <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <span class="portal-nav-label">Sign Out</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <button
+          type="button"
+          id="portal-sidebar-collapse-btn"
+          class="hidden lg:inline-flex absolute bottom-3 end-3 size-9 items-center justify-center rounded-lg"
+          aria-label="Toggle sidebar"
+        >
+          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div id="portal-main" class="w-full min-h-screen transition-all duration-300{% if portal_merge_nav_into_crm %} portal-main--crm-merged{% endif %}">
+      <main class="{% if portal_merge_nav_into_crm %}p-0{% else %}p-4 lg:p-6{% endif %}">

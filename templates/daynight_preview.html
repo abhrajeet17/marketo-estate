@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Preview - {{ project.name }}</title>
+    <link rel="stylesheet" href="/static/css/daynight_view.css">
+    <script src="/static/js/supabase.min.js"></script>
+    <style>
+    /* Preview controls panel */
+    .preview-panel {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 100;
+        background: rgba(20, 20, 24, 0.92);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 14px;
+        padding: 20px 22px;
+        min-width: 280px;
+        color: #e5e5e5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .preview-panel.collapsed {
+        transform: translateX(calc(100% + 16px));
+        opacity: 0;
+        pointer-events: none;
+    }
+    .preview-panel-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #c9a962;
+        margin-bottom: 16px;
+    }
+    .preview-control-group {
+        margin-bottom: 16px;
+    }
+    .preview-control-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        color: #aaa;
+        margin-bottom: 8px;
+    }
+    .preview-control-value {
+        font-weight: 600;
+        color: #e5e5e5;
+        font-variant-numeric: tabular-nums;
+    }
+    .preview-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 4px;
+        background: rgba(255,255,255,0.12);
+        border-radius: 2px;
+        outline: none;
+        cursor: pointer;
+    }
+    .preview-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #c9a962;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        transition: transform 0.15s;
+    }
+    .preview-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.15);
+    }
+    .preview-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #c9a962;
+        cursor: pointer;
+        border: none;
+    }
+    .preview-hint {
+        font-size: 0.72rem;
+        color: #666;
+        margin-top: 4px;
+    }
+    .preview-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 18px;
+    }
+    .preview-btn {
+        flex: 1;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+    }
+    .preview-btn:active {
+        transform: scale(0.97);
+    }
+    .preview-btn-primary {
+        background: #c9a962;
+        color: #000;
+    }
+    .preview-btn-primary:hover {
+        background: #d4b872;
+    }
+    .preview-btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .preview-btn-secondary {
+        background: rgba(255,255,255,0.08);
+        color: #ccc;
+    }
+    .preview-btn-secondary:hover {
+        background: rgba(255,255,255,0.14);
+    }
+    .preview-saved {
+        font-size: 0.78rem;
+        color: #4ade80;
+        text-align: center;
+        margin-top: 8px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .preview-saved.visible {
+        opacity: 1;
+    }
+    /* Toggle button */
+    .preview-toggle {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 99;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(20, 20, 24, 0.85);
+        backdrop-filter: blur(8px);
+        color: #c9a962;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s;
+    }
+    .preview-toggle.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+    .preview-link-row {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .preview-link-label {
+        font-size: 0.72rem;
+        color: #888;
+        margin-bottom: 6px;
+    }
+    .preview-link-input {
+        width: 100%;
+        font-size: 0.78rem;
+        padding: 6px 10px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        color: #e5e5e5;
+        outline: none;
+    }
+    .preview-link-input:focus {
+        border-color: #c9a962;
+    }
+    </style>
+</head>
+<body>
+    <div id="dn-loader"><div class="dn-spinner"></div></div>
+    <div id="dn-viewport"></div>
+    <div id="dn-vignette"></div>
+    <div id="dn-indicator">
+        <div class="dn-indicator-track">
+            <div class="dn-indicator-thumb" id="dn-indicator-thumb"></div>
+        </div>
+    </div>
+
+    <!-- Toggle button (visible when panel collapsed) -->
+    <button class="preview-toggle hidden" id="preview-toggle" title="Show controls">&#9881;</button>
+
+    <!-- Controls panel -->
+    <div class="preview-panel" id="preview-panel">
+        <div class="preview-panel-title">Preview Settings</div>
+
+        <div class="preview-control-group">
+            <div class="preview-control-label">
+                <span>Drag Speed</span>
+                <span class="preview-control-value" id="speed-value">{{ drag_speed }}</span>
+            </div>
+            <input type="range" class="preview-slider" id="speed-slider"
+                   min="10" max="300" step="5" value="{{ drag_speed }}">
+            <div class="preview-hint">Lower = faster transition, Higher = slower/finer control</div>
+        </div>
+
+        <div class="preview-actions">
+            <button class="preview-btn preview-btn-secondary" id="btn-reset">Reset</button>
+            <button class="preview-btn preview-btn-primary" id="btn-save">Save for Customers</button>
+        </div>
+        <div class="preview-saved" id="save-msg">Settings saved!</div>
+
+        <div class="preview-link-row">
+            <div class="preview-link-label">Customer View Link</div>
+            <input type="text" readonly class="preview-link-input" id="customer-link"
+                   value="{{ request.url_root.rstrip('/') }}/daynight/view/{{ project.share_token }}">
+        </div>
+
+        <div class="preview-actions" style="margin-top:8px;">
+            <button class="preview-btn preview-btn-secondary" id="btn-copy-link" style="flex:1;">Copy Link</button>
+            <button class="preview-btn preview-btn-secondary" id="btn-hide" style="flex:0 0 auto; padding:8px 12px;">Hide</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var mediaType = {{ media_type|tojson }};
+        var mediaUrl = {{ media_url|tojson }};
+        var stitchedWidth = {{ stitched_width|tojson }};
+        var stitchedHeight = {{ stitched_height|tojson }};
+        var projectId = {{ project.id|tojson }};
+        var savedDragSpeed = {{ drag_speed|tojson }};
+
+        var viewport = document.getElementById('dn-viewport');
+        var loader = document.getElementById('dn-loader');
+        var indicator = document.getElementById('dn-indicator');
+        var indicatorThumb = document.getElementById('dn-indicator-thumb');
+
+        // Controls
+        var panel = document.getElementById('preview-panel');
+        var toggleBtn = document.getElementById('preview-toggle');
+        var speedSlider = document.getElementById('speed-slider');
+        var speedValue = document.getElementById('speed-value');
+        var saveMsg = document.getElementById('save-msg');
+
+        // Panel toggle
+        document.getElementById('btn-hide').addEventListener('click', function() {
+            panel.classList.add('collapsed');
+            toggleBtn.classList.remove('hidden');
+        });
+        toggleBtn.addEventListener('click', function() {
+            panel.classList.remove('collapsed');
+            toggleBtn.classList.add('hidden');
+        });
+
+        // Speed slider
+        var PIXELS_PER_SECOND = savedDragSpeed;
+        speedSlider.addEventListener('input', function() {
+            PIXELS_PER_SECOND = parseFloat(this.value);
+            speedValue.textContent = this.value;
+        });
+
+        // Reset
+        document.getElementById('btn-reset').addEventListener('click', function() {
+            PIXELS_PER_SECOND = 80;
+            speedSlider.value = 80;
+            speedValue.textContent = '80';
+        });
+
+        // Save
+        document.getElementById('btn-save').addEventListener('click', function() {
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            fetch('/api/daynight/' + projectId + '/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + (window._accessToken || localStorage.getItem('dn_token') || '')
+                },
+                body: JSON.stringify({ drag_speed: PIXELS_PER_SECOND })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) throw new Error(data.error);
+                savedDragSpeed = PIXELS_PER_SECOND;
+                saveMsg.classList.add('visible');
+                setTimeout(function() { saveMsg.classList.remove('visible'); }, 2000);
+            })
+            .catch(function(err) {
+                saveMsg.textContent = 'Error: ' + err.message;
+                saveMsg.style.color = '#f87171';
+                saveMsg.classList.add('visible');
+                setTimeout(function() {
+                    saveMsg.classList.remove('visible');
+                    saveMsg.textContent = 'Settings saved!';
+                    saveMsg.style.color = '';
+                }, 3000);
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Save for Customers';
+            });
+        });
+
+        // Copy link
+        document.getElementById('btn-copy-link').addEventListener('click', function() {
+            var input = document.getElementById('customer-link');
+            navigator.clipboard.writeText(input.value).then(function() {
+                var btn = document.getElementById('btn-copy-link');
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy Link'; }, 1500);
+            });
+        });
+
+        // Initialize Supabase to get auth token for saving settings
+        (function initAuth() {
+            var sbUrl = {{ (supabase_url or '')|tojson }};
+            var sbKey = {{ (supabase_anon_key or '')|tojson }};
+            if (!sbUrl || !sbKey || !window.supabase) return;
+            var sb = window.supabase.createClient(sbUrl, sbKey);
+            sb.auth.getSession().then(function(r) {
+                if (r.data.session) {
+                    window._accessToken = r.data.session.access_token;
+                }
+            });
+        })();
+
+        // Shared drag state
+        var isDragging = false;
+        var startX = 0;
+        var startOffset = 0;
+        var velocityX = 0;
+        var lastX = 0;
+        var lastTime = 0;
+        var momentumRaf = null;
+        var indicatorTimeout = null;
+
+        function showIndicator() {
+            indicator.classList.add('visible');
+            clearTimeout(indicatorTimeout);
+            indicatorTimeout = setTimeout(function() {
+                indicator.classList.remove('visible');
+            }, 1200);
+        }
+
+        var loaderHidden = false;
+
+        function hideLoader() {
+            if (loaderHidden) return;
+            loaderHidden = true;
+            loader.classList.add('hidden');
+        }
+
+        // =====================================================================
+        // IMAGE MODE
+        // =====================================================================
+        if (mediaType === 'image') {
+            var img = new Image();
+            var offsetX = 0;
+            var imgDisplayWidth = 0;
+            var vw = window.innerWidth;
+            var vh = window.innerHeight;
+            img.decoding = 'async';
+            img.loading = 'eager';
+
+            img.onload = function() {
+                var scale = vh / img.naturalHeight;
+                imgDisplayWidth = img.naturalWidth * scale;
+                img.style.height = '100%';
+                img.style.width = imgDisplayWidth + 'px';
+                viewport.appendChild(img);
+                offsetX = -(imgDisplayWidth / 2 - vw / 2);
+                applyOffset();
+                hideLoader();
+                showIndicator();
+            };
+            img.onerror = function() {
+                hideLoader();
+            };
+            img.src = mediaUrl;
+
+            function clampOffset(x) {
+                var minX = -(imgDisplayWidth - vw);
+                if (minX > 0) minX = 0;
+                if (x > 0) x = 0;
+                if (x < minX) x = minX;
+                return x;
+            }
+
+            function applyOffset() {
+                img.style.transform = 'translateX(' + offsetX + 'px)';
+                updateIndicator(offsetX, imgDisplayWidth, vw);
+            }
+
+            function updateIndicator(off, totalW, viewW) {
+                if (totalW <= viewW) return;
+                var range = totalW - viewW;
+                var pos = -off / range;
+                var thumbW = viewW / totalW;
+                indicatorThumb.style.width = (thumbW * 100) + '%';
+                indicatorThumb.style.marginLeft = (pos * (1 - thumbW) * 100) + '%';
+            }
+
+            function beginImageDrag(clientX, pointerId, preventDefault) {
+                isDragging = true;
+                startX = clientX;
+                startOffset = offsetX;
+                velocityX = 0;
+                lastX = clientX;
+                lastTime = Date.now();
+                viewport.classList.add('grabbing');
+                if (pointerId != null && viewport.setPointerCapture) {
+                    try { viewport.setPointerCapture(pointerId); } catch (err) {}
+                }
+                if (momentumRaf) { cancelAnimationFrame(momentumRaf); momentumRaf = null; }
+                if (preventDefault) preventDefault();
+            }
+
+            function moveImageDrag(clientX, preventDefault) {
+                if (!isDragging) return;
+                var dx = clientX - startX;
+                offsetX = clampOffset(startOffset + dx);
+                applyOffset();
+                showIndicator();
+                var now = Date.now();
+                var dt = now - lastTime;
+                if (dt > 0) {
+                    velocityX = (clientX - lastX) / dt * 16;
+                }
+                lastX = clientX;
+                lastTime = now;
+                if (preventDefault) preventDefault();
+            }
+
+            function endImageDrag(preventDefault) {
+                if (!isDragging) return;
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+                startMomentum();
+                if (preventDefault) preventDefault();
+            }
+
+            function cancelImageDrag() {
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+            }
+
+            viewport.addEventListener('pointerdown', function(e) {
+                beginImageDrag(e.clientX, e.pointerId, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointermove', function(e) {
+                moveImageDrag(e.clientX, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointerup', function(e) {
+                endImageDrag(function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointercancel', cancelImageDrag);
+            if (!window.PointerEvent) {
+                viewport.addEventListener('touchstart', function(e) {
+                    if (e.touches.length !== 1) return;
+                    beginImageDrag(e.touches[0].clientX, null, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchmove', function(e) {
+                    if (!isDragging || e.touches.length !== 1) return;
+                    moveImageDrag(e.touches[0].clientX, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchend', function(e) {
+                    endImageDrag(function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchcancel', cancelImageDrag);
+            }
+
+            function startMomentum() {
+                if (Math.abs(velocityX) < 0.5) return;
+                var friction = 0.95;
+                function step() {
+                    velocityX *= friction;
+                    if (Math.abs(velocityX) < 0.3) { velocityX = 0; return; }
+                    offsetX = clampOffset(offsetX + velocityX);
+                    applyOffset();
+                    showIndicator();
+                    momentumRaf = requestAnimationFrame(step);
+                }
+                momentumRaf = requestAnimationFrame(step);
+            }
+
+            window.addEventListener('resize', function() {
+                vw = window.innerWidth;
+                vh = window.innerHeight;
+                var scale = vh / img.naturalHeight;
+                imgDisplayWidth = img.naturalWidth * scale;
+                img.style.width = imgDisplayWidth + 'px';
+                offsetX = clampOffset(offsetX);
+                applyOffset();
+            });
+        }
+
+        // =====================================================================
+        // VIDEO MODE
+        // =====================================================================
+        if (mediaType === 'video') {
+            var video = document.createElement('video');
+            video.src = mediaUrl;
+            video.preload = 'auto';
+            video.muted = true;
+            video.defaultMuted = true;
+            video.playsInline = true;
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', '');
+            video.style.position = 'fixed';
+            video.style.left = '-9999px';
+            video.style.top = '0';
+            video.style.width = '1px';
+            video.style.height = '1px';
+            video.style.opacity = '0';
+            video.style.pointerEvents = 'none';
+            document.body.appendChild(video);
+
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            viewport.appendChild(canvas);
+
+            var duration = 0;
+            var currentTime = 0;
+            var canvasReady = false;
+            var seekPending = false;
+            var targetTime = 0;
+            var videoFirstFrameTimer = null;
+
+            function finishVideoLoading() {
+                canvasReady = true;
+                hideLoader();
+                showIndicator();
+                if (videoFirstFrameTimer) {
+                    clearTimeout(videoFirstFrameTimer);
+                    videoFirstFrameTimer = null;
+                }
+            }
+
+            function ensureCanvasSize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+            }
+
+            video.addEventListener('loadedmetadata', function() {
+                duration = isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+                currentTime = duration / 2;
+                targetTime = currentTime;
+                video.currentTime = currentTime;
+                ensureCanvasSize();
+            });
+
+            video.addEventListener('loadeddata', function() {
+                if (!canvasReady) {
+                    drawCanvasFrameNow();
+                    finishVideoLoading();
+                }
+            });
+
+            video.addEventListener('canplay', function() {
+                if (!canvasReady) {
+                    drawCanvasFrameNow();
+                    finishVideoLoading();
+                }
+            });
+
+            video.addEventListener('error', function() {
+                hideLoader();
+            });
+
+            video.load();
+
+            videoFirstFrameTimer = setTimeout(function() {
+                if (!canvasReady && video && video.readyState >= 2) {
+                    drawCanvasFrameNow();
+                    finishVideoLoading();
+                } else if (!canvasReady) {
+                    hideLoader();
+                }
+            }, 8000);
+
+            function drawCanvasFrameNow() {
+                if (!video.videoWidth || !video.videoHeight || !canvas.width || !canvas.height) return;
+                drawVideoFrame();
+            }
+
+            video.addEventListener('seeked', function() {
+                if (!canvasReady) finishVideoLoading();
+                drawCanvasFrameNow();
+                // If user moved while we were seeking, jump to the latest target
+                if (seekPending) {
+                    seekPending = false;
+                    currentTime = targetTime;
+                    video.currentTime = currentTime;
+                }
+            });
+
+            function drawVideoFrame() {
+                if (!video.videoWidth || !video.videoHeight || !canvas.width || !canvas.height) return;
+                var vw = canvas.width;
+                var vh = canvas.height;
+                var vRatio = video.videoWidth / video.videoHeight;
+                var cRatio = vw / vh;
+                var dw, dh, dx, dy;
+                if (vRatio > cRatio) {
+                    dh = vh; dw = vh * vRatio; dx = (vw - dw) / 2; dy = 0;
+                } else {
+                    dw = vw; dh = vw / vRatio; dx = 0; dy = (vh - dh) / 2;
+                }
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, vw, vh);
+                ctx.drawImage(video, dx, dy, dw, dh);
+                updateVideoIndicator();
+            }
+
+            function updateVideoIndicator() {
+                if (duration <= 0) return;
+                var pos = currentTime / duration;
+                var thumbW = 0.08;
+                indicatorThumb.style.width = (thumbW * 100) + '%';
+                indicatorThumb.style.marginLeft = (pos * (1 - thumbW) * 100) + '%';
+            }
+
+            function seekTo(t) {
+                t = Math.max(0, Math.min(duration, t));
+                targetTime = t;
+                // Only issue a new seek if the previous one has finished
+                if (!video.seeking) {
+                    currentTime = t;
+                    video.currentTime = t;
+                } else {
+                    seekPending = true;
+                }
+            }
+
+            function beginVideoDrag(clientX, pointerId, preventDefault) {
+                isDragging = true;
+                startX = clientX;
+                startOffset = currentTime;
+                velocityX = 0;
+                lastX = clientX;
+                lastTime = Date.now();
+                viewport.classList.add('grabbing');
+                if (pointerId != null && viewport.setPointerCapture) {
+                    try { viewport.setPointerCapture(pointerId); } catch (err) {}
+                }
+                if (momentumRaf) { cancelAnimationFrame(momentumRaf); momentumRaf = null; }
+                if (preventDefault) preventDefault();
+            }
+
+            function moveVideoDrag(clientX, preventDefault) {
+                if (!isDragging) return;
+                var dx = clientX - startX;
+                var timeDelta = -dx / PIXELS_PER_SECOND;
+                var newTime = Math.max(0, Math.min(duration, startOffset + timeDelta));
+                seekTo(newTime);
+                showIndicator();
+                var now = Date.now();
+                var dt = now - lastTime;
+                if (dt > 0) {
+                    velocityX = (clientX - lastX) / dt * 16;
+                }
+                lastX = clientX;
+                lastTime = now;
+                if (preventDefault) preventDefault();
+            }
+
+            function endVideoDrag(preventDefault) {
+                if (!isDragging) return;
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+                startVideoMomentum();
+                if (preventDefault) preventDefault();
+            }
+
+            function cancelVideoDrag() {
+                isDragging = false;
+                viewport.classList.remove('grabbing');
+            }
+
+            viewport.addEventListener('pointerdown', function(e) {
+                beginVideoDrag(e.clientX, e.pointerId, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointermove', function(e) {
+                moveVideoDrag(e.clientX, function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointerup', function(e) {
+                endVideoDrag(function() { e.preventDefault(); });
+            });
+            viewport.addEventListener('pointercancel', cancelVideoDrag);
+            if (!window.PointerEvent) {
+                viewport.addEventListener('touchstart', function(e) {
+                    if (e.touches.length !== 1) return;
+                    beginVideoDrag(e.touches[0].clientX, null, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchmove', function(e) {
+                    if (!isDragging || e.touches.length !== 1) return;
+                    moveVideoDrag(e.touches[0].clientX, function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchend', function(e) {
+                    endVideoDrag(function() { e.preventDefault(); });
+                }, { passive: false });
+                viewport.addEventListener('touchcancel', cancelVideoDrag);
+            }
+
+            function startVideoMomentum() {
+                if (Math.abs(velocityX) < 0.5) return;
+                var friction = 0.93;
+                function step() {
+                    velocityX *= friction;
+                    if (Math.abs(velocityX) < 0.3) { velocityX = 0; return; }
+                    var timeDelta = -velocityX / PIXELS_PER_SECOND;
+                    currentTime = Math.max(0, Math.min(duration, currentTime + timeDelta));
+                    seekTo(currentTime);
+                    showIndicator();
+                    momentumRaf = requestAnimationFrame(step);
+                }
+                momentumRaf = requestAnimationFrame(step);
+            }
+
+            window.addEventListener('resize', function() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                if (canvasReady) drawVideoFrame();
+            });
+        }
+
+        // Prevent default scrolling/zooming
+        document.addEventListener('wheel', function(e) { e.preventDefault(); }, { passive: false });
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+    })();
+    </script>
+</body>
+</html>

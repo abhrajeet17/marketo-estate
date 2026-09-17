@@ -1,0 +1,7 @@
+      </main>
+    </div>
+    <script src="/static/js/supabase.min.js"></script>
+    <script>
+      window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || {{ (supabase_url|default(''))|tojson }};
+      window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || {{ (supabase_anon_key|default(''))|tojson }};
+    </script>

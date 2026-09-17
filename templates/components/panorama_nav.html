@@ -1,0 +1,24 @@
+{# Usage: {% include 'components/panorama_nav.html' with items=panorama_list, current_id=panorama_id %}
+   items: list of { id, name, meta } #}
+<div class="panorama-nav-shell" id="panorama-nav-shell">
+    <button type="button" class="panorama-nav-toggle" id="panorama-nav-toggle" aria-expanded="true" aria-controls="panorama-nav-panel">
+        <span class="panorama-nav-toggle-icon" aria-hidden="true">▼</span>
+        <span>Panoramas</span>
+    </button>
+    <div class="panorama-nav-panel" id="panorama-nav-panel" role="region" aria-label="Panorama list">
+        <div class="panorama-nav-head">
+            <div class="panorama-nav-title">Panoramas</div>
+            <div class="panorama-nav-subtitle">Switch view</div>
+        </div>
+        <div class="panorama-nav-list">
+            {% for item in items or [] %}
+            <button type="button" class="panorama-nav-item {% if item.id == current_id %}active{% endif %}" data-panorama-id="{{ item.id }}">
+                <span class="panorama-nav-item-name">{{ item.name }}</span>
+                {% if item.meta %}<span class="panorama-nav-item-meta">{{ item.meta }}</span>{% endif %}
+            </button>
+            {% else %}
+            <div class="panorama-nav-empty">No panoramas</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

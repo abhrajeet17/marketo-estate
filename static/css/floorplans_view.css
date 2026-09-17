@@ -1,0 +1,292 @@
+/* Floor Plans – Public Viewer (matches admin_3d frosted-glass style) */
+
+.fpv-page {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #ffffff;
+    font-family: var(--font-body, 'Syne', sans-serif);
+    position: relative;
+}
+
+/* -- Full-screen image area -- */
+.fpv-image-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.fpv-image-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem;
+}
+
+.fpv-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transform: scale(0.97);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.16));
+}
+
+.fpv-image.loaded {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.fpv-image.fade-out {
+    opacity: 0;
+    transform: scale(0.97);
+}
+
+/* Subtle vignette overlay */
+.fpv-image-area::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0) 24%,
+        rgba(10, 18, 34, 0.02) 78%,
+        rgba(10, 18, 34, 0.08) 100%
+    );
+    z-index: 1;
+}
+
+/* Watermark */
+.fpv-watermark {
+    position: absolute;
+    bottom: 1rem;
+    left: 1.25rem;
+    z-index: 10;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgba(22, 35, 56, 0.24);
+    letter-spacing: 0.04em;
+    pointer-events: none;
+}
+
+/* -- Zoom controls (gallery dark glass) -- */
+.fpv-zoom-controls {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 20;
+    display: flex;
+    gap: 0.25rem;
+    background: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.3rem 0.35rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+}
+
+.fpv-zoom-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    font-family: var(--font-body, 'Syne', sans-serif);
+}
+
+.fpv-zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* -- Floor Plan selector panel (gallery dark glass) -- */
+.fpv-panel {
+    position: fixed;
+    bottom: var(--fv-modal-bottom, 1.5rem);
+    right: var(--fv-modal-right, 7rem);
+    z-index: 20;
+    width: min(var(--fv-modal-width, 260px), max(0px, calc(100vw - var(--fv-modal-right, 0px))));
+    height: min(var(--fv-modal-height, var(--fv-modal-max-height, 72vh)), max(0px, calc(100vh - var(--fv-modal-bottom, 0px))));
+    max-height: min(var(--fv-modal-height, var(--fv-modal-max-height, 72vh)), max(0px, calc(100vh - var(--fv-modal-bottom, 0px))));
+    background: var(--fv-modal-bg, rgba(30, 30, 30, 0.8));
+    backdrop-filter: blur(var(--fv-modal-backdrop-blur, 18px)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--fv-modal-backdrop-blur, 18px)) saturate(160%);
+    border: 1px solid var(--fv-modal-border, rgba(255, 255, 255, 0.08));
+    border-radius: 14px;
+    box-shadow:
+        0 4px 18px var(--fv-modal-shadow, rgba(0, 0, 0, 0.35)),
+        0 0 28px var(--fv-modal-glow, rgba(164, 193, 234, 0));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.fpv-panel-header {
+    padding: 0.85rem 1rem 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.fpv-panel-title {
+    font-size: var(--fv-modal-title-font-size, 0.82rem);
+    font-weight: 700;
+    color: var(--fv-modal-title, #ffffff);
+    font-family: var(--fv-modal-title-font-family, var(--font-body, 'Syne', sans-serif));
+    letter-spacing: 0.01em;
+    margin: 0;
+}
+
+.fpv-panel-collapse {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--fv-modal-item-text, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.fpv-panel-collapse:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.fpv-panel-list {
+    --fpv-row-height: 2.25rem;
+    --fpv-row-gap: 0.2rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--fpv-row-gap);
+}
+
+.fpv-panel-list::-webkit-scrollbar {
+    width: 3px;
+}
+
+.fpv-panel-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+}
+
+.fpv-panel-item {
+    min-height: var(--fpv-row-height);
+    padding: 0.55rem 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--fv-modal-item-font-family, var(--font-body, 'Syne', sans-serif));
+    font-size: var(--fv-modal-item-font-size, 0.78rem);
+    font-weight: 600;
+    color: var(--fv-modal-item-text, rgba(255, 255, 255, 0.85));
+    text-align: left;
+    width: 100%;
+    display: block;
+    transition: background 0.18s ease, border-color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fpv-panel-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.fpv-panel-item.active {
+    background: var(--fv-modal-item-active-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--fv-modal-item-active-border, rgba(255, 255, 255, 0.15));
+}
+
+/* Collapsed state - just shows a small pill to re-open */
+.fpv-panel.collapsed .fpv-panel-list,
+.fpv-panel.collapsed .fpv-panel-header {
+    display: none;
+}
+
+.fpv-panel.collapsed {
+    width: auto;
+    height: auto;
+    max-height: none;
+    padding: 0;
+    border-radius: 12px;
+}
+
+.fpv-panel-expand {
+    display: none;
+    padding: 0.55rem 0.85rem;
+    font-family: var(--fv-modal-title-font-family, var(--font-body, 'Syne', sans-serif));
+    font-size: var(--fv-modal-title-font-size, 0.75rem);
+    font-weight: 700;
+    color: var(--fv-modal-title, #ffffff);
+    cursor: pointer;
+    background: none;
+    border: none;
+    white-space: nowrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.fpv-panel.collapsed .fpv-panel-expand {
+    display: inline-flex;
+}
+
+/* -- Responsive -- */
+@media (max-width: 768px) {
+    .fpv-panel {
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px) + var(--fv-modal-bottom, 24px));
+        right: min(var(--fv-modal-right, 7rem), calc(100vw - 1.5rem));
+        left: auto;
+        width: min(var(--fv-modal-width, 260px), max(0px, calc(100vw - var(--fv-modal-right, 0px) - 1rem)));
+        height: min(var(--fv-modal-height, var(--fv-modal-max-height, 72vh)), max(0px, calc(100vh - (72px + env(safe-area-inset-bottom, 0px) + var(--fv-modal-bottom, 24px)))));
+        max-height: min(var(--fv-modal-height, var(--fv-modal-max-height, 72vh)), max(0px, calc(100vh - (72px + env(safe-area-inset-bottom, 0px) + var(--fv-modal-bottom, 24px)))));
+    }
+
+    .fpv-image-wrap {
+        padding: 1.5rem;
+    }
+
+    .fpv-zoom-controls {
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+
+    .fpv-panel.collapsed {
+        max-width: calc(100vw - 1.5rem);
+    }
+}

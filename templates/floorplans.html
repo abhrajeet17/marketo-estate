@@ -1,0 +1,3394 @@
+{% extends 'base.html' %}
+{% block title %}Floor Plans – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<link rel="stylesheet" href="/static/css/floorplans.css">
+<link rel="stylesheet" href="/static/css/sales_route_maps.css">
+{% endblock %}
+{% block content %}
+<div class="floorplans-page" id="floorplans-page">
+    {% set active_page = 'floorplans' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="floorplans-main">
+        <div class="fp-global-toolbar">
+            <div class="fp-global-filter">
+                <label for="fp-global-workspace-filter">Select Project</label>
+                <select id="fp-global-workspace-filter" class="srm-select">
+                    <option value="">All projects</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Subtabs -->
+        <div class="fp-subtabs">
+            <button class="fp-subtab active" data-tab="daynight" id="subtab-daynight">Day/Night</button>
+            <button class="fp-subtab" data-tab="floorplans" id="subtab-floorplans">Floor Plans</button>
+            <button class="fp-subtab" data-tab="building-maps" id="subtab-building-maps">Building Maps</button>
+            <button class="fp-subtab" data-tab="earth-views" id="subtab-earth-views">Earth Views</button>
+            <button class="fp-subtab" data-tab="project-plans" id="subtab-project-plans">Project Plans</button>
+            <button class="fp-subtab" data-tab="route-maps" id="subtab-route-maps">Route Maps</button>
+            <button class="fp-subtab" data-tab="flat360" id="subtab-flat360">360 Strip</button>
+            <button class="fp-subtab" data-tab="galleries" id="subtab-galleries">Gallery</button>
+        </div>
+
+        <!-- ========= DAY/NIGHT TAB ========= -->
+        <div class="fp-tab-content" id="tab-daynight">
+            <div class="fp-daynight-embed-shell">
+                <iframe id="fp-daynight-frame"
+                        class="fp-daynight-embed-frame"
+                        src=""
+                        title="Day/Night"
+                        loading="lazy"
+                        referrerpolicy="same-origin"></iframe>
+            </div>
+        </div><!-- /tab-daynight -->
+
+        <!-- ========= FLOOR PLANS TAB ========= -->
+        <div class="fp-tab-content" id="tab-floorplans" style="display:none;">
+        <!-- List view -->
+        <div id="fp-list-view">
+            <div class="floorplans-header">
+                <h1 class="floorplans-title">Floor Plan Catalogues</h1>
+                <button class="btn btn-primary" id="new-catalogue-btn">New Catalogue</button>
+            </div>
+
+            <div id="fp-loading" style="text-align:center; padding:3rem; color:var(--color-muted);">Loading...</div>
+
+            <div class="fp-grid" id="fp-grid" style="display:none;"></div>
+
+            <div class="fp-empty" id="fp-empty" style="display:none;">
+                <div class="fp-empty-icon">&#9638;</div>
+                <div>No floor plan catalogues yet.</div>
+                <div style="margin-top:0.5rem; font-size:0.85rem;">Click "New Catalogue" to create one linked to a project.</div>
+            </div>
+        </div>
+
+        <!-- Detail view (items within a catalogue) -->
+        <div id="fp-detail-view" class="fp-detail">
+            <div class="fp-detail-header">
+                <button class="fp-detail-back" id="fp-back-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    Back
+                </button>
+                <h2 class="fp-detail-title" id="fp-detail-title">Floor Plans</h2>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-secondary btn-sm" id="fp-preview-btn" title="Preview public view">Preview</button>
+                    <button class="btn btn-sm" id="fp-save-order-btn" style="display:none;">Save Order</button>
+                </div>
+            </div>
+
+            <div class="fp-upload-zone" id="fp-upload-zone">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4; margin-bottom:0.4rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <div class="fp-upload-zone-text">Drop floor plan images here or click to browse</div>
+                <div class="fp-upload-zone-hint">PNG or WebP with transparent background recommended</div>
+                <input type="file" id="fp-file-input" accept="image/png,image/webp,image/jpeg" style="display:none" multiple>
+            </div>
+
+            <div class="fp-upload-progress" id="fp-upload-progress">
+                <div class="progress-bar"><div class="progress-fill" id="fp-progress-fill" style="width:0%"></div></div>
+                <div class="progress-text" id="fp-progress-text">Uploading...</div>
+            </div>
+
+            <div class="fp-items-list" id="fp-items-list"></div>
+
+            <div class="fp-empty" id="fp-items-empty" style="display:none;">
+                <div class="fp-empty-icon">&#128444;</div>
+                <div>No floor plans added yet.</div>
+                <div style="margin-top:0.5rem; font-size:0.85rem;">Upload images above to build your catalogue.</div>
+            </div>
+        </div>
+    </div><!-- /tab-floorplans -->
+
+        <!-- ========= BUILDING MAPS TAB ========= -->
+        <div class="fp-tab-content" id="tab-building-maps" style="display:none;">
+            <div class="floorplans-header">
+                <h1 class="floorplans-title">Building Maps</h1>
+                <button class="btn btn-primary" id="new-bm-btn">New Building Map</button>
+            </div>
+
+            <div id="bm-loading" style="text-align:center; padding:3rem; color:var(--color-muted);">Loading...</div>
+
+            <div class="fp-grid" id="bm-grid" style="display:none;"></div>
+
+            <div class="fp-empty" id="bm-empty" style="display:none;">
+                <div class="fp-empty-icon">&#9638;</div>
+                <div>No building maps yet.</div>
+                <div style="margin-top:0.5rem; font-size:0.85rem;">Click "New Building Map" to upload a building photo.</div>
+            </div>
+        </div><!-- /tab-building-maps -->
+
+        <!-- ========= EARTH VIEWS TAB ========= -->
+        <div class="fp-tab-content" id="tab-earth-views" style="display:none;">
+            <div class="floorplans-header">
+                <h1 class="floorplans-title">Earth Views</h1>
+                <button class="btn btn-primary" id="new-ev-btn">New Earth View</button>
+            </div>
+
+            <div id="ev-loading" style="text-align:center; padding:3rem; color:var(--color-muted);">Loading...</div>
+
+            <div class="fp-grid" id="ev-grid" style="display:none;"></div>
+
+            <div class="fp-empty" id="ev-empty" style="display:none;">
+                <div class="fp-empty-icon">&#127758;</div>
+                <div>No earth views yet.</div>
+                <div style="margin-top:0.5rem; font-size:0.85rem;">Click "New Earth View" to start drawing on satellite imagery.</div>
+            </div>
+        </div><!-- /tab-earth-views -->
+
+        <!-- ========= PROJECT PLANS TAB ========= -->
+        <div class="fp-tab-content" id="tab-project-plans" style="display:none;">
+            <div class="floorplans-header">
+                <h1 class="floorplans-title">Project Plans</h1>
+                <button class="btn btn-primary" id="new-pp-btn">New Project Plan</button>
+            </div>
+
+            <div id="pp-loading" style="text-align:center; padding:3rem; color:var(--color-muted);">Loading...</div>
+
+            <div class="fp-grid" id="pp-grid" style="display:none;"></div>
+
+            <div class="fp-empty" id="pp-empty" style="display:none;">
+                <div class="fp-empty-icon">&#9776;</div>
+                <div>No project plans yet.</div>
+                <div style="margin-top:0.5rem; font-size:0.85rem;">Click "New Project Plan" to bundle multiple building maps together.</div>
+            </div>
+
+            <!-- Manage view (hidden by default) -->
+            <div id="pp-manage" style="display:none;">
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem;">
+                    <button class="btn btn-secondary" id="pp-manage-back" style="padding:0.4rem 0.8rem;">&larr; Back</button>
+                    <h2 class="floorplans-title" id="pp-manage-title" style="margin:0; font-size:1.1rem;"></h2>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+                        <span style="font-size:0.85rem; font-weight:600; color:var(--color-text);">Share Link</span>
+                    </div>
+                    <div class="fp-share-row">
+                        <input type="text" id="pp-manage-share-url" readonly onclick="this.select()" style="flex:1;">
+                        <button class="btn btn-sm" id="pp-manage-copy-link">Copy</button>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+                    <span style="font-size:0.85rem; font-weight:600; color:var(--color-text);">Linked Building Maps</span>
+                    <button class="btn btn-sm btn-primary" id="pp-add-map-btn">+ Add Map</button>
+                </div>
+                <div id="pp-linked-maps"></div>
+            </div>
+        </div><!-- /tab-project-plans -->
+
+        <!-- ========= ROUTE MAPS TAB ========= -->
+        <div class="fp-tab-content" id="tab-route-maps" style="display:none;">
+            <div class="srm-header">
+                <div>
+                    <div class="srm-eyebrow">Sales Tool</div>
+                    <h1 class="srm-title">Route Map Builder</h1>
+                    <p class="srm-subtitle">Upload a map image, place one main pointer and multiple normal pointers, then draw paths between them for customer view.</p>
+                </div>
+                <button class="btn btn-primary" id="srm-new-btn">New Route Map</button>
+            </div>
+
+            <div class="srm-toolbar" style="display:none;">
+                <label for="srm-workspace-filter">Project</label>
+                <select id="srm-workspace-filter" class="srm-select">
+                    <option value="">All projects</option>
+                </select>
+            </div>
+
+            <div id="srm-loading" style="text-align:center; padding:2rem; color:var(--color-muted);">Loading route maps...</div>
+            <div class="srm-grid" id="srm-grid"></div>
+            <div class="srm-empty" id="srm-empty" style="display:none;">No route maps yet. Create your first one.</div>
+        </div><!-- /tab-route-maps -->
+
+        <!-- ========= SALES 360 TAB ========= -->
+        <div class="fp-tab-content" id="tab-flat360" style="display:none;">
+            <div class="srm-header">
+                <div>
+                    <div class="srm-eyebrow">Sales Tool</div>
+                    <h1 class="srm-title">Flat 360 Viewer</h1>
+                    <p class="srm-subtitle">Upload a flat 2D 360 image strip. In customer view users can drag left or right to rotate around.</p>
+                </div>
+                <button class="btn btn-primary" id="sf3-new-btn">New 360 View</button>
+            </div>
+
+            <div class="srm-toolbar" style="display:none;">
+                <label for="sf3-workspace-filter">Project</label>
+                <select id="sf3-workspace-filter" class="srm-select">
+                    <option value="">All projects</option>
+                </select>
+            </div>
+
+            <div id="sf3-loading" style="text-align:center; padding:2rem; color:var(--color-muted);">Loading 360 views...</div>
+            <div class="srm-grid" id="sf3-grid"></div>
+            <div class="srm-empty" id="sf3-empty" style="display:none;">No 360 views yet. Create your first one.</div>
+        </div><!-- /tab-flat360 -->
+
+        <!-- ========= GALLERIES TAB ========= -->
+        <div class="fp-tab-content" id="tab-galleries" style="display:none;">
+            <!-- List view -->
+            <div id="gal-list-view">
+                <div class="floorplans-header">
+                    <h1 class="floorplans-title">Galleries</h1>
+                    <button class="btn btn-primary" id="new-gal-btn">New Gallery</button>
+                </div>
+
+                <div id="gal-loading" style="text-align:center; padding:3rem; color:var(--color-muted);">Loading...</div>
+
+                <div class="fp-grid" id="gal-grid" style="display:none;"></div>
+
+                <div class="fp-empty" id="gal-empty" style="display:none;">
+                    <div class="fp-empty-icon">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                    </div>
+                    <div>No galleries yet.</div>
+                    <div style="margin-top:0.5rem; font-size:0.85rem;">Click "New Gallery" to create an image &amp; video gallery.</div>
+                </div>
+            </div>
+
+            <!-- Detail view (items within gallery) -->
+            <div id="gal-detail-view" class="fp-detail">
+                <div class="fp-detail-header">
+                    <button class="fp-detail-back" id="gal-back-btn">&larr; Back</button>
+                    <h2 id="gal-detail-title" class="floorplans-title" style="flex:1; margin:0;"></h2>
+                    <button class="btn btn-sm btn-secondary" id="gal-preview-btn" style="margin-left:auto;">Preview</button>
+                </div>
+
+                <!-- Upload zone -->
+                <div class="fp-upload-zone" id="gal-upload-zone">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.5;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <div style="font-size:0.85rem; color:var(--color-muted); margin-top:0.5rem;">Drop images or videos here, or click to browse</div>
+                    <div style="font-size:0.72rem; color:var(--color-muted); margin-top:0.25rem;">Supports: PNG, JPG, WebP, GIF, MP4, WebM, MOV</div>
+                    <input type="file" id="gal-file-input" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple style="display:none;">
+                </div>
+
+                <!-- Upload progress (shown via .visible — same pattern as floor plan uploads) -->
+                <div class="fp-upload-progress" id="gal-upload-progress">
+                    <div class="progress-bar"><div class="progress-fill" id="gal-progress-fill" style="width:0%"></div></div>
+                    <div class="progress-text" id="gal-progress-text">Uploading...</div>
+                </div>
+
+                <!-- Items list -->
+                <div class="fp-items-list" id="gal-items-list"></div>
+                <div class="fp-empty" id="gal-items-empty" style="display:none; padding:2rem;">
+                    <div>No items yet. Upload images or videos above.</div>
+                </div>
+
+                <button class="btn btn-primary" id="gal-save-order-btn" style="display:none; margin-top:1rem;">Save Order</button>
+            </div>
+        </div><!-- /tab-galleries -->
+    </div><!-- /floorplans-main -->
+
+    <!-- Create Catalogue Modal -->
+    <div class="modal-backdrop" id="fp-create-modal">
+        <div class="modal" style="max-width:480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">New Floor Plan Catalogue</div>
+                <button type="button" class="modal-close" id="fp-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Project</label>
+                <select class="form-input" id="fp-cat-workspace">
+                    <option value="">Loading projects...</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Catalogue Name</label>
+                <input type="text" class="form-input" id="fp-cat-name" maxlength="200" placeholder="e.g., Floor Plans" value="Floor Plans">
+            </div>
+            <div id="fp-create-error" class="msg error" style="display:none; margin-bottom:1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="fp-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="fp-modal-create">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload name modal (after file pick) -->
+    <div class="modal-backdrop" id="fp-name-modal">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-title" style="margin-bottom:1rem;">Name this floor plan</div>
+            <div style="display:flex; gap:1rem; align-items:center; margin-bottom:1rem;">
+                <img id="fp-name-preview" src="" alt="" style="width:80px; height:60px; object-fit:contain; border-radius:var(--radius-sm); background:var(--color-surface);">
+                <div style="flex:1;">
+                    <div id="fp-name-filename" style="font-size:0.82rem; color:var(--color-muted);"></div>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Floor Plan Name</label>
+                <input type="text" class="form-input" id="fp-item-name-input" maxlength="200" placeholder="e.g., 2 BHK (638 SQFT)">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="fp-name-skip">Skip</button>
+                <button class="btn btn-primary" id="fp-name-confirm">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete confirm modal -->
+    <div class="modal-backdrop" id="fp-delete-modal">
+        <div class="modal">
+            <div class="modal-title">Delete?</div>
+            <div class="modal-text" id="fp-delete-text">This action cannot be undone.</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="fp-delete-cancel">Cancel</button>
+                <button class="btn btn-danger" id="fp-delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename modal -->
+    <div class="modal-backdrop" id="fp-rename-modal">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-title" id="fp-rename-title" style="margin-bottom:1rem;">Rename Floor Plan</div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <input type="text" class="form-input" id="fp-rename-input" maxlength="200">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="fp-rename-cancel">Cancel</button>
+                <button class="btn btn-primary" id="fp-rename-confirm">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Building Map upload modal -->
+    <div class="modal-backdrop" id="bm-create-modal">
+        <div class="modal" style="max-width:480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">New Building Map</div>
+                <button type="button" class="modal-close" id="bm-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="bm-name" maxlength="200" placeholder="e.g., Tower A" value="Building Map">
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Project</label>
+                <select class="form-input" id="bm-workspace">
+                    <option value="">Loading projects...</option>
+                </select>
+                <div style="font-size:0.72rem; color:var(--color-muted); margin-top:0.25rem;">Optionally link this building map to a project workspace</div>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Floor Plan Catalogue</label>
+                <select class="form-input" id="bm-catalogue">
+                    <option value="">— None —</option>
+                </select>
+                <div style="font-size:0.72rem; color:var(--color-muted); margin-top:0.25rem;">Link a catalogue to filter floor plans when editing zones</div>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Building Image</label>
+                <div class="fp-dropzone" id="bm-dropzone">
+                    <input type="file" id="bm-file" accept="image/png,image/jpeg,image/webp" style="display:none">
+                    <div class="fp-dropzone-idle" id="bm-dropzone-idle">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4; margin-bottom:0.4rem;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        <div class="fp-dropzone-text">Drop building image here or click to browse</div>
+                        <div class="fp-dropzone-hint">PNG, JPG or WebP &middot; Photo or panorama of the building exterior</div>
+                    </div>
+                    <div class="fp-dropzone-preview" id="bm-dropzone-preview" style="display:none;">
+                        <img id="bm-preview-img" src="" alt="Preview">
+                        <div class="fp-dropzone-preview-info">
+                            <span id="bm-preview-name" class="fp-dropzone-preview-name"></span>
+                            <span id="bm-preview-size" class="fp-dropzone-preview-size"></span>
+                        </div>
+                        <button type="button" class="fp-dropzone-remove" id="bm-preview-remove" title="Remove">&times;</button>
+                    </div>
+                </div>
+            </div>
+            <div id="bm-create-error" class="msg error" style="display:none; margin-bottom:1rem;"></div>
+            <div class="bm-upload-progress" id="bm-upload-progress" style="display:none; margin-bottom:1rem;">
+                <div class="progress-bar" style="height:4px; background:var(--color-border); border-radius:2px; overflow:hidden;">
+                    <div class="progress-fill" id="bm-progress-fill" style="width:0%; height:100%; background:var(--color-text); border-radius:2px; transition:width 0.3s ease;"></div>
+                </div>
+                <div style="font-size:0.75rem; color:var(--color-muted); margin-top:0.3rem; text-align:center;" id="bm-progress-text">Uploading...</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="bm-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="bm-modal-create">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Building Map delete modal -->
+    <div class="modal-backdrop" id="bm-delete-modal">
+        <div class="modal">
+            <div class="modal-title">Delete Building Map?</div>
+            <div class="modal-text" id="bm-delete-text">This action cannot be undone.</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="bm-delete-cancel">Cancel</button>
+                <button class="btn btn-danger" id="bm-delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earth View create modal -->
+    <div class="modal-backdrop" id="ev-create-modal">
+        <div class="modal" style="max-width:480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">New Earth View</div>
+                <button type="button" class="modal-close" id="ev-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="ev-name" maxlength="200" placeholder="e.g., Sector A" value="Earth View">
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Project</label>
+                <select class="form-input" id="ev-workspace">
+                    <option value="">No project</option>
+                </select>
+            </div>
+            <div id="ev-create-error" class="msg error" style="display:none; margin-bottom:1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="ev-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="ev-modal-create">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earth View delete modal -->
+    <div class="modal-backdrop" id="ev-delete-modal">
+        <div class="modal">
+            <div class="modal-title">Delete Earth View?</div>
+            <div class="modal-text" id="ev-delete-text">This action cannot be undone.</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="ev-delete-cancel">Cancel</button>
+                <button class="btn btn-danger" id="ev-delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Plan create modal -->
+    <div class="modal-backdrop" id="pp-create-modal">
+        <div class="modal" style="max-width:480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">New Project Plan</div>
+                <button type="button" class="modal-close" id="pp-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Plan Name</label>
+                <input type="text" class="form-input" id="pp-name" maxlength="200" placeholder="e.g., Tower A + B" value="Project Plan">
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Project</label>
+                <select class="form-input" id="pp-workspace">
+                    <option value="">Loading projects...</option>
+                </select>
+                <div style="font-size:0.72rem; color:var(--color-muted); margin-top:0.25rem;">Optionally link this project plan to a project workspace</div>
+            </div>
+            <div id="pp-create-error" class="msg error" style="display:none; margin-bottom:1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="pp-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="pp-modal-create">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Plan delete modal -->
+    <div class="modal-backdrop" id="pp-delete-modal">
+        <div class="modal">
+            <div class="modal-title">Delete Project Plan?</div>
+            <div class="modal-text" id="pp-delete-text">This action cannot be undone.</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="pp-delete-cancel">Cancel</button>
+                <button class="btn btn-danger" id="pp-delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Map to Plan modal -->
+    <div class="modal-backdrop" id="pp-add-map-modal">
+        <div class="modal" style="max-width:520px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">Add Building Map</div>
+                <button type="button" class="modal-close" id="pp-add-map-close" aria-label="Close">&times;</button>
+            </div>
+            <div id="pp-available-maps" style="max-height:400px; overflow-y:auto;"></div>
+            <div id="pp-no-maps-msg" class="msg" style="display:none; margin-top:0.5rem;">No building maps available to add.</div>
+        </div>
+    </div>
+
+    <!-- Route Map create modal -->
+    <div class="modal-backdrop" id="srm-create-modal">
+        <div class="modal srm-modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">Create Sales Route Map</div>
+                <button type="button" class="modal-close" id="srm-create-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="srm-field">
+                <label>Project</label>
+                <select id="srm-create-workspace" class="srm-select">
+                    <option value="">Select project</option>
+                </select>
+            </div>
+            <div class="srm-field">
+                <label>Map Name</label>
+                <input id="srm-create-name" class="srm-input" type="text" maxlength="200" value="Sales Route Map">
+            </div>
+            <div class="srm-field">
+                <label>Map Image</label>
+                <input id="srm-create-file" class="srm-input" type="file" accept="image/png,image/jpeg,image/webp,image/jpg">
+            </div>
+            <div class="srm-error" id="srm-create-error" style="display:none;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="srm-create-cancel">Cancel</button>
+                <button class="btn btn-primary" id="srm-create-submit">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales 360 create modal -->
+    <div class="modal-backdrop" id="sf3-create-modal">
+        <div class="modal srm-modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">Create Flat 360 View</div>
+                <button type="button" class="modal-close" id="sf3-create-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="srm-field">
+                <label>Project</label>
+                <select id="sf3-create-workspace" class="srm-select">
+                    <option value="">Select project</option>
+                </select>
+            </div>
+            <div class="srm-field">
+                <label>Name</label>
+                <input id="sf3-create-name" class="srm-input" type="text" maxlength="200" value="Sales 360 View">
+            </div>
+            <div class="srm-field">
+                <label>360 Strip Image</label>
+                <input id="sf3-create-file" class="srm-input" type="file" accept="image/png,image/jpeg,image/webp,image/jpg">
+            </div>
+            <div class="srm-error" id="sf3-create-error" style="display:none;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="sf3-create-cancel">Cancel</button>
+                <button class="btn btn-primary" id="sf3-create-submit">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Create Modal -->
+    <div class="modal-backdrop" id="gal-create-modal">
+        <div class="modal" style="max-width:480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div class="modal-title">New Gallery</div>
+                <button type="button" class="modal-close" id="gal-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="gal-name" placeholder="e.g., Project Gallery" value="Gallery">
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">Project</label>
+                <select class="form-input" id="gal-workspace">
+                    <option value="">Loading projects...</option>
+                </select>
+            </div>
+            <div class="msg msg-error" id="gal-create-error" style="display:none;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="gal-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="gal-modal-create">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Delete Modal -->
+    <div class="modal-backdrop" id="gal-delete-modal">
+        <div class="modal" style="max-width:440px;">
+            <div class="modal-title" style="margin-bottom:1rem;">Confirm Delete</div>
+            <p id="gal-delete-text" style="margin-bottom:1.25rem; font-size:0.9rem;"></p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="gal-delete-cancel">Cancel</button>
+                <button class="btn btn-danger" id="gal-delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Rename Modal -->
+    <div class="modal-backdrop" id="gal-rename-modal">
+        <div class="modal" style="max-width:440px;">
+            <div class="modal-title" id="gal-rename-title" style="margin-bottom:1rem;">Rename Item</div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <input type="text" class="form-input" id="gal-rename-input" placeholder="Name">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="gal-rename-cancel">Cancel</button>
+                <button class="btn btn-primary" id="gal-rename-confirm">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Name Modal (for upload naming) -->
+    <div class="modal-backdrop" id="gal-name-modal">
+        <div class="modal" style="max-width:480px;">
+            <div class="modal-title" style="margin-bottom:0.75rem;">Name this item</div>
+            <div id="gal-name-preview-wrap" style="margin-bottom:0.75rem; text-align:center;">
+                <img id="gal-name-preview" style="max-width:100%; max-height:200px; border-radius:8px; display:none;" alt="">
+                <video id="gal-name-preview-video" style="max-width:100%; max-height:200px; border-radius:8px; display:none;" muted></video>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+                <input type="text" class="form-input" id="gal-item-name-input" placeholder="e.g., Living Room View">
+            </div>
+            <div class="form-group" id="gal-item-is360-wrap" style="margin-bottom:1rem;">
+                <label style="display:flex;align-items:center;gap:0.45rem;font-size:0.82rem;color:var(--color-text);">
+                    <input type="checkbox" id="gal-item-is360">
+                    Mark as 360 image
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="gal-name-skip">Skip</button>
+                <button class="btn btn-primary" id="gal-name-confirm">Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+    window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+    window.__MAX_GALLERY_READ_BYTES__ = {{ (max_gallery_read_bytes or 0)|tojson }};
+</script>
+<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
+<script>
+(function() {
+    var accessToken = null;
+    var catalogues = [];
+    var currentCatalogue = null;
+    var currentItems = [];
+    var pendingFiles = [];
+    var pendingFileIndex = 0;
+    var orderDirty = false;
+    var fpLoaded = false;
+    var workspaceOptionsLoaded = false;
+    var SALES_TAB_ORDER = ['daynight', 'floorplans', 'building-maps', 'earth-views', 'project-plans', 'route-maps', 'flat360', 'galleries'];
+    var SALES_DEFAULT_TAB = SALES_TAB_ORDER[0];
+    var initialSalesTab = resolveInitialSalesTab();
+    var pendingAuthLoads = Object.create(null);
+    var salesTabManuallySelected = false;
+    var salesGlobalProjects = [];
+    var salesProjectNameMap = Object.create(null);
+    var salesGlobalProjectId = resolveInitialProjectFilter();
+    var salesGlobalSearchText = '';
+
+    // Wait for sidebar auth then start
+    window.sidebarReady.then(function(ctx) {
+        accessToken = ctx.accessToken;
+        bindGlobalFilters();
+        loadProjectsForModal();
+        if (!salesTabManuallySelected) {
+            activateSalesTab(initialSalesTab);
+        }
+    });
+
+    function waitForAuthAndRetry(key, retryFn) {
+        if (accessToken) return false;
+        if (pendingAuthLoads[key]) return true;
+        pendingAuthLoads[key] = true;
+        window.sidebarReady.then(function(ctx) {
+            accessToken = ctx.accessToken;
+            pendingAuthLoads[key] = false;
+            retryFn();
+        }).catch(function() {
+            pendingAuthLoads[key] = false;
+        });
+        return true;
+    }
+
+    function authHeaders() {
+        return { 'Authorization': 'Bearer ' + accessToken };
+    }
+
+    function apiJson(url, opts, retryOpts) {
+        if (window.pmApi && typeof window.pmApi.fetchJsonWithRetry === 'function') {
+            return window.pmApi.fetchJsonWithRetry(url, opts, Object.assign({
+                retries: 2,
+                baseDelayMs: 220,
+                waitAttempts: 8,
+                waitDelayMs: 140
+            }, retryOpts || {}));
+        }
+        return fetch(url, opts || {}).then(function(r) {
+            if (!r.ok) throw new Error('Request failed (' + r.status + ')');
+            return r.json();
+        });
+    }
+
+    function normalizeProjectList(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.workspaces)) return data.workspaces;
+        if (data && Array.isArray(data.projects)) return data.projects;
+        return [];
+    }
+
+    function resolveInitialProjectFilter() {
+        var qs = new URLSearchParams(window.location.search || '');
+        return (qs.get('workspace_id') || qs.get('workspace') || '').trim();
+    }
+
+    function buildProjectNameMap(workspaces) {
+        salesProjectNameMap = Object.create(null);
+        (workspaces || []).forEach(function(ws) {
+            var id = String(ws && ws.id ? ws.id : '').trim();
+            if (!id) return;
+            salesProjectNameMap[id] = ws.name || 'Project';
+        });
+    }
+
+    function workspaceNameById(workspaceId) {
+        var id = String(workspaceId || '').trim();
+        if (!id) return '';
+        return salesProjectNameMap[id] || '';
+    }
+
+    function bindGlobalFilters() {
+        var workspaceSel = document.getElementById('fp-global-workspace-filter');
+
+        if (workspaceSel) {
+            workspaceSel.value = salesGlobalProjectId || '';
+            workspaceSel.addEventListener('change', function() {
+                salesGlobalProjectId = workspaceSel.value || '';
+                applyGlobalFilters();
+            });
+        }
+    }
+
+    function renderGlobalProjectOptions() {
+        var sel = document.getElementById('fp-global-workspace-filter');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">All projects</option>';
+        salesGlobalProjects.forEach(function(ws) {
+            var opt = document.createElement('option');
+            opt.value = String(ws.id || '');
+            opt.textContent = ws.name || 'Project';
+            sel.appendChild(opt);
+        });
+        if (salesGlobalProjectId && !workspaceNameById(salesGlobalProjectId)) {
+            salesGlobalProjectId = '';
+        }
+        sel.value = salesGlobalProjectId || '';
+    }
+
+    function syncGlobalProjectToLocalFilters() {
+        srmActiveProjectId = salesGlobalProjectId || '';
+        sf3ActiveProjectId = salesGlobalProjectId || '';
+        var srmFilter = document.getElementById('srm-workspace-filter');
+        var sf3Filter = document.getElementById('sf3-workspace-filter');
+        if (srmFilter) srmFilter.value = srmActiveProjectId || '';
+        if (sf3Filter) sf3Filter.value = sf3ActiveProjectId || '';
+    }
+
+    function updateSalesToolsUrlState() {
+        var qs = new URLSearchParams(window.location.search || '');
+        if (salesGlobalProjectId) qs.set('workspace_id', salesGlobalProjectId);
+        else qs.delete('workspace_id');
+        qs.delete('q');
+        qs.delete('search');
+        var nextQs = qs.toString();
+        var nextUrl = nextQs ? ('/salestools?' + nextQs) : '/salestools';
+        window.history.replaceState({}, '', nextUrl);
+    }
+
+    function applyGlobalFilters() {
+        syncGlobalProjectToLocalFilters();
+        updateSalesToolsUrlState();
+        refreshDaynightEmbedFilters();
+        if (fpLoaded && !currentCatalogue) loadCatalogues();
+        if (bmLoaded) loadBuildingMaps();
+        if (evLoaded) loadEarthViews();
+        if (ppLoaded && !ppManagePlanId) loadProjectPlans();
+        if (srmLoaded) loadSrmMaps();
+        if (sf3Loaded) loadSf3Views();
+        if (galLoaded && !currentGallery) loadGalleries();
+    }
+
+    function globalProjectMatches(itemProjectId) {
+        if (!salesGlobalProjectId) return true;
+        if (itemProjectId === undefined) return true;
+        if (itemProjectId === null || itemProjectId === '') return false;
+        return String(itemProjectId) === String(salesGlobalProjectId);
+    }
+
+    function globalSearchMatches(values) {
+        var term = (salesGlobalSearchText || '').trim().toLowerCase();
+        if (!term) return true;
+        if (!Array.isArray(values)) values = [values];
+        for (var i = 0; i < values.length; i++) {
+            var raw = values[i];
+            if (raw === null || raw === undefined) continue;
+            if (String(raw).toLowerCase().indexOf(term) >= 0) return true;
+        }
+        return false;
+    }
+
+    function loadSalesGlobalProjects() {
+        if (waitForAuthAndRetry('global-workspaces', loadSalesGlobalProjects)) return Promise.resolve([]);
+        return apiJson('/api/workspaces', { headers: authHeaders() })
+            .then(function(data) {
+                salesGlobalProjects = normalizeProjectList(data);
+                buildProjectNameMap(salesGlobalProjects);
+                renderGlobalProjectOptions();
+                return salesGlobalProjects;
+            })
+            .catch(function() {
+                salesGlobalProjects = [];
+                buildProjectNameMap([]);
+                renderGlobalProjectOptions();
+                return [];
+            });
+    }
+
+    // ------------------------------------------------------------------
+    // Catalogue list
+    // ------------------------------------------------------------------
+
+    function loadCatalogues() {
+        if (waitForAuthAndRetry('catalogues', loadCatalogues)) return;
+        var query = salesGlobalProjectId ? ('?workspace_id=' + encodeURIComponent(salesGlobalProjectId)) : '';
+        apiJson('/api/floorplans/catalogues' + query, { headers: authHeaders() })
+            .then(function(data) {
+                catalogues = data;
+                fpLoaded = true;
+                renderCatalogues();
+            })
+            .catch(function() {
+                fpLoaded = false;
+                catalogues = [];
+                renderCatalogues();
+            });
+    }
+
+    function renderCatalogues() {
+        var loading = document.getElementById('fp-loading');
+        var grid = document.getElementById('fp-grid');
+        var empty = document.getElementById('fp-empty');
+        var visibleCatalogues = catalogues.filter(function(c) {
+            return globalProjectMatches(c && c.workspace_id) &&
+                globalSearchMatches([c && c.name, (c && c.item_names ? c.item_names.join(' ') : '')]);
+        });
+        if (loading) loading.style.display = 'none';
+        if (!visibleCatalogues.length) {
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (grid) grid.style.display = '';
+        grid.innerHTML = visibleCatalogues.map(function(c) {
+            var itemNames = c.item_names || [];
+            var chipsHtml = '';
+            if (itemNames.length) {
+                chipsHtml = itemNames.map(function(n) { return '<span class="fp-card-chip">' + esc(n) + '</span>'; }).join('');
+                if ((c.item_count || 0) > itemNames.length) {
+                    chipsHtml += '<span class="fp-card-chip muted">+' + ((c.item_count || 0) - itemNames.length) + ' more</span>';
+                }
+            } else {
+                chipsHtml = '<span class="fp-card-chip muted">Empty catalogue</span>';
+            }
+            return '<div class="fp-card" data-id="' + c.id + '">' +
+                '<div class="fp-card-header">' +
+                    '<div class="fp-card-icon icon-catalogue">' +
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>' +
+                    '</div>' +
+                    '<div class="fp-card-title-group">' +
+                        '<div class="fp-card-name">' + esc(c.name) + '</div>' +
+                        '<div class="fp-card-meta">Floor Plan Catalogue</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fp-card-stats">' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (c.item_count || 0) + '</div><div class="fp-card-stat-label">Plans</div></div>' +
+                '</div>' +
+                '<div class="fp-card-details">' +
+                    '<div class="fp-card-detail-label">Floor Plans</div>' +
+                    '<div class="fp-card-chips">' + chipsHtml + '</div>' +
+                '</div>' +
+                '<hr class="fp-card-divider">' +
+                '<div class="fp-card-body">' +
+                    '<div class="fp-share-row">' +
+                        '<input type="text" value="' + esc(c.share_url || '') + '" readonly onclick="this.select()">' +
+                        '<button class="btn btn-sm fp-copy-btn" data-url="' + esc(c.share_url || '') + '">Copy</button>' +
+                    '</div>' +
+                    '<div class="fp-card-actions">' +
+                        '<button class="btn btn-secondary fp-manage-btn" data-id="' + c.id + '">Manage</button>' +
+                        '<button class="btn btn-secondary fp-rename-cat-btn" data-id="' + c.id + '" data-name="' + esc(c.name) + '">Rename</button>' +
+                        '<button class="btn btn-danger fp-del-cat-btn" data-id="' + c.id + '" data-name="' + esc(c.name) + '">Delete</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        // Bind events
+        grid.querySelectorAll('.fp-copy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigator.clipboard.writeText(btn.dataset.url).then(function() {
+                    btn.textContent = 'Copied!';
+                    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+                });
+            });
+        });
+        grid.querySelectorAll('.fp-manage-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openCatalogue(btn.dataset.id);
+            });
+        });
+        grid.querySelectorAll('.fp-rename-cat-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openRename(btn.dataset.id, btn.dataset.name, 'catalogue');
+            });
+        });
+        grid.querySelectorAll('.fp-del-cat-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                confirmDeleteCatalogue(btn.dataset.id, btn.dataset.name);
+            });
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Create catalogue modal
+    // ------------------------------------------------------------------
+
+    function loadProjectsForModal() {
+        if (waitForAuthAndRetry('workspace-options', loadProjectsForModal)) return;
+        return loadSalesGlobalProjects()
+            .then(function(workspaces) {
+                var selectors = [
+                    document.getElementById('fp-cat-workspace'),
+                    document.getElementById('bm-workspace'),
+                    document.getElementById('ev-workspace'),
+                    document.getElementById('pp-workspace'),
+                    document.getElementById('gal-workspace')
+                ].filter(Boolean);
+                if (!selectors.length) return;
+                if (!workspaces.length) {
+                    workspaceOptionsLoaded = true;
+                    selectors.forEach(function(sel) {
+                        sel.innerHTML = '<option value="">No projects found</option>';
+                    });
+                    renderSrmProjectOptions();
+                    renderSf3ProjectOptions();
+                    return;
+                }
+                var optionsHtml = workspaces.map(function(w) {
+                    return '<option value="' + w.id + '">' + (w.name || 'Project') + '</option>';
+                }).join('');
+                selectors.forEach(function(sel) {
+                    var allowEmpty = ['bm-workspace', 'ev-workspace', 'pp-workspace', 'gal-workspace'].indexOf(sel.id) >= 0;
+                    sel.innerHTML = (allowEmpty ? '<option value="">No project</option>' : '') + optionsHtml;
+                });
+                workspaceOptionsLoaded = true;
+                renderSrmProjectOptions();
+                renderSf3ProjectOptions();
+            })
+            .catch(function() {
+                workspaceOptionsLoaded = false;
+                ['fp-cat-workspace', 'bm-workspace', 'ev-workspace', 'pp-workspace', 'gal-workspace'].forEach(function(id) {
+                    var sel = document.getElementById(id);
+                    if (sel) sel.innerHTML = '<option value="">Failed to load projects</option>';
+                });
+                renderSrmProjectOptions();
+                renderSf3ProjectOptions();
+            });
+    }
+
+    document.getElementById('new-catalogue-btn').addEventListener('click', function() {
+        showModal('fp-create-modal');
+        document.getElementById('fp-create-error').style.display = 'none';
+        var sel = document.getElementById('fp-cat-workspace');
+        if (sel && salesGlobalProjectId) sel.value = salesGlobalProjectId;
+    });
+    document.getElementById('fp-modal-close').addEventListener('click', function() { hideModal('fp-create-modal'); });
+    document.getElementById('fp-modal-cancel').addEventListener('click', function() { hideModal('fp-create-modal'); });
+
+    document.getElementById('fp-modal-create').addEventListener('click', function() {
+        var name = document.getElementById('fp-cat-name').value.trim() || 'Floor Plans';
+        var workspaceSel = document.getElementById('fp-cat-workspace');
+        var workspace_id = workspaceSel ? workspaceSel.value : '';
+        if (!workspace_id) {
+            document.getElementById('fp-create-error').textContent = 'Please select a project.';
+            document.getElementById('fp-create-error').style.display = '';
+            return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        fetch('/api/floorplans/catalogues', {
+            method: 'POST',
+            headers: Object.assign({'Content-Type': 'application/json'}, authHeaders()),
+            body: JSON.stringify({ name: name, workspace_id: workspace_id })
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            btn.disabled = false;
+            if (!res.ok) {
+                showError('fp-create-error', res.data.error || 'Failed');
+                return;
+            }
+            hideModal('fp-create-modal');
+            loadCatalogues();
+        })
+        .catch(function() { btn.disabled = false; });
+    });
+
+    // ------------------------------------------------------------------
+    // Delete catalogue
+    // ------------------------------------------------------------------
+
+    var deleteTarget = { type: null, id: null };
+
+    function confirmDeleteCatalogue(id, name) {
+        deleteTarget = { type: 'catalogue', id: id };
+        document.getElementById('fp-delete-text').textContent = 'Delete catalogue "' + name + '" and all its floor plans? This cannot be undone.';
+        showModal('fp-delete-modal');
+    }
+
+    function confirmDeleteItem(id, name) {
+        deleteTarget = { type: 'item', id: id };
+        document.getElementById('fp-delete-text').textContent = 'Delete floor plan "' + name + '"? This cannot be undone.';
+        showModal('fp-delete-modal');
+    }
+
+    document.getElementById('fp-delete-cancel').addEventListener('click', function() { hideModal('fp-delete-modal'); });
+    document.getElementById('fp-delete-confirm').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        var url = deleteTarget.type === 'catalogue'
+            ? '/api/floorplans/catalogues/' + deleteTarget.id
+            : '/api/floorplans/items/' + deleteTarget.id;
+        fetch(url, { method: 'DELETE', headers: authHeaders() })
+            .then(function() {
+                btn.disabled = false;
+                hideModal('fp-delete-modal');
+                if (deleteTarget.type === 'catalogue') {
+                    loadCatalogues();
+                } else {
+                    loadItems();
+                }
+            })
+            .catch(function() { btn.disabled = false; });
+    });
+
+    // ------------------------------------------------------------------
+    // Detail view (items within catalogue)
+    // ------------------------------------------------------------------
+
+    function openCatalogue(catalogueId) {
+        currentCatalogue = catalogues.find(function(c) { return c.id === catalogueId; });
+        if (!currentCatalogue) return;
+        document.getElementById('fp-list-view').style.display = 'none';
+        document.getElementById('fp-detail-view').classList.add('visible');
+        document.getElementById('fp-detail-title').textContent = currentCatalogue.name;
+        orderDirty = false;
+        document.getElementById('fp-save-order-btn').style.display = 'none';
+        loadItems();
+    }
+
+    document.getElementById('fp-back-btn').addEventListener('click', function() {
+        document.getElementById('fp-detail-view').classList.remove('visible');
+        document.getElementById('fp-list-view').style.display = '';
+        currentCatalogue = null;
+        loadCatalogues();
+    });
+
+    document.getElementById('fp-preview-btn').addEventListener('click', function() {
+        if (currentCatalogue && currentCatalogue.share_token) {
+            window.open('/floorplans/view/' + currentCatalogue.share_token, '_blank');
+        }
+    });
+
+    function loadItems() {
+        if (!currentCatalogue) return;
+        fetch('/api/floorplans/catalogues/' + currentCatalogue.id + '/items', { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(data) {
+                currentItems = data;
+                renderItems();
+            });
+    }
+
+    function renderItems() {
+        var list = document.getElementById('fp-items-list');
+        var empty = document.getElementById('fp-items-empty');
+        if (!currentItems.length) {
+            list.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        list.innerHTML = currentItems.map(function(item, idx) {
+            var sizeStr = item.file_size_bytes ? formatBytes(item.file_size_bytes) : '';
+            var dimStr = (item.image_width && item.image_height) ? item.image_width + ' x ' + item.image_height : '';
+            var meta = [sizeStr, dimStr].filter(Boolean).join(' &middot; ');
+            return '<div class="fp-item" draggable="true" data-id="' + item.id + '" data-idx="' + idx + '">' +
+                '<div class="fp-item-drag" title="Drag to reorder">' +
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>' +
+                '</div>' +
+                '<img class="fp-item-thumb" src="' + esc(item.image_url || '') + '" alt="' + esc(item.name) + '">' +
+                '<div class="fp-item-info">' +
+                    '<div class="fp-item-name">' + esc(item.name) + '</div>' +
+                    '<div class="fp-item-size">' + meta + '</div>' +
+                '</div>' +
+                '<div class="fp-item-actions">' +
+                    '<button class="fp-item-btn rename" data-id="' + item.id + '" data-name="' + esc(item.name) + '" title="Rename">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
+                    '</button>' +
+                    '<button class="fp-item-btn delete" data-id="' + item.id + '" data-name="' + esc(item.name) + '" title="Delete">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+                    '</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        // Bind events
+        list.querySelectorAll('.fp-item-btn.rename').forEach(function(btn) {
+            btn.addEventListener('click', function() { openRename(btn.dataset.id, btn.dataset.name); });
+        });
+        list.querySelectorAll('.fp-item-btn.delete').forEach(function(btn) {
+            btn.addEventListener('click', function() { confirmDeleteItem(btn.dataset.id, btn.dataset.name); });
+        });
+
+        // Drag and drop reorder
+        setupDragReorder();
+    }
+
+    // ------------------------------------------------------------------
+    // Drag reorder
+    // ------------------------------------------------------------------
+
+    function setupDragReorder() {
+        var list = document.getElementById('fp-items-list');
+        var dragSrcIdx = null;
+
+        list.querySelectorAll('.fp-item').forEach(function(el) {
+            el.addEventListener('dragstart', function(e) {
+                dragSrcIdx = parseInt(el.dataset.idx);
+                el.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', dragSrcIdx);
+            });
+            el.addEventListener('dragend', function() {
+                el.classList.remove('dragging');
+                list.querySelectorAll('.fp-item').forEach(function(x) { x.classList.remove('drag-over'); });
+            });
+            el.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                el.classList.add('drag-over');
+            });
+            el.addEventListener('dragleave', function() {
+                el.classList.remove('drag-over');
+            });
+            el.addEventListener('drop', function(e) {
+                e.preventDefault();
+                el.classList.remove('drag-over');
+                var targetIdx = parseInt(el.dataset.idx);
+                if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+                // Reorder array
+                var moved = currentItems.splice(dragSrcIdx, 1)[0];
+                currentItems.splice(targetIdx, 0, moved);
+                orderDirty = true;
+                document.getElementById('fp-save-order-btn').style.display = '';
+                renderItems();
+            });
+        });
+    }
+
+    // Save reorder
+    document.getElementById('fp-save-order-btn').addEventListener('click', function() {
+        if (!currentCatalogue || !orderDirty) return;
+        var btn = this;
+        btn.disabled = true;
+        var ids = currentItems.map(function(it) { return it.id; });
+        fetch('/api/floorplans/catalogues/' + currentCatalogue.id + '/reorder', {
+            method: 'POST',
+            headers: Object.assign({'Content-Type': 'application/json'}, authHeaders()),
+            body: JSON.stringify({ ordered_ids: ids })
+        })
+        .then(function(r) { return r.ok ? r.json() : []; })
+        .then(function(data) {
+            btn.disabled = false;
+            btn.style.display = 'none';
+            orderDirty = false;
+            currentItems = data;
+            renderItems();
+        })
+        .catch(function() { btn.disabled = false; });
+    });
+
+    // ------------------------------------------------------------------
+    // File upload
+    // ------------------------------------------------------------------
+
+    var uploadZone = document.getElementById('fp-upload-zone');
+    var fileInput = document.getElementById('fp-file-input');
+
+    uploadZone.addEventListener('click', function() { fileInput.click(); });
+    uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('dragover'); });
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length) handleFiles(fileInput.files);
+        fileInput.value = '';
+    });
+
+    function handleFiles(files) {
+        pendingFiles = Array.from(files);
+        pendingFileIndex = 0;
+        processNextFile();
+    }
+
+    function processNextFile() {
+        if (pendingFileIndex >= pendingFiles.length) return;
+        var file = pendingFiles[pendingFileIndex];
+        // Show name modal
+        var nameFromFile = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+        document.getElementById('fp-item-name-input').value = nameFromFile;
+        document.getElementById('fp-name-filename').textContent = file.name + ' (' + formatBytes(file.size) + ')';
+        // Preview
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('fp-name-preview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        showModal('fp-name-modal');
+    }
+
+    document.getElementById('fp-name-confirm').addEventListener('click', function() {
+        var name = document.getElementById('fp-item-name-input').value.trim();
+        if (!name) name = 'Untitled';
+        hideModal('fp-name-modal');
+        uploadFile(pendingFiles[pendingFileIndex], name);
+    });
+
+    document.getElementById('fp-name-skip').addEventListener('click', function() {
+        pendingFileIndex++;
+        hideModal('fp-name-modal');
+        processNextFile();
+    });
+
+    function uploadFile(file, name) {
+        if (!currentCatalogue) return;
+        var progress = document.getElementById('fp-upload-progress');
+        var fill = document.getElementById('fp-progress-fill');
+        var text = document.getElementById('fp-progress-text');
+        progress.classList.add('visible');
+        fill.style.width = '30%';
+        text.textContent = 'Uploading ' + name + '...';
+
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('name', name);
+
+        fetch('/api/floorplans/catalogues/' + currentCatalogue.id + '/items', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            fill.style.width = '100%';
+            setTimeout(function() {
+                progress.classList.remove('visible');
+                fill.style.width = '0%';
+            }, 600);
+            if (res.ok) {
+                loadItems();
+            } else {
+                text.textContent = 'Error: ' + (res.data.error || 'Upload failed');
+                setTimeout(function() { progress.classList.remove('visible'); }, 2000);
+            }
+            pendingFileIndex++;
+            setTimeout(processNextFile, 300);
+        })
+        .catch(function() {
+            progress.classList.remove('visible');
+            pendingFileIndex++;
+            processNextFile();
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Rename item
+    // ------------------------------------------------------------------
+
+    var renameTargetId = null;
+    var renameTargetType = 'item';
+
+    function openRename(id, name, type) {
+        renameTargetId = id;
+        renameTargetType = type || 'item';
+        document.getElementById('fp-rename-title').textContent =
+            renameTargetType === 'catalogue' ? 'Rename Catalogue' : 'Rename Floor Plan';
+        document.getElementById('fp-rename-input').value = name;
+        showModal('fp-rename-modal');
+    }
+
+    document.getElementById('fp-rename-cancel').addEventListener('click', function() {
+        hideModal('fp-rename-modal');
+        renameTargetId = null;
+    });
+    document.getElementById('fp-rename-confirm').addEventListener('click', function() {
+        var name = document.getElementById('fp-rename-input').value.trim();
+        if (!name || !renameTargetId) { hideModal('fp-rename-modal'); return; }
+        var endpoint = renameTargetType === 'catalogue'
+            ? ('/api/floorplans/catalogues/' + renameTargetId)
+            : ('/api/floorplans/items/' + renameTargetId);
+        fetch(endpoint, {
+            method: 'PATCH',
+            headers: Object.assign({'Content-Type': 'application/json'}, authHeaders()),
+            body: JSON.stringify({ name: name })
+        })
+        .then(function() {
+            hideModal('fp-rename-modal');
+            renameTargetId = null;
+            if (renameTargetType === 'catalogue') {
+                loadCatalogues();
+            } else {
+                loadItems();
+            }
+        });
+    });
+
+    // ------------------------------------------------------------------
+    // Utils
+    // ------------------------------------------------------------------
+
+    function showModal(id) { document.getElementById(id).classList.add('visible'); }
+    function hideModal(id) { document.getElementById(id).classList.remove('visible'); }
+    function showError(id, msg) {
+        var el = document.getElementById(id);
+        el.textContent = msg;
+        el.style.display = '';
+    }
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+    function formatBytes(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+        return (b / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ------------------------------------------------------------------
+    // Subtabs
+    // ------------------------------------------------------------------
+
+    document.querySelectorAll('.fp-subtab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            salesTabManuallySelected = true;
+            activateSalesTab(tab.dataset.tab);
+        });
+    });
+
+    function resolveInitialSalesTab() {
+        var qs = new URLSearchParams(window.location.search || '');
+        var requestedTab = (qs.get('tab') || '').trim().toLowerCase();
+        if (SALES_TAB_ORDER.indexOf(requestedTab) >= 0) return requestedTab;
+        return SALES_DEFAULT_TAB;
+    }
+
+    function activateSalesTab(tabName) {
+        var target = (tabName || '').trim().toLowerCase();
+        if (SALES_TAB_ORDER.indexOf(target) < 0) {
+            target = SALES_DEFAULT_TAB;
+        }
+        document.querySelectorAll('.fp-subtab').forEach(function(t) {
+            t.classList.toggle('active', t.dataset.tab === target);
+        });
+        SALES_TAB_ORDER.forEach(function(tab) {
+            var panel = document.getElementById('tab-' + tab);
+            if (panel) panel.style.display = (tab === target ? '' : 'none');
+        });
+        initSalesTab(target);
+    }
+
+    function initSalesTab(target) {
+        if (target === 'daynight') {
+            ensureDaynightEmbedLoaded();
+            return;
+        }
+        if (target === 'floorplans') {
+            if (!fpLoaded) loadCatalogues();
+            if (!workspaceOptionsLoaded) loadProjectsForModal();
+            return;
+        }
+        if (target === 'building-maps') {
+            if (!bmLoaded) loadBuildingMaps();
+            if (!workspaceOptionsLoaded) loadProjectsForModal();
+            return;
+        }
+        if (target === 'earth-views') {
+            if (!evLoaded) loadEarthViews();
+            return;
+        }
+        if (target === 'project-plans') {
+            if (!ppLoaded) loadProjectPlans();
+            if (!workspaceOptionsLoaded) loadProjectsForModal();
+            return;
+        }
+        if (target === 'route-maps') {
+            if (!srmLoaded) loadSalesRouteMaps();
+            return;
+        }
+        if (target === 'flat360') {
+            if (!sf3Loaded) loadSalesFlat360Views();
+            return;
+        }
+        if (target === 'galleries') {
+            if (!galLoaded) loadGalleries();
+            if (!workspaceOptionsLoaded) loadProjectsForModal();
+        }
+    }
+
+    var daynightEmbedLoaded = false;
+    function buildDaynightEmbedUrl() {
+        var qs = new URLSearchParams();
+        qs.set('embedded', '1');
+        if (salesGlobalProjectId) qs.set('workspace_id', salesGlobalProjectId);
+        return '/daynight?' + qs.toString();
+    }
+
+    function refreshDaynightEmbedFilters() {
+        var frame = document.getElementById('fp-daynight-frame');
+        if (!frame || !daynightEmbedLoaded) return;
+        var nextSrc = buildDaynightEmbedUrl();
+        if (frame.getAttribute('src') !== nextSrc) {
+            frame.src = nextSrc;
+        }
+    }
+
+    function ensureDaynightEmbedLoaded() {
+        var frame = document.getElementById('fp-daynight-frame');
+        if (!frame) return;
+        if (daynightEmbedLoaded) {
+            refreshDaynightEmbedFilters();
+            return;
+        }
+        frame.src = buildDaynightEmbedUrl();
+        daynightEmbedLoaded = true;
+    }
+
+    // ------------------------------------------------------------------
+    // Route Maps
+    // ------------------------------------------------------------------
+
+    var srmLoaded = false;
+    var srmEventsBound = false;
+    var srmPendingAuthLoad = false;
+    var srmMaps = [];
+    var srmProjects = [];
+    var srmActiveProjectId = salesGlobalProjectId || '';
+
+    function loadSalesRouteMaps() {
+        if (!accessToken) {
+            if (srmPendingAuthLoad) return;
+            srmPendingAuthLoad = true;
+            window.sidebarReady.then(function(ctx) {
+                accessToken = ctx.accessToken;
+                srmPendingAuthLoad = false;
+                loadSalesRouteMaps();
+            }).catch(function() {
+                srmPendingAuthLoad = false;
+            });
+            return;
+        }
+        bindSalesRouteMapEvents();
+        var loading = document.getElementById('srm-loading');
+        if (loading) loading.style.display = '';
+        loadSrmProjects()
+            .then(function() { return loadSrmMaps(); })
+            .then(function() {
+                srmLoaded = true;
+                if (loading) loading.style.display = 'none';
+            })
+            .catch(function() {
+                srmLoaded = true;
+                if (loading) loading.style.display = 'none';
+                renderSrmMaps();
+            });
+    }
+
+    function bindSalesRouteMapEvents() {
+        if (srmEventsBound) return;
+        srmEventsBound = true;
+
+        var newBtn = document.getElementById('srm-new-btn');
+        var createClose = document.getElementById('srm-create-close');
+        var createCancel = document.getElementById('srm-create-cancel');
+        var createModal = document.getElementById('srm-create-modal');
+        var createSubmit = document.getElementById('srm-create-submit');
+        var workspaceFilter = document.getElementById('srm-workspace-filter');
+
+        if (newBtn) {
+            newBtn.addEventListener('click', function() {
+                var err = document.getElementById('srm-create-error');
+                if (err) err.style.display = 'none';
+                var nameInput = document.getElementById('srm-create-name');
+                var fileInput = document.getElementById('srm-create-file');
+                var wsInput = document.getElementById('srm-create-workspace');
+                if (nameInput) nameInput.value = 'Sales Route Map';
+                if (fileInput) fileInput.value = '';
+                if (wsInput) wsInput.value = srmActiveProjectId || '';
+                showModal('srm-create-modal');
+            });
+        }
+        if (createClose) createClose.addEventListener('click', function() { hideModal('srm-create-modal'); });
+        if (createCancel) createCancel.addEventListener('click', function() { hideModal('srm-create-modal'); });
+        if (createModal) {
+            createModal.addEventListener('click', function(e) {
+                if (e.target === createModal) hideModal('srm-create-modal');
+            });
+        }
+        if (createSubmit) createSubmit.addEventListener('click', createSrmMap);
+        if (workspaceFilter) {
+            workspaceFilter.addEventListener('change', function() {
+                srmActiveProjectId = workspaceFilter.value || '';
+                loadSrmMaps();
+            });
+        }
+    }
+
+    function loadSrmProjects() {
+        return loadSalesGlobalProjects()
+            .then(function(workspaces) {
+                srmProjects = Array.isArray(workspaces) ? workspaces.slice() : [];
+                renderSrmProjectOptions();
+                syncGlobalProjectToLocalFilters();
+            })
+            .catch(function() {
+                srmProjects = [];
+                renderSrmProjectOptions();
+            });
+    }
+
+    function renderSrmProjectOptions() {
+        var filter = document.getElementById('srm-workspace-filter');
+        var createSel = document.getElementById('srm-create-workspace');
+        if (filter) {
+            while (filter.options.length > 1) filter.remove(1);
+        }
+        if (createSel) {
+            createSel.innerHTML = '<option value="">Select project</option>';
+        }
+        srmProjects.forEach(function(ws) {
+            var name = ws.name || 'Project';
+            if (filter) {
+                var optF = document.createElement('option');
+                optF.value = ws.id;
+                optF.textContent = name;
+                filter.appendChild(optF);
+            }
+            if (createSel) {
+                var optC = document.createElement('option');
+                optC.value = ws.id;
+                optC.textContent = name;
+                createSel.appendChild(optC);
+            }
+        });
+        if (filter) filter.value = srmActiveProjectId || '';
+    }
+
+    function loadSrmMaps() {
+        var query = srmActiveProjectId ? ('?workspace_id=' + encodeURIComponent(srmActiveProjectId)) : '';
+        return apiJson('/api/sales-maps' + query, { headers: authHeaders() })
+            .then(function(data) {
+                srmMaps = Array.isArray(data) ? data : [];
+                renderSrmMaps();
+            })
+            .catch(function() {
+                srmMaps = [];
+                renderSrmMaps();
+            });
+    }
+
+    function renderSrmMaps() {
+        var grid = document.getElementById('srm-grid');
+        var empty = document.getElementById('srm-empty');
+        var visibleMaps = srmMaps.filter(function(mapItem) {
+            return globalProjectMatches(mapItem && mapItem.workspace_id) &&
+                globalSearchMatches([mapItem && mapItem.name]);
+        });
+        if (!grid || !empty) return;
+        if (!visibleMaps.length) {
+            grid.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+        grid.innerHTML = visibleMaps.map(function(mapItem) {
+            var badge = mapItem.has_main_marker
+                ? '<span class="srm-badge ok">Main pointer set</span>'
+                : '<span class="srm-badge warn">Main pointer missing</span>';
+            var preview = mapItem.image_url
+                ? '<img src="' + esc(mapItem.image_url) + '" alt="' + esc(mapItem.name) + '" class="srm-thumb">'
+                : '<div class="srm-thumb srm-thumb-empty">No image</div>';
+            return '' +
+                '<div class="srm-card" data-id="' + mapItem.id + '">' +
+                    preview +
+                    '<div class="srm-card-body">' +
+                        '<div class="srm-card-top">' +
+                            '<div class="srm-name">' + esc(mapItem.name) + '</div>' +
+                            badge +
+                        '</div>' +
+                        '<div class="srm-meta">' +
+                            '<span>' + (mapItem.marker_count || 0) + ' pointers</span>' +
+                            '<span>' + (mapItem.route_count || 0) + ' routes</span>' +
+                        '</div>' +
+                        '<div class="srm-actions">' +
+                            '<a class="btn btn-secondary btn-sm" href="/sales-route-maps/editor/' + encodeURIComponent(mapItem.id) + '">Edit</a>' +
+                            '<a class="btn btn-secondary btn-sm" href="' + esc(mapItem.share_url || '#') + '" target="_blank" rel="noopener">Preview</a>' +
+                            '<button class="btn btn-secondary btn-sm srm-rename-btn" data-id="' + mapItem.id + '" data-name="' + esc(mapItem.name) + '">Rename</button>' +
+                            '<button class="btn btn-secondary btn-sm srm-copy-btn" data-url="' + esc(mapItem.share_url || '') + '">Copy Link</button>' +
+                            '<button class="btn btn-danger btn-sm srm-delete-btn" data-id="' + mapItem.id + '" data-name="' + esc(mapItem.name) + '">Delete</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+        }).join('');
+
+        grid.querySelectorAll('.srm-rename-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var mapId = btn.dataset.id;
+                var currentName = btn.dataset.name || '';
+                var nextName = (window.prompt('Rename route map', currentName) || '').trim();
+                if (!nextName || nextName === currentName) return;
+                btn.disabled = true;
+                fetch('/api/sales-maps/' + encodeURIComponent(mapId), {
+                    method: 'PATCH',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                    body: JSON.stringify({ name: nextName })
+                })
+                .then(function(r) {
+                    if (!r.ok) return r.json().then(function(payload) { throw new Error(payload.error || 'Failed to rename route map.'); });
+                    return loadSrmMaps();
+                })
+                .catch(function(err) {
+                    alert(err && err.message ? err.message : 'Failed to rename route map.');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                });
+            });
+        });
+
+        grid.querySelectorAll('.srm-copy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var url = btn.dataset.url || '';
+                if (!url) return;
+                navigator.clipboard.writeText(url).then(function() {
+                    var original = btn.textContent;
+                    btn.textContent = 'Copied';
+                    setTimeout(function() { btn.textContent = original; }, 1200);
+                });
+            });
+        });
+
+        grid.querySelectorAll('.srm-delete-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var mapId = btn.dataset.id;
+                var mapName = btn.dataset.name || 'this map';
+                if (!confirm('Delete "' + mapName + '"? This cannot be undone.')) return;
+                btn.disabled = true;
+                fetch('/api/sales-maps/' + encodeURIComponent(mapId), {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                })
+                .then(function(r) {
+                    if (!r.ok) return r.json().then(function(payload) { throw new Error(payload.error || 'Failed to delete route map.'); });
+                    return loadSrmMaps();
+                })
+                .catch(function(err) {
+                    alert(err && err.message ? err.message : 'Failed to delete route map.');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                });
+            });
+        });
+    }
+
+    function createSrmMap() {
+        var nameInput = document.getElementById('srm-create-name');
+        var wsInput = document.getElementById('srm-create-workspace');
+        var fileInput = document.getElementById('srm-create-file');
+        var err = document.getElementById('srm-create-error');
+        var submit = document.getElementById('srm-create-submit');
+        var name = nameInput && nameInput.value ? nameInput.value.trim() : '';
+        var workspaceId = wsInput ? wsInput.value : '';
+        var file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+        if (!workspaceId) {
+            if (err) {
+                err.textContent = 'Please select a project.';
+                err.style.display = '';
+            }
+            return;
+        }
+        if (!file) {
+            if (err) {
+                err.textContent = 'Please select a map image.';
+                err.style.display = '';
+            }
+            return;
+        }
+        if (err) err.style.display = 'none';
+        if (submit) submit.disabled = true;
+
+        var fd = new FormData();
+        fd.append('name', name || 'Sales Route Map');
+        fd.append('workspace_id', workspaceId);
+        fd.append('file', file);
+
+        fetch('/api/sales-maps', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            if (!res.ok) throw new Error((res.data && res.data.error) || 'Failed to create route map.');
+            hideModal('srm-create-modal');
+            return loadSrmMaps();
+        })
+        .catch(function(err2) {
+            if (err) {
+                err.textContent = err2 && err2.message ? err2.message : 'Failed to create route map.';
+                err.style.display = '';
+            }
+        })
+        .finally(function() {
+            if (submit) submit.disabled = false;
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Sales Flat 360
+    // ------------------------------------------------------------------
+
+    var sf3Loaded = false;
+    var sf3EventsBound = false;
+    var sf3PendingAuthLoad = false;
+    var sf3Views = [];
+    var sf3Projects = [];
+    var sf3ActiveProjectId = salesGlobalProjectId || '';
+
+    function loadSalesFlat360Views() {
+        if (!accessToken) {
+            if (sf3PendingAuthLoad) return;
+            sf3PendingAuthLoad = true;
+            window.sidebarReady.then(function(ctx) {
+                accessToken = ctx.accessToken;
+                sf3PendingAuthLoad = false;
+                loadSalesFlat360Views();
+            }).catch(function() {
+                sf3PendingAuthLoad = false;
+            });
+            return;
+        }
+        bindSalesFlat360Events();
+        var loading = document.getElementById('sf3-loading');
+        if (loading) loading.style.display = '';
+        loadSf3Projects()
+            .then(function() { return loadSf3Views(); })
+            .then(function() {
+                sf3Loaded = true;
+                if (loading) loading.style.display = 'none';
+            })
+            .catch(function() {
+                sf3Loaded = true;
+                if (loading) loading.style.display = 'none';
+                renderSf3Views();
+            });
+    }
+
+    function bindSalesFlat360Events() {
+        if (sf3EventsBound) return;
+        sf3EventsBound = true;
+
+        var newBtn = document.getElementById('sf3-new-btn');
+        var createClose = document.getElementById('sf3-create-close');
+        var createCancel = document.getElementById('sf3-create-cancel');
+        var createModal = document.getElementById('sf3-create-modal');
+        var createSubmit = document.getElementById('sf3-create-submit');
+        var workspaceFilter = document.getElementById('sf3-workspace-filter');
+
+        if (newBtn) {
+            newBtn.addEventListener('click', function() {
+                var err = document.getElementById('sf3-create-error');
+                if (err) err.style.display = 'none';
+                var nameInput = document.getElementById('sf3-create-name');
+                var fileInput = document.getElementById('sf3-create-file');
+                var wsInput = document.getElementById('sf3-create-workspace');
+                if (nameInput) nameInput.value = 'Sales 360 View';
+                if (fileInput) fileInput.value = '';
+                if (wsInput) wsInput.value = sf3ActiveProjectId || '';
+                showModal('sf3-create-modal');
+            });
+        }
+        if (createClose) createClose.addEventListener('click', function() { hideModal('sf3-create-modal'); });
+        if (createCancel) createCancel.addEventListener('click', function() { hideModal('sf3-create-modal'); });
+        if (createModal) {
+            createModal.addEventListener('click', function(e) {
+                if (e.target === createModal) hideModal('sf3-create-modal');
+            });
+        }
+        if (createSubmit) createSubmit.addEventListener('click', createSf3View);
+        if (workspaceFilter) {
+            workspaceFilter.addEventListener('change', function() {
+                sf3ActiveProjectId = workspaceFilter.value || '';
+                loadSf3Views();
+            });
+        }
+    }
+
+    function loadSf3Projects() {
+        return loadSalesGlobalProjects()
+            .then(function(workspaces) {
+                sf3Projects = Array.isArray(workspaces) ? workspaces.slice() : [];
+                renderSf3ProjectOptions();
+                syncGlobalProjectToLocalFilters();
+            })
+            .catch(function() {
+                sf3Projects = [];
+                renderSf3ProjectOptions();
+            });
+    }
+
+    function renderSf3ProjectOptions() {
+        var filter = document.getElementById('sf3-workspace-filter');
+        var createSel = document.getElementById('sf3-create-workspace');
+        if (filter) {
+            while (filter.options.length > 1) filter.remove(1);
+        }
+        if (createSel) {
+            createSel.innerHTML = '<option value="">Select project</option>';
+        }
+        sf3Projects.forEach(function(ws) {
+            var name = ws.name || 'Project';
+            if (filter) {
+                var optF = document.createElement('option');
+                optF.value = ws.id;
+                optF.textContent = name;
+                filter.appendChild(optF);
+            }
+            if (createSel) {
+                var optC = document.createElement('option');
+                optC.value = ws.id;
+                optC.textContent = name;
+                createSel.appendChild(optC);
+            }
+        });
+        if (filter) filter.value = sf3ActiveProjectId || '';
+    }
+
+    function loadSf3Views() {
+        var query = sf3ActiveProjectId ? ('?workspace_id=' + encodeURIComponent(sf3ActiveProjectId)) : '';
+        return apiJson('/api/sales-flat360' + query, { headers: authHeaders() })
+            .then(function(data) {
+                sf3Views = Array.isArray(data) ? data : [];
+                renderSf3Views();
+            })
+            .catch(function() {
+                sf3Views = [];
+                renderSf3Views();
+            });
+    }
+
+    function renderSf3Views() {
+        var grid = document.getElementById('sf3-grid');
+        var empty = document.getElementById('sf3-empty');
+        var visibleViews = sf3Views.filter(function(item) {
+            return globalProjectMatches(item && item.workspace_id) &&
+                globalSearchMatches([item && item.name]);
+        });
+        if (!grid || !empty) return;
+        if (!visibleViews.length) {
+            grid.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+        grid.innerHTML = visibleViews.map(function(item) {
+            var preview = item.image_url
+                ? '<img src="' + esc(item.image_url) + '" alt="' + esc(item.name) + '" class="srm-thumb">'
+                : '<div class="srm-thumb srm-thumb-empty">No image</div>';
+            return '' +
+                '<div class="srm-card" data-id="' + item.id + '">' +
+                    preview +
+                    '<div class="srm-card-body">' +
+                        '<div class="srm-card-top">' +
+                            '<div class="srm-name">' + esc(item.name) + '</div>' +
+                            '<span class="srm-badge ok">Drag 360 Ready</span>' +
+                        '</div>' +
+                        '<div class="srm-meta">' +
+                            '<span>' + (item.image_width || 0) + ' x ' + (item.image_height || 0) + '</span>' +
+                        '</div>' +
+                        '<div class="srm-actions">' +
+                            '<a class="btn btn-secondary btn-sm" href="/sales-flat360/editor/' + encodeURIComponent(item.id) + '">Open</a>' +
+                            '<a class="btn btn-secondary btn-sm" href="' + esc(item.share_url || '#') + '" target="_blank" rel="noopener">Preview</a>' +
+                            '<button class="btn btn-secondary btn-sm sf3-rename-btn" data-id="' + item.id + '" data-name="' + esc(item.name) + '">Rename</button>' +
+                            '<button class="btn btn-secondary btn-sm sf3-copy-btn" data-url="' + esc(item.share_url || '') + '">Copy Link</button>' +
+                            '<button class="btn btn-danger btn-sm sf3-delete-btn" data-id="' + item.id + '" data-name="' + esc(item.name) + '">Delete</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+        }).join('');
+
+        grid.querySelectorAll('.sf3-rename-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var viewId = btn.dataset.id;
+                var currentName = btn.dataset.name || '';
+                var nextName = (window.prompt('Rename 360 view', currentName) || '').trim();
+                if (!nextName || nextName === currentName) return;
+                btn.disabled = true;
+                fetch('/api/sales-flat360/' + encodeURIComponent(viewId), {
+                    method: 'PATCH',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                    body: JSON.stringify({ name: nextName })
+                })
+                .then(function(r) {
+                    if (!r.ok) return r.json().then(function(payload) { throw new Error(payload.error || 'Failed to rename 360 view.'); });
+                    return loadSf3Views();
+                })
+                .catch(function(err) {
+                    alert(err && err.message ? err.message : 'Failed to rename 360 view.');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                });
+            });
+        });
+
+        grid.querySelectorAll('.sf3-copy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var url = btn.dataset.url || '';
+                if (!url) return;
+                navigator.clipboard.writeText(url).then(function() {
+                    var original = btn.textContent;
+                    btn.textContent = 'Copied';
+                    setTimeout(function() { btn.textContent = original; }, 1200);
+                });
+            });
+        });
+
+        grid.querySelectorAll('.sf3-delete-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var viewId = btn.dataset.id;
+                var viewName = btn.dataset.name || 'this view';
+                if (!confirm('Delete "' + viewName + '"? This cannot be undone.')) return;
+                btn.disabled = true;
+                fetch('/api/sales-flat360/' + encodeURIComponent(viewId), {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                })
+                .then(function(r) {
+                    if (!r.ok) return r.json().then(function(payload) { throw new Error(payload.error || 'Failed to delete 360 view.'); });
+                    return loadSf3Views();
+                })
+                .catch(function(err) {
+                    alert(err && err.message ? err.message : 'Failed to delete 360 view.');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                });
+            });
+        });
+    }
+
+    function createSf3View() {
+        var nameInput = document.getElementById('sf3-create-name');
+        var wsInput = document.getElementById('sf3-create-workspace');
+        var fileInput = document.getElementById('sf3-create-file');
+        var err = document.getElementById('sf3-create-error');
+        var submit = document.getElementById('sf3-create-submit');
+        var name = nameInput && nameInput.value ? nameInput.value.trim() : '';
+        var workspaceId = wsInput ? wsInput.value : '';
+        var file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+        if (!workspaceId) {
+            if (err) {
+                err.textContent = 'Please select a project.';
+                err.style.display = '';
+            }
+            return;
+        }
+        if (!file) {
+            if (err) {
+                err.textContent = 'Please select a 360 image.';
+                err.style.display = '';
+            }
+            return;
+        }
+        if (err) err.style.display = 'none';
+        if (submit) submit.disabled = true;
+
+        var fd = new FormData();
+        fd.append('name', name || 'Sales 360 View');
+        fd.append('workspace_id', workspaceId);
+        fd.append('file', file);
+
+        fetch('/api/sales-flat360', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            if (!res.ok) throw new Error((res.data && res.data.error) || 'Failed to create 360 view.');
+            hideModal('sf3-create-modal');
+            return loadSf3Views();
+        })
+        .catch(function(err2) {
+            if (err) {
+                err.textContent = err2 && err2.message ? err2.message : 'Failed to create 360 view.';
+                err.style.display = '';
+            }
+        })
+        .finally(function() {
+            if (submit) submit.disabled = false;
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Building Maps
+    // ------------------------------------------------------------------
+
+    var bmLoaded = false;
+    var buildingMaps = [];
+
+    function loadBuildingMaps() {
+        if (waitForAuthAndRetry('building-maps', loadBuildingMaps)) return;
+        var query = salesGlobalProjectId ? ('?workspace_id=' + encodeURIComponent(salesGlobalProjectId)) : '';
+        fetch('/api/building-maps' + query, { headers: authHeaders() })
+            .then(function(r) {
+                if (!r.ok) throw new Error('Failed to load building maps');
+                return r.json();
+            })
+            .then(function(data) {
+                buildingMaps = data;
+                bmLoaded = true;
+                renderBuildingMaps();
+            })
+            .catch(function() {
+                bmLoaded = false;
+                buildingMaps = [];
+                renderBuildingMaps();
+            });
+    }
+
+    function renderBuildingMaps() {
+        var loading = document.getElementById('bm-loading');
+        var grid = document.getElementById('bm-grid');
+        var empty = document.getElementById('bm-empty');
+        var visibleMaps = buildingMaps.filter(function(m) {
+            var workspaceName = workspaceNameById(m && m.workspace_id);
+            return globalProjectMatches(m && m.workspace_id) &&
+                globalSearchMatches([m && m.name, m && m.catalogue_name, workspaceName]);
+        });
+        if (loading) loading.style.display = 'none';
+        if (!visibleMaps.length) {
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (grid) grid.style.display = '';
+        grid.innerHTML = visibleMaps.map(function(m) {
+            var imgUrl = m.image_url || '';
+            var catChip = m.catalogue_name
+                ? '<span class="fp-card-chip">' + esc(m.catalogue_name) + '</span>'
+                : '<span class="fp-card-chip muted">No catalogue</span>';
+            return '<div class="fp-card" data-id="' + m.id + '">' +
+                '<div class="fp-card-preview">' +
+                    (imgUrl ? '<img src="' + esc(imgUrl) + '" alt="' + esc(m.name) + '">' : '<span class="fp-placeholder">&#9638;</span>') +
+                '</div>' +
+                '<div class="fp-card-header" style="padding-top:0.75rem;">' +
+                    '<div class="fp-card-icon icon-building">' +
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><rect x="9" y="18" width="6" height="4"/></svg>' +
+                    '</div>' +
+                    '<div class="fp-card-title-group">' +
+                        '<div class="fp-card-name">' + esc(m.name) + '</div>' +
+                        '<div class="fp-card-meta">' + catChip + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fp-card-stats">' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (m.zone_count || 0) + '</div><div class="fp-card-stat-label">Zones</div></div>' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (m.floor_count || 0) + '</div><div class="fp-card-stat-label">Floors</div></div>' +
+                '</div>' +
+                '<hr class="fp-card-divider">' +
+                '<div class="fp-card-body">' +
+                    '<div class="fp-card-actions">' +
+                        '<button class="btn btn-secondary bm-manage-btn" data-id="' + m.id + '">Manage</button>' +
+                        '<button class="btn btn-danger bm-del-btn" data-id="' + m.id + '" data-name="' + esc(m.name) + '">Delete</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        grid.querySelectorAll('.bm-manage-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                window.location.href = '/building-map/admin/' + btn.dataset.id;
+            });
+        });
+        grid.querySelectorAll('.bm-del-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                bmDeleteTarget = { id: btn.dataset.id, name: btn.dataset.name };
+                document.getElementById('bm-delete-text').textContent = 'Delete "' + btn.dataset.name + '" and all its zones? This cannot be undone.';
+                showModal('bm-delete-modal');
+            });
+        });
+    }
+
+    // Create building map — drag & drop zone
+    var bmDropzone = document.getElementById('bm-dropzone');
+    var bmFileInput = document.getElementById('bm-file');
+    var bmDropzoneIdle = document.getElementById('bm-dropzone-idle');
+    var bmDropzonePreview = document.getElementById('bm-dropzone-preview');
+    var bmSelectedFile = null;
+
+    function bmShowPreview(file) {
+        bmSelectedFile = file;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('bm-preview-img').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        document.getElementById('bm-preview-name').textContent = file.name;
+        document.getElementById('bm-preview-size').textContent = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+        bmDropzoneIdle.style.display = 'none';
+        bmDropzonePreview.style.display = '';
+    }
+
+    function bmClearPreview() {
+        bmSelectedFile = null;
+        bmFileInput.value = '';
+        document.getElementById('bm-preview-img').src = '';
+        bmDropzoneIdle.style.display = '';
+        bmDropzonePreview.style.display = 'none';
+    }
+
+    bmDropzone.addEventListener('click', function(e) {
+        if (e.target.closest('.fp-dropzone-remove')) return;
+        if (!bmSelectedFile) bmFileInput.click();
+    });
+    bmDropzone.addEventListener('dragover', function(e) { e.preventDefault(); bmDropzone.classList.add('dragover'); });
+    bmDropzone.addEventListener('dragleave', function() { bmDropzone.classList.remove('dragover'); });
+    bmDropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        bmDropzone.classList.remove('dragover');
+        var file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) bmShowPreview(file);
+    });
+    bmFileInput.addEventListener('change', function() {
+        if (bmFileInput.files.length) bmShowPreview(bmFileInput.files[0]);
+    });
+    document.getElementById('bm-preview-remove').addEventListener('click', function(e) {
+        e.stopPropagation();
+        bmClearPreview();
+    });
+
+    function populateBmCatalogueSelect() {
+        var sel = document.getElementById('bm-catalogue');
+        sel.innerHTML = '<option value="">— None —</option>';
+        catalogues.forEach(function(c) {
+            sel.innerHTML += '<option value="' + c.id + '">' + esc(c.name) + ' (' + (c.item_count || 0) + ' plans)</option>';
+        });
+    }
+
+    document.getElementById('new-bm-btn').addEventListener('click', function() {
+        document.getElementById('bm-name').value = 'Building Map';
+        bmClearPreview();
+        populateBmCatalogueSelect();
+        document.getElementById('bm-catalogue').value = '';
+        if (salesGlobalProjectId) document.getElementById('bm-workspace').value = salesGlobalProjectId;
+        document.getElementById('bm-create-error').style.display = 'none';
+        document.getElementById('bm-upload-progress').style.display = 'none';
+        showModal('bm-create-modal');
+    });
+    document.getElementById('bm-modal-close').addEventListener('click', function() { hideModal('bm-create-modal'); });
+    document.getElementById('bm-modal-cancel').addEventListener('click', function() { hideModal('bm-create-modal'); });
+
+    document.getElementById('bm-modal-create').addEventListener('click', function() {
+        var name = document.getElementById('bm-name').value.trim() || 'Building Map';
+        var file = bmSelectedFile || (bmFileInput.files.length ? bmFileInput.files[0] : null);
+        if (!file) {
+            document.getElementById('bm-create-error').textContent = 'Please select an image file.';
+            document.getElementById('bm-create-error').style.display = '';
+            return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        document.getElementById('bm-create-error').style.display = 'none';
+        document.getElementById('bm-upload-progress').style.display = '';
+        document.getElementById('bm-progress-fill').style.width = '40%';
+        document.getElementById('bm-progress-text').textContent = 'Uploading...';
+
+        var fd = new FormData();
+        fd.append('name', name);
+        fd.append('file', file);
+        var workspaceId = document.getElementById('bm-workspace').value;
+        if (workspaceId) fd.append('workspace_id', workspaceId);
+        var catId = document.getElementById('bm-catalogue').value;
+        if (catId) fd.append('catalogue_id', catId);
+
+        fetch('/api/building-maps', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            btn.disabled = false;
+            document.getElementById('bm-progress-fill').style.width = '100%';
+            setTimeout(function() {
+                document.getElementById('bm-upload-progress').style.display = 'none';
+            }, 500);
+            if (!res.ok) {
+                document.getElementById('bm-create-error').textContent = res.data.error || 'Failed';
+                document.getElementById('bm-create-error').style.display = '';
+                return;
+            }
+            hideModal('bm-create-modal');
+            loadBuildingMaps();
+        })
+        .catch(function() { btn.disabled = false; });
+    });
+
+    // Delete building map
+    var bmDeleteTarget = null;
+    document.getElementById('bm-delete-cancel').addEventListener('click', function() { hideModal('bm-delete-modal'); });
+    document.getElementById('bm-delete-confirm').addEventListener('click', function() {
+        if (!bmDeleteTarget) return;
+        var btn = this;
+        btn.disabled = true;
+        fetch('/api/building-maps/' + bmDeleteTarget.id, { method: 'DELETE', headers: authHeaders() })
+            .then(function() {
+                btn.disabled = false;
+                hideModal('bm-delete-modal');
+                loadBuildingMaps();
+            })
+            .catch(function() { btn.disabled = false; });
+    });
+
+    // ------------------------------------------------------------------
+    // Earth Views
+    // ------------------------------------------------------------------
+
+    var evLoaded = false;
+    var earthViews = [];
+    var evDeleteTarget = null;
+
+    function loadEarthViews() {
+        if (waitForAuthAndRetry('earth-views', loadEarthViews)) return;
+        var query = salesGlobalProjectId ? ('?workspace_id=' + encodeURIComponent(salesGlobalProjectId)) : '';
+        fetch('/api/earth-views' + query, { headers: authHeaders() })
+            .then(function(r) {
+                if (!r.ok) throw new Error('Failed to load earth views');
+                return r.json();
+            })
+            .then(function(data) {
+                earthViews = data;
+                evLoaded = true;
+                renderEarthViews();
+            })
+            .catch(function() {
+                evLoaded = false;
+                earthViews = [];
+                renderEarthViews();
+            });
+    }
+
+    function renderEarthViews() {
+        var loading = document.getElementById('ev-loading');
+        var grid = document.getElementById('ev-grid');
+        var empty = document.getElementById('ev-empty');
+        var visibleViews = earthViews.filter(function(v) {
+            var workspaceName = workspaceNameById(v && v.workspace_id);
+            return globalProjectMatches(v && v.workspace_id) &&
+                globalSearchMatches([v && v.name, workspaceName]);
+        });
+        if (loading) loading.style.display = 'none';
+        if (!visibleViews.length) {
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (grid) grid.style.display = '';
+        grid.innerHTML = visibleViews.map(function(v) {
+            var shareUrl = v.share_url || (location.origin + '/earth-view/view/' + (v.share_token || ''));
+            return '<div class="fp-card" data-id="' + v.id + '">' +
+                '<div class="fp-card-header">' +
+                    '<div class="fp-card-icon" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">' +
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
+                    '</div>' +
+                    '<div class="fp-card-title-group">' +
+                        '<div class="fp-card-name">' + esc(v.name) + '</div>' +
+                        '<div class="fp-card-meta">Earth View</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fp-card-stats">' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (v.plot_count || 0) + '</div><div class="fp-card-stat-label">Plots</div></div>' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (v.marker_count || 0) + '</div><div class="fp-card-stat-label">Markers</div></div>' +
+                '</div>' +
+                '<hr class="fp-card-divider">' +
+                '<div class="fp-card-body">' +
+                    '<div class="fp-share-row">' +
+                        '<input type="text" value="' + esc(shareUrl) + '" readonly onclick="this.select()">' +
+                        '<button class="btn btn-sm ev-copy-btn" data-url="' + esc(shareUrl) + '">Copy</button>' +
+                    '</div>' +
+                    '<div class="fp-card-actions">' +
+                        '<button class="btn btn-secondary ev-manage-btn" data-id="' + v.id + '">Manage</button>' +
+                        '<button class="btn btn-danger ev-del-btn" data-id="' + v.id + '" data-name="' + esc(v.name) + '">Delete</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        grid.querySelectorAll('.ev-copy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigator.clipboard.writeText(btn.dataset.url).then(function() {
+                    btn.textContent = 'Copied!';
+                    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+                });
+            });
+        });
+        grid.querySelectorAll('.ev-manage-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                window.location.href = '/earth-view/admin/' + btn.dataset.id;
+            });
+        });
+        grid.querySelectorAll('.ev-del-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                evDeleteTarget = { id: btn.dataset.id, name: btn.dataset.name };
+                document.getElementById('ev-delete-text').textContent = 'Delete "' + btn.dataset.name + '" and all plots/markers? This cannot be undone.';
+                showModal('ev-delete-modal');
+            });
+        });
+    }
+
+    document.getElementById('new-ev-btn').addEventListener('click', function() {
+        document.getElementById('ev-name').value = 'Earth View';
+        if (salesGlobalProjectId) document.getElementById('ev-workspace').value = salesGlobalProjectId;
+        document.getElementById('ev-create-error').style.display = 'none';
+        showModal('ev-create-modal');
+    });
+    document.getElementById('ev-modal-close').addEventListener('click', function() { hideModal('ev-create-modal'); });
+    document.getElementById('ev-modal-cancel').addEventListener('click', function() { hideModal('ev-create-modal'); });
+
+    document.getElementById('ev-modal-create').addEventListener('click', function() {
+        var name = document.getElementById('ev-name').value.trim() || 'Earth View';
+        var workspaceId = (document.getElementById('ev-workspace').value || '').trim();
+        var btn = this;
+        btn.disabled = true;
+        document.getElementById('ev-create-error').style.display = 'none';
+        fetch('/api/earth-views', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({
+                name: name,
+                center_lng: 0,
+                center_lat: 20,
+                zoom: 3,
+                workspace_id: workspaceId || null
+            })
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            btn.disabled = false;
+            if (!res.ok) {
+                document.getElementById('ev-create-error').textContent = res.data.error || 'Failed';
+                document.getElementById('ev-create-error').style.display = '';
+                return;
+            }
+            hideModal('ev-create-modal');
+            loadEarthViews();
+        })
+        .catch(function() { btn.disabled = false; });
+    });
+
+    document.getElementById('ev-delete-cancel').addEventListener('click', function() { hideModal('ev-delete-modal'); });
+    document.getElementById('ev-delete-confirm').addEventListener('click', function() {
+        if (!evDeleteTarget) return;
+        var btn = this;
+        btn.disabled = true;
+        fetch('/api/earth-views/' + evDeleteTarget.id, { method: 'DELETE', headers: authHeaders() })
+            .then(function() {
+                btn.disabled = false;
+                hideModal('ev-delete-modal');
+                loadEarthViews();
+            })
+            .catch(function() { btn.disabled = false; });
+    });
+
+    // ------------------------------------------------------------------
+    // Project Plans
+    // ------------------------------------------------------------------
+
+    var ppLoaded = false;
+    var projectPlans = [];
+    var ppManagePlanId = null;
+
+    function loadProjectPlans() {
+        if (waitForAuthAndRetry('project-plans', loadProjectPlans)) return;
+        var query = salesGlobalProjectId ? ('?workspace_id=' + encodeURIComponent(salesGlobalProjectId)) : '';
+        fetch('/api/project-plans' + query, { headers: authHeaders() })
+            .then(function(r) {
+                if (!r.ok) throw new Error('Failed to load project plans');
+                return r.json();
+            })
+            .then(function(data) {
+                projectPlans = data;
+                ppLoaded = true;
+                renderProjectPlans();
+            })
+            .catch(function() {
+                ppLoaded = false;
+                projectPlans = [];
+                renderProjectPlans();
+            });
+    }
+
+    function renderProjectPlans() {
+        var loading = document.getElementById('pp-loading');
+        var grid = document.getElementById('pp-grid');
+        var empty = document.getElementById('pp-empty');
+        var manage = document.getElementById('pp-manage');
+        var visiblePlans = projectPlans.filter(function(p) {
+            var workspaceName = workspaceNameById(p && p.workspace_id);
+            return globalProjectMatches(p && p.workspace_id) &&
+                globalSearchMatches([p && p.name, (p && p.map_names ? p.map_names.join(' ') : ''), workspaceName]);
+        });
+        if (loading) loading.style.display = 'none';
+        manage.style.display = 'none';
+        if (!visiblePlans.length) {
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (grid) grid.style.display = '';
+        grid.innerHTML = visiblePlans.map(function(p) {
+            var shareUrl = p.share_url || (location.origin + '/project-plan/view/' + (p.share_token || ''));
+            var mapNames = p.map_names || [];
+            var chipsHtml = '';
+            if (mapNames.length) {
+                chipsHtml = mapNames.map(function(n) { return '<span class="fp-card-chip">' + esc(n) + '</span>'; }).join('');
+            } else {
+                chipsHtml = '<span class="fp-card-chip muted">No maps linked</span>';
+            }
+            return '<div class="fp-card" data-id="' + p.id + '">' +
+                '<div class="fp-card-header">' +
+                    '<div class="fp-card-icon icon-project">' +
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>' +
+                    '</div>' +
+                    '<div class="fp-card-title-group">' +
+                        '<div class="fp-card-name">' + esc(p.name) + '</div>' +
+                        '<div class="fp-card-meta">Project Plan</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fp-card-stats">' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (p.map_count || 0) + '</div><div class="fp-card-stat-label">Maps</div></div>' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (p.total_zones || 0) + '</div><div class="fp-card-stat-label">Zones</div></div>' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (p.total_floors || 0) + '</div><div class="fp-card-stat-label">Floors</div></div>' +
+                '</div>' +
+                '<div class="fp-card-details">' +
+                    '<div class="fp-card-detail-label">Building Maps</div>' +
+                    '<div class="fp-card-chips">' + chipsHtml + '</div>' +
+                '</div>' +
+                '<hr class="fp-card-divider">' +
+                '<div class="fp-card-body">' +
+                    '<div class="fp-share-row">' +
+                        '<input type="text" value="' + esc(shareUrl) + '" readonly onclick="this.select()">' +
+                        '<button class="btn btn-sm pp-copy-btn" data-url="' + esc(shareUrl) + '">Copy</button>' +
+                    '</div>' +
+                    '<div class="fp-card-actions">' +
+                        '<button class="btn btn-secondary pp-manage-btn" data-id="' + p.id + '">Manage</button>' +
+                        '<button class="btn btn-danger pp-del-btn" data-id="' + p.id + '" data-name="' + esc(p.name) + '">Delete</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        grid.querySelectorAll('.pp-copy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigator.clipboard.writeText(btn.dataset.url).then(function() {
+                    btn.textContent = 'Copied!';
+                    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+                });
+            });
+        });
+        grid.querySelectorAll('.pp-manage-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openPlanManage(btn.dataset.id);
+            });
+        });
+        grid.querySelectorAll('.pp-del-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                ppDeleteTarget = { id: btn.dataset.id, name: btn.dataset.name };
+                document.getElementById('pp-delete-text').textContent = 'Delete "' + btn.dataset.name + '" and all its links? This cannot be undone.';
+                showModal('pp-delete-modal');
+            });
+        });
+    }
+
+    // Create project plan
+    document.getElementById('new-pp-btn').addEventListener('click', function() {
+        document.getElementById('pp-name').value = 'Project Plan';
+        if (salesGlobalProjectId) document.getElementById('pp-workspace').value = salesGlobalProjectId;
+        document.getElementById('pp-create-error').style.display = 'none';
+        showModal('pp-create-modal');
+    });
+    document.getElementById('pp-modal-close').addEventListener('click', function() { hideModal('pp-create-modal'); });
+    document.getElementById('pp-modal-cancel').addEventListener('click', function() { hideModal('pp-create-modal'); });
+
+    document.getElementById('pp-modal-create').addEventListener('click', function() {
+        var name = document.getElementById('pp-name').value.trim() || 'Project Plan';
+        var workspaceId = document.getElementById('pp-workspace').value;
+        var btn = this;
+        btn.disabled = true;
+        document.getElementById('pp-create-error').style.display = 'none';
+        fetch('/api/project-plans', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({ name: name, workspace_id: workspaceId || null })
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            btn.disabled = false;
+            if (!res.ok) {
+                document.getElementById('pp-create-error').textContent = res.data.error || 'Failed';
+                document.getElementById('pp-create-error').style.display = '';
+                return;
+            }
+            hideModal('pp-create-modal');
+            loadProjectPlans();
+        })
+        .catch(function() { btn.disabled = false; });
+    });
+
+    // Delete project plan
+    var ppDeleteTarget = null;
+    document.getElementById('pp-delete-cancel').addEventListener('click', function() { hideModal('pp-delete-modal'); });
+    document.getElementById('pp-delete-confirm').addEventListener('click', function() {
+        if (!ppDeleteTarget) return;
+        var btn = this;
+        btn.disabled = true;
+        fetch('/api/project-plans/' + ppDeleteTarget.id, { method: 'DELETE', headers: authHeaders() })
+            .then(function() {
+                btn.disabled = false;
+                hideModal('pp-delete-modal');
+                loadProjectPlans();
+            })
+            .catch(function() { btn.disabled = false; });
+    });
+
+    // Manage project plan (link/unlink maps)
+    function openPlanManage(planId) {
+        ppManagePlanId = planId;
+        document.getElementById('pp-grid').style.display = 'none';
+        document.getElementById('pp-empty').style.display = 'none';
+        document.getElementById('pp-loading').style.display = 'none';
+        document.getElementById('pp-manage').style.display = '';
+        fetch('/api/project-plans/' + planId, { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(plan) {
+                if (!plan) return;
+                document.getElementById('pp-manage-title').textContent = plan.name;
+                document.getElementById('pp-manage-share-url').value = plan.share_url || '';
+                renderLinkedMaps(plan.maps || []);
+            });
+    }
+
+    document.getElementById('pp-manage-back').addEventListener('click', function() {
+        ppManagePlanId = null;
+        renderProjectPlans();
+    });
+
+    document.getElementById('pp-manage-copy-link').addEventListener('click', function() {
+        var input = document.getElementById('pp-manage-share-url');
+        navigator.clipboard.writeText(input.value).then(function() {
+            var btn = document.getElementById('pp-manage-copy-link');
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+        });
+    });
+
+    function renderLinkedMaps(maps) {
+        var container = document.getElementById('pp-linked-maps');
+        if (!maps.length) {
+            container.innerHTML = '<div style="font-size:0.85rem; color:var(--color-muted); padding:1rem 0;">No building maps linked yet. Click "+ Add Map" to link one.</div>';
+            return;
+        }
+        container.innerHTML = maps.map(function(link, idx) {
+            var imgUrl = link.building_map_image_url || '';
+            return '<div class="fp-card" style="flex-direction:row; align-items:center; padding:0.75rem; margin-bottom:0.5rem;" data-map-id="' + link.building_map_id + '">' +
+                '<div style="width:60px; height:45px; border-radius:6px; overflow:hidden; background:var(--color-surface); flex-shrink:0; margin-right:0.75rem;">' +
+                    (imgUrl ? '<img src="' + esc(imgUrl) + '" style="width:100%; height:100%; object-fit:cover;">' : '<span class="fp-placeholder" style="font-size:1rem;">&#9638;</span>') +
+                '</div>' +
+                '<div style="flex:1; min-width:0;">' +
+                    '<div style="font-weight:600; font-size:0.85rem;">' + esc(link.building_map_name || 'Building Map') + '</div>' +
+                    '<div style="font-size:0.75rem; color:var(--color-muted);">Order: ' + (idx + 1) + '</div>' +
+                '</div>' +
+                '<button class="btn btn-sm btn-danger pp-unlink-btn" data-map-id="' + link.building_map_id + '" style="flex-shrink:0;">Remove</button>' +
+            '</div>';
+        }).join('');
+
+        container.querySelectorAll('.pp-unlink-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var mapId = btn.dataset.mapId;
+                fetch('/api/project-plans/' + ppManagePlanId + '/maps/' + mapId, { method: 'DELETE', headers: authHeaders() })
+                    .then(function() { openPlanManage(ppManagePlanId); });
+            });
+        });
+    }
+
+    // Add map to plan modal
+    document.getElementById('pp-add-map-btn').addEventListener('click', function() {
+        // Load available building maps
+        if (!bmLoaded) {
+            fetch('/api/building-maps', { headers: authHeaders() })
+                .then(function(r) { return r.ok ? r.json() : []; })
+                .then(function(data) {
+                    buildingMaps = data;
+                    bmLoaded = true;
+                    showAddMapModal();
+                });
+        } else {
+            showAddMapModal();
+        }
+    });
+    document.getElementById('pp-add-map-close').addEventListener('click', function() { hideModal('pp-add-map-modal'); });
+
+    function showAddMapModal() {
+        // Get currently linked map IDs
+        fetch('/api/project-plans/' + ppManagePlanId + '/maps', { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(linked) {
+                var linkedIds = linked.map(function(l) { return l.building_map_id; });
+                var available = buildingMaps.filter(function(m) { return linkedIds.indexOf(m.id) === -1; });
+                var container = document.getElementById('pp-available-maps');
+                var noMsg = document.getElementById('pp-no-maps-msg');
+                if (!available.length) {
+                    container.innerHTML = '';
+                    noMsg.style.display = '';
+                    showModal('pp-add-map-modal');
+                    return;
+                }
+                noMsg.style.display = 'none';
+                container.innerHTML = available.map(function(m) {
+                    var imgUrl = m.image_url || '';
+                    return '<div class="fp-card" style="flex-direction:row; align-items:center; padding:0.75rem; margin-bottom:0.5rem; cursor:pointer;" data-add-map-id="' + m.id + '">' +
+                        '<div style="width:60px; height:45px; border-radius:6px; overflow:hidden; background:var(--color-surface); flex-shrink:0; margin-right:0.75rem;">' +
+                            (imgUrl ? '<img src="' + esc(imgUrl) + '" style="width:100%; height:100%; object-fit:cover;">' : '<span class="fp-placeholder" style="font-size:1rem;">&#9638;</span>') +
+                        '</div>' +
+                        '<div style="flex:1; min-width:0;">' +
+                            '<div style="font-weight:600; font-size:0.85rem;">' + esc(m.name) + '</div>' +
+                        '</div>' +
+                        '<button class="btn btn-sm btn-primary pp-link-btn" data-map-id="' + m.id + '" style="flex-shrink:0;">Add</button>' +
+                    '</div>';
+                }).join('');
+                container.querySelectorAll('.pp-link-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        btn.disabled = true;
+                        fetch('/api/project-plans/' + ppManagePlanId + '/maps', {
+                            method: 'POST',
+                            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                            body: JSON.stringify({ building_map_id: btn.dataset.mapId })
+                        })
+                        .then(function() {
+                            hideModal('pp-add-map-modal');
+                            openPlanManage(ppManagePlanId);
+                        })
+                        .catch(function() { btn.disabled = false; });
+                    });
+                });
+                showModal('pp-add-map-modal');
+            });
+    }
+
+    // ==================================================================
+    // Galleries
+    // ==================================================================
+
+    var galLoaded = false;
+    var galleries = [];
+    var currentGallery = null;
+    var galItems = [];
+    var galOrderDirty = false;
+    var galPendingFiles = [];
+    var galPendingFileIndex = 0;
+    var galPendingIsVideo = false;
+
+    function loadGalleries() {
+        if (waitForAuthAndRetry('galleries', loadGalleries)) return;
+        var query = salesGlobalProjectId ? ('?workspace_id=' + encodeURIComponent(salesGlobalProjectId)) : '';
+        fetch('/api/galleries' + query, { headers: authHeaders() })
+            .then(function(r) {
+                if (!r.ok) throw new Error('Failed to load galleries');
+                return r.json();
+            })
+            .then(function(data) {
+                galleries = data;
+                galLoaded = true;
+                renderGalleries();
+            })
+            .catch(function() {
+                galLoaded = false;
+                galleries = [];
+                renderGalleries();
+            });
+    }
+
+    function renderGalleries() {
+        var loading = document.getElementById('gal-loading');
+        var grid = document.getElementById('gal-grid');
+        var empty = document.getElementById('gal-empty');
+        var visibleGalleries = galleries.filter(function(g) {
+            var workspaceName = workspaceNameById(g && g.workspace_id);
+            return globalProjectMatches(g && g.workspace_id) &&
+                globalSearchMatches([g && g.name, (g && g.item_names ? g.item_names.join(' ') : ''), workspaceName]);
+        });
+        if (loading) loading.style.display = 'none';
+        if (!visibleGalleries.length) {
+            if (grid) grid.style.display = 'none';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (grid) grid.style.display = '';
+        grid.innerHTML = visibleGalleries.map(function(g) {
+            var itemNames = g.item_names || [];
+            var chipsHtml = '';
+            if (itemNames.length) {
+                chipsHtml = itemNames.map(function(n) { return '<span class="fp-card-chip">' + esc(n) + '</span>'; }).join('');
+                if ((g.item_count || 0) > itemNames.length) {
+                    chipsHtml += '<span class="fp-card-chip muted">+' + ((g.item_count || 0) - itemNames.length) + ' more</span>';
+                }
+            } else {
+                chipsHtml = '<span class="fp-card-chip muted">Empty gallery</span>';
+            }
+            return '<div class="fp-card" data-id="' + g.id + '">' +
+                '<div class="fp-card-header">' +
+                    '<div class="fp-card-icon" style="background:linear-gradient(135deg,#e11d48,#be123c);">' +
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>' +
+                    '</div>' +
+                    '<div class="fp-card-title-group">' +
+                        '<div class="fp-card-name">' + esc(g.name) + '</div>' +
+                        '<div class="fp-card-meta">Gallery</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fp-card-stats">' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (g.image_count || 0) + '</div><div class="fp-card-stat-label">Images</div></div>' +
+                    '<div class="fp-card-stat"><div class="fp-card-stat-value">' + (g.video_count || 0) + '</div><div class="fp-card-stat-label">Videos</div></div>' +
+                '</div>' +
+                '<div class="fp-card-details">' +
+                    '<div class="fp-card-detail-label">Items</div>' +
+                    '<div class="fp-card-chips">' + chipsHtml + '</div>' +
+                '</div>' +
+                '<hr class="fp-card-divider">' +
+                '<div class="fp-card-body">' +
+                    '<div class="fp-share-row">' +
+                        '<input type="text" value="' + esc(g.share_url || '') + '" readonly onclick="this.select()">' +
+                        '<button class="btn btn-sm gal-copy-btn" data-url="' + esc(g.share_url || '') + '">Copy</button>' +
+                    '</div>' +
+                    '<div class="fp-card-actions">' +
+                        '<button class="btn btn-secondary gal-manage-btn" data-id="' + g.id + '">Manage</button>' +
+                        '<button class="btn btn-secondary gal-rename-btn" data-id="' + g.id + '" data-name="' + esc(g.name) + '">Rename</button>' +
+                        '<button class="btn btn-danger gal-del-btn" data-id="' + g.id + '" data-name="' + esc(g.name) + '">Delete</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        grid.querySelectorAll('.gal-copy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigator.clipboard.writeText(btn.dataset.url).then(function() {
+                    btn.textContent = 'Copied!';
+                    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+                });
+            });
+        });
+        grid.querySelectorAll('.gal-manage-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openGallery(btn.dataset.id);
+            });
+        });
+        grid.querySelectorAll('.gal-rename-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                galOpenRename(btn.dataset.id, btn.dataset.name, 'gallery');
+            });
+        });
+        grid.querySelectorAll('.gal-del-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                galDeleteTarget = { type: 'gallery', id: btn.dataset.id, name: btn.dataset.name };
+                document.getElementById('gal-delete-text').textContent = 'Delete gallery "' + btn.dataset.name + '" and all its items? This cannot be undone.';
+                showModal('gal-delete-modal');
+            });
+        });
+    }
+
+    // Create gallery
+    document.getElementById('new-gal-btn').addEventListener('click', function() {
+        document.getElementById('gal-name').value = 'Gallery';
+        if (salesGlobalProjectId) document.getElementById('gal-workspace').value = salesGlobalProjectId;
+        document.getElementById('gal-create-error').style.display = 'none';
+        showModal('gal-create-modal');
+    });
+    document.getElementById('gal-modal-close').addEventListener('click', function() { hideModal('gal-create-modal'); });
+    document.getElementById('gal-modal-cancel').addEventListener('click', function() { hideModal('gal-create-modal'); });
+
+    document.getElementById('gal-modal-create').addEventListener('click', function() {
+        var name = document.getElementById('gal-name').value.trim() || 'Gallery';
+        var workspaceId = (document.getElementById('gal-workspace').value || '').trim();
+        var btn = this;
+        if (!workspaceId) {
+            showError('gal-create-error', 'Please select a project.');
+            return;
+        }
+        btn.disabled = true;
+        document.getElementById('gal-create-error').style.display = 'none';
+        fetch('/api/galleries', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({ name: name, workspace_id: workspaceId })
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            btn.disabled = false;
+            if (!res.ok) {
+                showError('gal-create-error', res.data.error || 'Failed');
+                return;
+            }
+            hideModal('gal-create-modal');
+            loadGalleries();
+        })
+        .catch(function() { btn.disabled = false; });
+    });
+
+    // Delete gallery / item
+    var galDeleteTarget = null;
+    document.getElementById('gal-delete-cancel').addEventListener('click', function() { hideModal('gal-delete-modal'); });
+    document.getElementById('gal-delete-confirm').addEventListener('click', function() {
+        if (!galDeleteTarget) return;
+        var btn = this;
+        btn.disabled = true;
+        var url = galDeleteTarget.type === 'gallery'
+            ? '/api/galleries/' + galDeleteTarget.id
+            : '/api/gallery-items/' + galDeleteTarget.id;
+        fetch(url, { method: 'DELETE', headers: authHeaders() })
+            .then(function() {
+                btn.disabled = false;
+                hideModal('gal-delete-modal');
+                if (galDeleteTarget.type === 'gallery') {
+                    loadGalleries();
+                } else {
+                    loadGalItems();
+                }
+            })
+            .catch(function() { btn.disabled = false; });
+    });
+
+    // Detail view
+    function openGallery(galleryId) {
+        currentGallery = galleries.find(function(g) { return g.id === galleryId; });
+        if (!currentGallery) return;
+        document.getElementById('gal-list-view').style.display = 'none';
+        document.getElementById('gal-detail-view').classList.add('visible');
+        document.getElementById('gal-detail-title').textContent = currentGallery.name;
+        galOrderDirty = false;
+        document.getElementById('gal-save-order-btn').style.display = 'none';
+        loadGalItems();
+    }
+
+    document.getElementById('gal-back-btn').addEventListener('click', function() {
+        document.getElementById('gal-detail-view').classList.remove('visible');
+        document.getElementById('gal-list-view').style.display = '';
+        currentGallery = null;
+        loadGalleries();
+    });
+
+    document.getElementById('gal-preview-btn').addEventListener('click', function() {
+        if (currentGallery && currentGallery.share_token) {
+            window.open('/gallery/view/' + currentGallery.share_token, '_blank');
+        }
+    });
+
+    function loadGalItems() {
+        if (!currentGallery) return;
+        fetch('/api/galleries/' + currentGallery.id + '/items', { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(data) {
+                galItems = data;
+                renderGalItems();
+            });
+    }
+
+    function renderGalItems() {
+        var list = document.getElementById('gal-items-list');
+        var empty = document.getElementById('gal-items-empty');
+        if (!galItems.length) {
+            list.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        list.innerHTML = galItems.map(function(item, idx) {
+            var sizeStr = item.file_size_bytes ? formatBytes(item.file_size_bytes) : '';
+            var typeStr = item.media_type === 'video' ? 'Video' : 'Image';
+            var has360 = item.media_type === 'image' && !!item.is_360;
+            var meta = [typeStr, has360 ? '360°' : '', sizeStr].filter(Boolean).join(' \u00b7 ');
+            var thumbHtml = item.media_type === 'video'
+                ? '<div class="fp-item-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--color-surface);font-size:1.2rem;">&#9654;</div>'
+                : '<img class="fp-item-thumb" src="' + esc(item.media_url || '') + '" alt="' + esc(item.name) + '">';
+            var toggle360Btn = item.media_type === 'image'
+                ? '<button class="fp-item-btn flag360' + (has360 ? ' active' : '') + '" data-id="' + item.id + '" data-is360="' + (has360 ? '1' : '0') + '" title="Toggle 360 mode">360</button>'
+                : '';
+            return '<div class="fp-item" draggable="true" data-id="' + item.id + '" data-idx="' + idx + '">' +
+                '<div class="fp-item-drag" title="Drag to reorder">' +
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>' +
+                '</div>' +
+                thumbHtml +
+                '<div class="fp-item-info">' +
+                    '<div class="fp-item-name">' + esc(item.name) + '</div>' +
+                    '<div class="fp-item-size">' + meta + '</div>' +
+                '</div>' +
+                '<div class="fp-item-actions">' +
+                    toggle360Btn +
+                    '<button class="fp-item-btn rename" data-id="' + item.id + '" data-name="' + esc(item.name) + '" title="Rename">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
+                    '</button>' +
+                    '<button class="fp-item-btn delete" data-id="' + item.id + '" data-name="' + esc(item.name) + '" title="Delete">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+                    '</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        list.querySelectorAll('.fp-item-btn.rename').forEach(function(btn) {
+            btn.addEventListener('click', function() { galOpenRename(btn.dataset.id, btn.dataset.name, 'item'); });
+        });
+        list.querySelectorAll('.fp-item-btn.delete').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                galDeleteTarget = { type: 'item', id: btn.dataset.id, name: btn.dataset.name };
+                document.getElementById('gal-delete-text').textContent = 'Delete "' + btn.dataset.name + '"? This cannot be undone.';
+                showModal('gal-delete-modal');
+            });
+        });
+        list.querySelectorAll('.fp-item-btn.flag360').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var itemId = btn.dataset.id;
+                var nextIs360 = btn.dataset.is360 !== '1';
+                btn.disabled = true;
+                fetch('/api/gallery-items/' + itemId, {
+                    method: 'PATCH',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                    body: JSON.stringify({ is_360: nextIs360 })
+                }).then(function(r) {
+                    if (!r.ok) throw new Error('Failed to update 360 flag');
+                    return r.json();
+                }).then(function() {
+                    loadGalItems();
+                }).catch(function() {
+                    btn.disabled = false;
+                });
+            });
+        });
+
+        galSetupDragReorder();
+    }
+
+    function galSetupDragReorder() {
+        var list = document.getElementById('gal-items-list');
+        var dragSrcIdx = null;
+        list.querySelectorAll('.fp-item').forEach(function(el) {
+            el.addEventListener('dragstart', function(e) {
+                dragSrcIdx = parseInt(el.dataset.idx);
+                el.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', dragSrcIdx);
+            });
+            el.addEventListener('dragend', function() {
+                el.classList.remove('dragging');
+                list.querySelectorAll('.fp-item').forEach(function(x) { x.classList.remove('drag-over'); });
+            });
+            el.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                el.classList.add('drag-over');
+            });
+            el.addEventListener('dragleave', function() { el.classList.remove('drag-over'); });
+            el.addEventListener('drop', function(e) {
+                e.preventDefault();
+                el.classList.remove('drag-over');
+                var targetIdx = parseInt(el.dataset.idx);
+                if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+                var moved = galItems.splice(dragSrcIdx, 1)[0];
+                galItems.splice(targetIdx, 0, moved);
+                galOrderDirty = true;
+                document.getElementById('gal-save-order-btn').style.display = '';
+                renderGalItems();
+            });
+        });
+    }
+
+    document.getElementById('gal-save-order-btn').addEventListener('click', function() {
+        if (!currentGallery || !galOrderDirty) return;
+        var ids = galItems.map(function(it) { return it.id; });
+        fetch('/api/galleries/' + currentGallery.id + '/reorder', {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({ ordered_ids: ids })
+        }).then(function() {
+            galOrderDirty = false;
+            document.getElementById('gal-save-order-btn').style.display = 'none';
+        });
+    });
+
+    // Upload
+    var galUploadZone = document.getElementById('gal-upload-zone');
+    var galFileInput = document.getElementById('gal-file-input');
+    var GAL_ALLOWED_EXTS = { png: true, jpg: true, jpeg: true, webp: true, gif: true, mp4: true, webm: true, mov: true };
+    var GAL_MAX_UPLOAD_BYTES = Number(window.__MAX_GALLERY_READ_BYTES__ || 0) || 0;
+    var GAL_UPLOAD_TIMEOUT_MS = 15 * 60 * 1000;
+    var GAL_UPLOAD_RETRY_LIMIT = 2;
+
+    function galProgressParts() {
+        return {
+            progress: document.getElementById('gal-upload-progress'),
+            fill: document.getElementById('gal-progress-fill'),
+            text: document.getElementById('gal-progress-text')
+        };
+    }
+
+    function galResetProgressChrome() {
+        var ui = galProgressParts();
+        if (ui.text) ui.text.style.color = '';
+    }
+
+    function galShowUploadError(message, resetQueue) {
+        var ui = galProgressParts();
+        if (resetQueue) {
+            galPendingFiles = [];
+            galPendingFileIndex = 0;
+        }
+        if (!ui.progress || !ui.fill || !ui.text) return;
+        ui.text.textContent = message;
+        ui.text.style.color = 'var(--color-danger, #ef4444)';
+        ui.fill.style.width = '0%';
+        ui.progress.classList.add('visible');
+        setTimeout(function() {
+            ui.progress.classList.remove('visible');
+            galResetProgressChrome();
+        }, 6500);
+    }
+
+    function galFileExt(filename) {
+        var name = String(filename || '');
+        if (name.indexOf('.') < 0) return '';
+        return name.split('.').pop().toLowerCase();
+    }
+
+    function galValidateFile(file) {
+        if (!file) return 'Invalid file selection.';
+        var ext = galFileExt(file.name);
+        if (!GAL_ALLOWED_EXTS[ext]) {
+            return 'Unsupported file type for "' + (file.name || 'file') + '". Use PNG, JPG, WEBP, GIF, MP4, WEBM, or MOV.';
+        }
+        if (GAL_MAX_UPLOAD_BYTES > 0 && Number(file.size || 0) > GAL_MAX_UPLOAD_BYTES) {
+            return 'File "' + (file.name || 'file') + '" is too large (' + formatBytes(file.size || 0) + '). Max allowed is ' + formatBytes(GAL_MAX_UPLOAD_BYTES) + '.';
+        }
+        return '';
+    }
+
+    function galFriendlyUploadFailure(statusCode) {
+        if (statusCode === 0) {
+            return 'Connection was interrupted before upload completed. Please retry. If this repeats, check proxy/network timeouts.';
+        }
+        if (statusCode === 413) {
+            return 'Upload too large for server limits. Please use a smaller file.';
+        }
+        if (statusCode === 499) {
+            return 'Upload was cancelled before completion (499). This usually means the connection/proxy closed early; please retry.';
+        }
+        if (statusCode >= 500) {
+            return 'Server/storage error during upload. Please retry in a moment.';
+        }
+        return statusCode ? ('Upload failed (' + statusCode + ')') : 'Upload failed';
+    }
+
+    function galCanRetryUploadStatus(statusCode) {
+        var code = Number(statusCode || 0);
+        return code === 0 || code === 408 || code === 429 || code === 499 || code >= 500;
+    }
+
+    galUploadZone.addEventListener('click', function() { galFileInput.click(); });
+    galUploadZone.addEventListener('dragover', function(e) { e.preventDefault(); galUploadZone.classList.add('dragover'); });
+    galUploadZone.addEventListener('dragleave', function() { galUploadZone.classList.remove('dragover'); });
+    galUploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        galUploadZone.classList.remove('dragover');
+        galPendingFiles = Array.from(e.dataTransfer.files);
+        galPendingFileIndex = 0;
+        if (!galPendingFiles.length) {
+            galShowUploadError('No files detected. Please drop at least one media file.', false);
+            return;
+        }
+        galProcessNextFile();
+    });
+    galFileInput.addEventListener('change', function() {
+        galPendingFiles = Array.from(galFileInput.files);
+        galPendingFileIndex = 0;
+        if (!galPendingFiles.length) {
+            galShowUploadError('No files selected.', false);
+            galFileInput.value = '';
+            return;
+        }
+        galProcessNextFile();
+        galFileInput.value = '';
+    });
+
+    function galProcessNextFile() {
+        while (galPendingFileIndex < galPendingFiles.length) {
+            var candidate = galPendingFiles[galPendingFileIndex];
+            var validationErr = galValidateFile(candidate);
+            if (!validationErr) break;
+            galShowUploadError(validationErr + ' Skipping this file.', false);
+            galPendingFileIndex++;
+        }
+        if (galPendingFileIndex >= galPendingFiles.length) return;
+
+        var file = galPendingFiles[galPendingFileIndex];
+        var nameFromFile = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+        document.getElementById('gal-item-name-input').value = nameFromFile;
+        var isVideo = file.type.startsWith('video/');
+        galPendingIsVideo = isVideo;
+        var imgEl = document.getElementById('gal-name-preview');
+        var vidEl = document.getElementById('gal-name-preview-video');
+        var is360Wrap = document.getElementById('gal-item-is360-wrap');
+        var is360Input = document.getElementById('gal-item-is360');
+        if (is360Input) is360Input.checked = false;
+        if (is360Wrap) is360Wrap.style.display = isVideo ? 'none' : '';
+        if (isVideo) {
+            imgEl.style.display = 'none';
+            vidEl.style.display = '';
+            vidEl.src = URL.createObjectURL(file);
+        } else {
+            vidEl.style.display = 'none';
+            imgEl.style.display = '';
+            var reader = new FileReader();
+            reader.onload = function(e) { imgEl.src = e.target.result; };
+            reader.readAsDataURL(file);
+        }
+        showModal('gal-name-modal');
+    }
+
+    document.getElementById('gal-name-confirm').addEventListener('click', function() {
+        var name = document.getElementById('gal-item-name-input').value.trim() || 'Untitled';
+        var is360Input = document.getElementById('gal-item-is360');
+        var is360 = !galPendingIsVideo && !!(is360Input && is360Input.checked);
+        hideModal('gal-name-modal');
+        galUploadFile(galPendingFiles[galPendingFileIndex], name, is360);
+    });
+
+    document.getElementById('gal-name-skip').addEventListener('click', function() {
+        galPendingFileIndex++;
+        hideModal('gal-name-modal');
+        if (galPendingFileIndex < galPendingFiles.length) {
+            galProcessNextFile();
+        }
+    });
+
+    function galUploadFile(file, name, is360) {
+        var ui = galProgressParts();
+        var progress = ui.progress;
+        var fill = ui.fill;
+        var text = ui.text;
+
+        if (!currentGallery) {
+            galShowUploadError('No gallery is open. Go back and open a gallery, then try again.', false);
+            return;
+        }
+        if (!file) {
+            galShowUploadError('No file selected for upload.', true);
+            return;
+        }
+        var validationErr = galValidateFile(file);
+        if (validationErr) {
+            galShowUploadError(validationErr, true);
+            return;
+        }
+        if (!progress || !fill || !text) return;
+
+        progress.classList.add('visible');
+        galResetProgressChrome();
+        fill.style.width = '0%';
+        text.textContent = 'Starting upload ' + (galPendingFileIndex + 1) + '/' + galPendingFiles.length + '...';
+
+        var fd = new FormData();
+        fd.append('name', name);
+        fd.append('file', file);
+        fd.append('is_360', is360 ? 'true' : 'false');
+        var headers = authHeaders();
+
+        function sendAttempt(attemptNo) {
+            var xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function(ev) {
+                if (ev.lengthComputable && ev.total > 0) {
+                    var pct = Math.round((ev.loaded / ev.total) * 100);
+                    fill.style.width = pct + '%';
+                    text.textContent = 'Uploading ' + (galPendingFileIndex + 1) + '/' + galPendingFiles.length + ' - ' + pct + '%';
+                } else {
+                    fill.style.width = '35%';
+                    text.textContent = 'Uploading ' + (galPendingFileIndex + 1) + '/' + galPendingFiles.length + '...';
+                }
+            });
+
+            xhr.addEventListener('load', function() {
+                var ok = xhr.status >= 200 && xhr.status < 300;
+                if (ok) {
+                    fill.style.width = '100%';
+                    text.textContent = 'Saved.';
+                    galPendingFileIndex++;
+                    if (galPendingFileIndex < galPendingFiles.length) {
+                        setTimeout(function() {
+                            fill.style.width = '0%';
+                            galProcessNextFile();
+                        }, 300);
+                    } else {
+                        setTimeout(function() {
+                            progress.classList.remove('visible');
+                            fill.style.width = '0%';
+                        }, 500);
+                        loadGalItems();
+                    }
+                    return;
+                }
+
+                var statusCode = xhr.status || 0;
+                if (attemptNo < GAL_UPLOAD_RETRY_LIMIT && galCanRetryUploadStatus(statusCode)) {
+                    fill.style.width = '0%';
+                    text.textContent = 'Retrying upload (' + (attemptNo + 1) + '/' + GAL_UPLOAD_RETRY_LIMIT + ')...';
+                    setTimeout(function() { sendAttempt(attemptNo + 1); }, 900 * attemptNo);
+                    return;
+                }
+
+                var msg = '';
+                try {
+                    var payload = JSON.parse(xhr.responseText || '{}');
+                    if (payload && payload.error) msg = String(payload.error);
+                } catch (e) {}
+                if (!msg) msg = galFriendlyUploadFailure(statusCode);
+                galShowUploadError(msg, true);
+            });
+
+            xhr.addEventListener('error', function() {
+                if (attemptNo < GAL_UPLOAD_RETRY_LIMIT) {
+                    fill.style.width = '0%';
+                    text.textContent = 'Retrying upload (' + (attemptNo + 1) + '/' + GAL_UPLOAD_RETRY_LIMIT + ')...';
+                    setTimeout(function() { sendAttempt(attemptNo + 1); }, 900 * attemptNo);
+                    return;
+                }
+                galShowUploadError(galFriendlyUploadFailure(xhr.status || 0), true);
+            });
+
+            xhr.addEventListener('timeout', function() {
+                if (attemptNo < GAL_UPLOAD_RETRY_LIMIT) {
+                    fill.style.width = '0%';
+                    text.textContent = 'Upload timed out. Retrying...';
+                    setTimeout(function() { sendAttempt(attemptNo + 1); }, 900 * attemptNo);
+                    return;
+                }
+                galShowUploadError('Upload timed out. For large videos, try again or use a smaller file.', true);
+            });
+
+            xhr.addEventListener('abort', function() {
+                galShowUploadError('Upload was cancelled before completion. Please retry.', true);
+            });
+
+            xhr.open('POST', '/api/galleries/' + currentGallery.id + '/items');
+            xhr.timeout = GAL_UPLOAD_TIMEOUT_MS;
+            if (headers.Authorization) xhr.setRequestHeader('Authorization', headers.Authorization);
+            xhr.send(fd);
+        }
+
+        sendAttempt(1);
+    }
+
+    // Rename
+    var galRenameTarget = null;
+    var galRenameTargetType = 'item';
+    function galOpenRename(id, name, type) {
+        galRenameTarget = id;
+        galRenameTargetType = type || 'item';
+        document.getElementById('gal-rename-title').textContent =
+            galRenameTargetType === 'gallery' ? 'Rename Gallery' : 'Rename Item';
+        document.getElementById('gal-rename-input').value = name;
+        showModal('gal-rename-modal');
+    }
+    document.getElementById('gal-rename-cancel').addEventListener('click', function() {
+        hideModal('gal-rename-modal');
+        galRenameTarget = null;
+    });
+    document.getElementById('gal-rename-confirm').addEventListener('click', function() {
+        if (!galRenameTarget) return;
+        var targetId = galRenameTarget;
+        var targetType = galRenameTargetType;
+        var newName = document.getElementById('gal-rename-input').value.trim();
+        if (!newName) return;
+        var btn = this;
+        btn.disabled = true;
+        var endpoint = targetType === 'gallery'
+            ? ('/api/galleries/' + targetId)
+            : ('/api/gallery-items/' + targetId);
+        fetch(endpoint, {
+            method: 'PATCH',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({ name: newName })
+        }).then(function(r) {
+            if (!r.ok) {
+                return r.json().then(function(payload) {
+                    throw new Error((payload && payload.error) || 'Failed to rename');
+                }, function() {
+                    throw new Error('Failed to rename');
+                });
+            }
+            btn.disabled = false;
+            hideModal('gal-rename-modal');
+            galRenameTarget = null;
+            if (targetType === 'gallery') {
+                if (currentGallery && String(currentGallery.id) === String(targetId)) {
+                    currentGallery.name = newName;
+                    document.getElementById('gal-detail-title').textContent = newName;
+                }
+                loadGalleries();
+            } else {
+                loadGalItems();
+            }
+        }).catch(function(err) {
+            btn.disabled = false;
+            if (err && err.message) alert(err.message);
+        });
+    });
+})();
+</script>
+{% endblock %}

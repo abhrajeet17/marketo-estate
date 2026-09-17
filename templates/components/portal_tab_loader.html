@@ -1,0 +1,37 @@
+{# portal_tab_loader.html — unified hollow portal loader
+   vars: loader_id, arc_id, percent_id, steps_id, caption_id, label_id,
+         initial_caption, initial_label, steps (list of data-step values) #}
+<div class="portal-tab-loader" id="{{ loader_id }}" role="status" aria-live="polite" aria-busy="true">
+  <div class="portal-tab-loader__panel">
+    <div class="portal-tab-loader__visual" aria-hidden="true">
+      <svg class="portal-tab-loader__svg" viewBox="0 0 120 120" focusable="false">
+        <g class="portal-tab-loader__rings" transform="rotate(-90 60 60)">
+          <circle class="portal-tab-loader__track" cx="60" cy="60" r="50"></circle>
+          <circle class="portal-tab-loader__idle" cx="60" cy="60" r="50">
+            <animateTransform attributeName="transform" type="rotate" from="0 60 60" to="360 60 60" dur="1.35s" repeatCount="indefinite"></animateTransform>
+          </circle>
+          <circle class="portal-tab-loader__progress" id="{{ arc_id }}" cx="60" cy="60" r="50"></circle>
+        </g>
+        <g class="portal-tab-loader__icon" transform="translate(60 62)">
+          <path d="M-13 12 0-16 13 12"></path>
+          <rect x="-10.5" y="12" width="21" height="15" rx="1.5"></rect>
+          <path d="M-4.5 19.5h9v7.5h-9z"></path>
+          <path d="M-16.5 27h33"></path>
+        </g>
+      </svg>
+    </div>
+    <div class="portal-tab-loader__meta">
+      <div class="portal-tab-loader__percent-wrap">
+        <span class="portal-tab-loader__percent" id="{{ percent_id }}">12</span>
+        <span class="portal-tab-loader__suffix">%</span>
+      </div>
+      <p class="portal-tab-loader__label" id="{{ label_id }}">{{ initial_label or initial_caption or 'Loading' }}</p>
+      <ul class="portal-tab-loader__ticks" id="{{ steps_id }}">
+        {% for step in steps %}
+        <li{% if loop.first %} class="is-active"{% endif %} data-step="{{ step }}"></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p class="portal-tab-loader__sr" id="{{ caption_id }}">{{ initial_caption or 'Loading' }}</p>
+  </div>
+</div>

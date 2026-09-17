@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Add User – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/add_user.css">
+{% endblock %}
+{% block content %}
+<div class="add-user-page">
+    <header class="header">
+        <div class="header-left">
+            <a href="/dashboard" class="brand-pill" aria-label="MarketoState">
+                <img src="/static/Marketostate/Marketostate%20logo.png" alt="MarketoState">
+            </a>
+            <nav class="nav">
+            <a href="/dashboard">Plotted Development</a>
+            <a href="/login">Sign in</a>
+            </nav>
+        </div>
+    </header>
+    <main class="container">
+        <div class="card">
+            <h1>Add user</h1>
+            <p>Create a new platform user (email and password). You must be signed in to add users.</p>
+            <div id="guest-msg" class="guest-msg" style="display:none;">
+                You need to <a href="/login">sign in</a> to add users.
+            </div>
+            <form id="form-add-user" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label" for="new-name">Username / Name</label>
+                    <input type="text" id="new-name" class="form-input" placeholder="User's display name"
+                        autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="new-email">Email</label>
+                    <input type="email" id="new-email" class="form-input" required placeholder="newuser@example.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="new-password">Password</label>
+                    <input type="password" id="new-password" class="form-input" required minlength="6"
+                        placeholder="At least 6 characters">
+                </div>
+                <div id="add-user-error" class="error" style="display:none;"></div>
+                <div id="add-user-success" class="success" style="display:none;"></div>
+                <button type="submit" class="btn" id="btn-add-user">Create user</button>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        (function () {
+            var supabaseUrl = {{ (supabase_url or '')|tojson }};
+        var supabaseAnonKey = {{ (supabase_anon_key or '')| tojson }};
+        if (!supabaseUrl || !supabaseAnonKey) {
+            document.querySelector('.card p').textContent = 'Supabase is not configured.';
+            return;
+        }
+        var supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+        window._supabase = supabase;
+        var form = document.getElementById('form-add-user');
+        var guestMsg = document.getElementById('guest-msg');
+
+        supabase.auth.getSession().then(function (_ref) {
+            var session = _ref.data.session;
+            if (session) {
+                try { if (window.applyOrgTheme) window.applyOrgTheme(); } catch (e) { }
+                form.style.display = 'block';
+            } else {
+                window.location.replace('/login');
+            }
+        });
+
+        function showError(msg) {
+            var el = document.getElementById('add-user-error');
+            var ok = document.getElementById('add-user-success');
+            el.textContent = msg || '';
+            el.style.display = msg ? 'block' : 'none';
+            ok.style.display = 'none';
+        }
+        function showSuccess(msg) {
+            var el = document.getElementById('add-user-success');
+            var err = document.getElementById('add-user-error');
+            el.textContent = msg || '';
+            el.style.display = msg ? 'block' : 'none';
+            err.style.display = 'none';
+        }
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            var btn = document.getElementById('btn-add-user');
+            showError('');
+            showSuccess('');
+            btn.disabled = true;
+            var name = document.getElementById('new-name').value.trim();
+            var email = document.getElementById('new-email').value.trim();
+            var password = document.getElementById('new-password').value;
+            var session = (await supabase.auth.getSession()).data.session;
+            if (!session) {
+                showError('Session expired. Please sign in again.');
+                btn.disabled = false;
+                return;
+            }
+            try {
+                var r = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                    body: JSON.stringify({ email: email, password: password, display_name: name || undefined })
+                });
+                var data = await r.json().catch(function () { return {}; });
+                if (r.ok) {
+                    showSuccess('User created: ' + (data.user && (data.user.display_name || data.user.email) || email));
+                    document.getElementById('new-name').value = '';
+                    document.getElementById('new-email').value = '';
+                    document.getElementById('new-password').value = '';
+                } else {
+                    showError(data.error || 'Failed to create user');
+                }
+            } catch (err) {
+                showError(err.message || 'Request failed');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+        }) ();
+    </script>
+{% endblock %}

@@ -1,0 +1,22 @@
+<div class="app-brand demo">
+  <a
+    href="{{ home_href|default('/customer-dashboard') }}"
+    class="app-brand-link"
+    {% if home_link_id %}id="{{ home_link_id }}"{% endif %}
+    aria-label="MarketoState"
+  >
+    <span class="app-brand-logo demo">
+      <img
+        src="/static/Marketostate/Marketostate%20logo.png"
+        alt="MarketoState"
+        class="app-brand-img ms-sidebar-brand-logo"
+      />
+      <img
+        src="/static/Marketostate/Marketostate%20Favicon.svg"
+        alt=""
+        class="app-brand-img-collapsed ms-sidebar-brand-icon"
+        aria-hidden="true"
+      />
+    </span>
+  </a>
+</div>

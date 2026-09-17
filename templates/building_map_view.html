@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ bm.name or 'Building Map' }} – MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/building_map_view.css">
+</head>
+<body>
+<div class="bmv-page" id="bmv-page">
+    <!-- Full-screen image area -->
+    <div class="bmv-container" id="bmv-container">
+        <div class="bmv-image-wrap" id="bmv-image-wrap">
+            <img class="bmv-image" id="bmv-image" src="{{ image_url }}" alt="{{ bm.name }}" draggable="false">
+            <canvas class="bmv-canvas" id="bmv-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Zoom controls (top-right) -->
+    <div class="bmv-zoom-controls">
+        <button class="bmv-zoom-btn" id="bmv-zoom-in" title="Zoom in">+</button>
+        <button class="bmv-zoom-btn" id="bmv-zoom-out" title="Zoom out">&minus;</button>
+        <button class="bmv-zoom-btn" id="bmv-zoom-reset" title="Reset" style="font-size:0.72rem;">&#8634;</button>
+    </div>
+
+    <!-- Floors panel (right side, tall) -->
+    <div class="bmv-floors-panel" id="bmv-floors-panel">
+        <div class="bmv-floors-header">
+            <h2 class="bmv-floors-title">Floors</h2>
+            <button class="bmv-floors-collapse" id="bmv-floors-collapse" title="Collapse">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+        </div>
+        <div class="bmv-floors-list" id="bmv-floors-list"></div>
+        <button class="bmv-floors-expand" id="bmv-floors-expand">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Floors
+        </button>
+    </div>
+
+    {% if images|length > 1 %}
+    <!-- Image toggle panel (bottom-left) -->
+    <div class="bmv-image-toggle" id="bmv-image-toggle">
+        <button class="bmv-image-toggle-trigger" id="bmv-image-toggle-trigger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span id="bmv-current-image-name">{{ images[0].name }}</span>
+        </button>
+        <div class="bmv-image-toggle-menu" id="bmv-image-toggle-menu" hidden>
+            <div class="bmv-image-toggle-title">Views</div>
+            <div class="bmv-image-toggle-list" id="bmv-image-toggle-list"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if siblings|length > 1 %}
+    <!-- Building selector (bottom-right) -->
+    <div class="bmv-building-selector" id="bmv-building-selector">
+        <button class="bmv-building-trigger" id="bmv-building-trigger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+            {{ bm.name }}
+        </button>
+        <div class="bmv-building-menu" id="bmv-building-menu" hidden>
+            {% for s in siblings %}
+            <a href="/building-map/view/{{ s.share_token }}" class="bmv-building-item{% if s.active %} active{% endif %}">{{ s.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Floor plan modal (shows linked floor plan image) -->
+    <div class="bmv-fp-modal-backdrop" id="bmv-fp-modal">
+        <div class="bmv-fp-modal">
+            <div class="bmv-fp-modal-header">
+                <h3 class="bmv-fp-modal-title" id="bmv-fp-modal-title">Floor Plan</h3>
+                <button class="bmv-fp-modal-close" id="bmv-fp-modal-close">&times;</button>
+            </div>
+            <div class="bmv-fp-modal-body">
+                <img class="bmv-fp-modal-img" id="bmv-fp-modal-img" src="" alt="Floor Plan">
+            </div>
+        </div>
+    </div>
+
+    <!-- Watermark -->
+    <div class="bmv-watermark">MarketoState</div>
+</div>
+
+<script>
+(function() {
+    // ── Data from server ──
+    var ALL_ZONES = {{ zones|tojson }};
+    var ALL_IMAGES = {{ images|tojson }};
+    var currentImageIndex = 0;
+
+    // ── Parse points ──
+    ALL_ZONES.forEach(function(z) {
+        if (typeof z.points === 'string') z.points = JSON.parse(z.points);
+    });
+
+    // ── Get zones for current image ──
+    function getVisibleZones() {
+        var img = ALL_IMAGES[currentImageIndex];
+        if (!img) return ALL_ZONES;
+        var imgId = img.id || null;
+        // If the image has no id (fallback main image), show zones with no image_id
+        return ALL_ZONES.filter(function(z) {
+            return (z.image_id || null) === imgId;
+        });
+    }
+
+    // ── Preload floor plan images ──
+    (function preload() {
+        var seen = {};
+        ALL_ZONES.forEach(function(z) {
+            var url = z.linked_floor_plan_image_url;
+            if (url && !seen[url]) {
+                seen[url] = true;
+                new Image().src = url;
+            }
+        });
+    })();
+
+    // ── Color map ──
+    var COLOR_MAP = {
+        green:  { stroke: 'rgba(34,197,94,0.6)',  fill: 'rgba(34,197,94,0.10)',  fillHover: 'rgba(34,197,94,0.25)' },
+        orange: { stroke: 'rgba(249,115,22,0.6)', fill: 'rgba(249,115,22,0.10)', fillHover: 'rgba(249,115,22,0.25)' },
+        red:    { stroke: 'rgba(239,68,68,0.6)',  fill: 'rgba(239,68,68,0.10)',  fillHover: 'rgba(239,68,68,0.25)' },
+        blue:   { stroke: 'rgba(59,130,246,0.6)', fill: 'rgba(59,130,246,0.10)', fillHover: 'rgba(59,130,246,0.25)' },
+        purple: { stroke: 'rgba(168,85,247,0.6)', fill: 'rgba(168,85,247,0.10)', fillHover: 'rgba(168,85,247,0.25)' }
+    };
+
+    // ── DOM refs ──
+    var container = document.getElementById('bmv-container');
+    var imageWrap = document.getElementById('bmv-image-wrap');
+    var imgEl = document.getElementById('bmv-image');
+    var canvas = document.getElementById('bmv-canvas');
+    var ctx = canvas.getContext('2d');
+    var floorsPanel = document.getElementById('bmv-floors-panel');
+    var floorsList = document.getElementById('bmv-floors-list');
+
+    var imgNatW = 0, imgNatH = 0;
+    var scale = 1, panX = 0, panY = 0;
+    var isDragging = false, dragStartX, dragStartY, startPanX, startPanY;
+    var highlightedFloor = null;
+    var highlightedZoneId = null;
+
+    // ── Init ──
+    imgEl.onload = function() {
+        imgNatW = imgEl.naturalWidth;
+        imgNatH = imgEl.naturalHeight;
+        canvas.width = imgNatW;
+        canvas.height = imgNatH;
+        resetTransform();
+        buildFloorsList();
+        renderZones();
+    };
+
+    // ── Image toggle ──
+    function switchToImage(index) {
+        if (index < 0 || index >= ALL_IMAGES.length) return;
+        currentImageIndex = index;
+        var img = ALL_IMAGES[index];
+        imgEl.src = img.image_url;
+        highlightedFloor = null;
+        highlightedZoneId = null;
+        // Update trigger text
+        var nameEl = document.getElementById('bmv-current-image-name');
+        if (nameEl) nameEl.textContent = img.name;
+        // Update toggle list active state
+        var listEl = document.getElementById('bmv-image-toggle-list');
+        if (listEl) {
+            listEl.querySelectorAll('.bmv-image-toggle-item').forEach(function(el, i) {
+                el.classList.toggle('active', i === index);
+            });
+        }
+        // Hide menu
+        var menu = document.getElementById('bmv-image-toggle-menu');
+        if (menu) menu.hidden = true;
+        // imgEl.onload will rebuild floors and render zones
+    }
+
+    // Build image toggle list
+    if (ALL_IMAGES.length > 1) {
+        var toggleList = document.getElementById('bmv-image-toggle-list');
+        if (toggleList) {
+            toggleList.innerHTML = ALL_IMAGES.map(function(img, idx) {
+                return '<button class="bmv-image-toggle-item' + (idx === 0 ? ' active' : '') + '" data-idx="' + idx + '">' +
+                    '<img src="' + (img.image_url || '') + '" alt="" class="bmv-image-toggle-thumb">' +
+                    '<span class="bmv-image-toggle-name">' + (img.name || 'View') + '</span>' +
+                '</button>';
+            }).join('');
+
+            toggleList.querySelectorAll('.bmv-image-toggle-item').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    switchToImage(parseInt(btn.dataset.idx));
+                });
+            });
+        }
+
+        // Toggle menu visibility
+        var toggleTrigger = document.getElementById('bmv-image-toggle-trigger');
+        var toggleMenu = document.getElementById('bmv-image-toggle-menu');
+        if (toggleTrigger && toggleMenu) {
+            toggleTrigger.addEventListener('click', function() {
+                toggleMenu.hidden = !toggleMenu.hidden;
+            });
+            document.addEventListener('click', function(e) {
+                if (!toggleTrigger.contains(e.target) && !toggleMenu.contains(e.target)) {
+                    toggleMenu.hidden = true;
+                }
+            });
+        }
+    }
+
+    // ── Build floors list ──
+    function buildFloorsList() {
+        var visibleZones = getVisibleZones();
+        var floors = [];
+        visibleZones.forEach(function(z) {
+            var f = z.floor_number || 0;
+            if (floors.indexOf(f) === -1) floors.push(f);
+        });
+        floors.sort(function(a, b) { return b - a; }); // descending (top floor first)
+
+        floorsList.innerHTML = floors.map(function(f) {
+            var zoneCount = visibleZones.filter(function(z) { return z.floor_number === f; }).length;
+            return '<button class="bmv-floor-btn" data-floor="' + f + '">' +
+                '<span class="bmv-floor-num">F' + f + '</span>' +
+                '<span class="bmv-floor-count">' + zoneCount + ' zone' + (zoneCount !== 1 ? 's' : '') + '</span>' +
+            '</button>';
+        }).join('');
+
+        floorsList.querySelectorAll('.bmv-floor-btn').forEach(function(btn) {
+            btn.addEventListener('mouseenter', function() {
+                highlightedFloor = parseInt(btn.dataset.floor);
+                highlightedZoneId = null;
+                renderZones();
+                btn.classList.add('hover');
+            });
+            btn.addEventListener('mouseleave', function() {
+                highlightedFloor = null;
+                renderZones();
+                btn.classList.remove('hover');
+            });
+            btn.addEventListener('click', function() {
+                highlightedFloor = parseInt(btn.dataset.floor);
+                highlightedZoneId = null;
+                renderZones();
+                // Briefly highlight
+                floorsList.querySelectorAll('.bmv-floor-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+            });
+        });
+    }
+
+    // ── Render zones on canvas ──
+    function renderZones() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var visibleZones = getVisibleZones();
+
+        // Pass 1: draw all fills (no strokes) for clean layering
+        visibleZones.forEach(function(z) {
+            var pts = z.points;
+            if (!pts || pts.length < 3) return;
+            var c = COLOR_MAP[z.color] || COLOR_MAP.green;
+            var isHighlighted = (highlightedFloor !== null && z.floor_number === highlightedFloor) ||
+                                (highlightedZoneId !== null && z.id === highlightedZoneId);
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.closePath();
+            ctx.fillStyle = isHighlighted ? c.fillHover : c.fill;
+            ctx.fill();
+        });
+
+        // Pass 2: strokes only on highlighted zones (thin, no glow)
+        visibleZones.forEach(function(z) {
+            var pts = z.points;
+            if (!pts || pts.length < 3) return;
+            var c = COLOR_MAP[z.color] || COLOR_MAP.green;
+            var isHighlighted = (highlightedFloor !== null && z.floor_number === highlightedFloor) ||
+                                (highlightedZoneId !== null && z.id === highlightedZoneId);
+            if (!isHighlighted) return;
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.closePath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        });
+
+        // Pass 3: labels on highlighted
+        visibleZones.forEach(function(z) {
+            var pts = z.points;
+            if (!pts || pts.length < 3) return;
+            var isHighlighted = (highlightedFloor !== null && z.floor_number === highlightedFloor) ||
+                                (highlightedZoneId !== null && z.id === highlightedZoneId);
+            if (!isHighlighted) return;
+            var cx = 0, cy = 0;
+            pts.forEach(function(p) { cx += p.x; cy += p.y; });
+            cx /= pts.length; cy /= pts.length;
+            ctx.font = 'bold 13px Syne, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(z.name, cx, cy);
+            ctx.fillText(z.name, cx, cy);
+        });
+    }
+
+    // ── Zoom & Pan ──
+    function resetTransform() {
+        if (!imgNatW || !imgNatH) return;
+        var cw = container.clientWidth;
+        var ch = container.clientHeight;
+        scale = Math.min(cw / imgNatW, ch / imgNatH, 1);
+        panX = (cw - imgNatW * scale) / 2;
+        panY = (ch - imgNatH * scale) / 2;
+        applyTransform();
+    }
+
+    function applyTransform() {
+        imageWrap.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+    }
+
+    document.getElementById('bmv-zoom-in').addEventListener('click', function() {
+        scale = Math.min(scale * 1.3, 5); applyTransform();
+    });
+    document.getElementById('bmv-zoom-out').addEventListener('click', function() {
+        scale = Math.max(scale / 1.3, 0.1); applyTransform();
+    });
+    document.getElementById('bmv-zoom-reset').addEventListener('click', resetTransform);
+
+    container.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var factor = e.deltaY > 0 ? 0.9 : 1.1;
+        var rect = container.getBoundingClientRect();
+        var mx = e.clientX - rect.left;
+        var my = e.clientY - rect.top;
+        var newScale = Math.max(0.1, Math.min(5, scale * factor));
+        panX = mx - (mx - panX) * (newScale / scale);
+        panY = my - (my - panY) * (newScale / scale);
+        scale = newScale;
+        applyTransform();
+    }, { passive: false });
+
+    container.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        dragStartX = e.clientX; dragStartY = e.clientY;
+        startPanX = panX; startPanY = panY;
+        container.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        panX = startPanX + (e.clientX - dragStartX);
+        panY = startPanY + (e.clientY - dragStartY);
+        applyTransform();
+    });
+    window.addEventListener('mouseup', function() {
+        if (isDragging) { isDragging = false; container.style.cursor = ''; }
+    });
+
+    // Touch
+    var touchStartDist = 0, touchStartScale = 1;
+    container.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            touchStartScale = scale;
+        } else if (e.touches.length === 1) {
+            isDragging = true;
+            dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
+            startPanX = panX; startPanY = panY;
+        }
+    }, { passive: true });
+    container.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            scale = Math.max(0.1, Math.min(5, touchStartScale * (dist / touchStartDist)));
+            applyTransform();
+        } else if (isDragging && e.touches.length === 1) {
+            panX = startPanX + (e.touches[0].clientX - dragStartX);
+            panY = startPanY + (e.touches[0].clientY - dragStartY);
+            applyTransform();
+        }
+    }, { passive: false });
+    container.addEventListener('touchend', function() { isDragging = false; });
+
+    // ── Coordinate conversion ──
+    function clientToImageCoords(clientX, clientY) {
+        var rect = container.getBoundingClientRect();
+        return {
+            x: (clientX - rect.left - panX) / scale,
+            y: (clientY - rect.top - panY) / scale
+        };
+    }
+
+    function pointInPolygon(point, polygon) {
+        var x = point.x, y = point.y, inside = false;
+        for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            var xi = polygon[i].x, yi = polygon[i].y;
+            var xj = polygon[j].x, yj = polygon[j].y;
+            var intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // ── Hover highlight on image ──
+    container.addEventListener('mousemove', function(e) {
+        if (isDragging) return;
+        var coords = clientToImageCoords(e.clientX, e.clientY);
+        var visibleZones = getVisibleZones();
+        var found = null;
+        for (var i = visibleZones.length - 1; i >= 0; i--) {
+            if (visibleZones[i].points && visibleZones[i].points.length >= 3 && pointInPolygon(coords, visibleZones[i].points)) {
+                found = visibleZones[i];
+                break;
+            }
+        }
+        if (found) {
+            highlightedZoneId = found.id;
+            highlightedFloor = null;
+            container.style.cursor = 'pointer';
+        } else {
+            if (highlightedZoneId !== null) {
+                highlightedZoneId = null;
+                container.style.cursor = 'grab';
+            }
+        }
+        renderZones();
+    });
+
+    // ── Click on zone ──
+    container.addEventListener('click', function(e) {
+        if (isDragging) return;
+        var coords = clientToImageCoords(e.clientX, e.clientY);
+        var visibleZones = getVisibleZones();
+        for (var i = visibleZones.length - 1; i >= 0; i--) {
+            var z = visibleZones[i];
+            if (z.points && z.points.length >= 3 && pointInPolygon(coords, z.points)) {
+                handleZoneClick(z);
+                return;
+            }
+        }
+    });
+
+    function handleZoneClick(zone) {
+        if (zone.linked_panorama_id) {
+            // Navigate to panorama customer view
+            window.location.href = '/customer/' + zone.linked_panorama_id;
+        } else if (zone.linked_floor_plan_image_url) {
+            // Show floor plan in modal
+            showFloorPlanModal(zone.linked_floor_plan_name || zone.name, zone.linked_floor_plan_image_url);
+        }
+    }
+
+    // ── Floor plan modal ──
+    function showFloorPlanModal(title, imgUrl) {
+        document.getElementById('bmv-fp-modal-title').textContent = title;
+        document.getElementById('bmv-fp-modal-img').src = imgUrl;
+        document.getElementById('bmv-fp-modal').classList.add('visible');
+    }
+
+    document.getElementById('bmv-fp-modal-close').addEventListener('click', function() {
+        document.getElementById('bmv-fp-modal').classList.remove('visible');
+    });
+    document.getElementById('bmv-fp-modal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('visible');
+    });
+
+    // ── Floors panel collapse/expand ──
+    document.getElementById('bmv-floors-collapse').addEventListener('click', function() {
+        floorsPanel.classList.add('collapsed');
+    });
+    document.getElementById('bmv-floors-expand').addEventListener('click', function() {
+        floorsPanel.classList.remove('collapsed');
+    });
+
+    // ── Building selector dropdown ──
+    var buildingTrigger = document.getElementById('bmv-building-trigger');
+    var buildingMenu = document.getElementById('bmv-building-menu');
+    if (buildingTrigger && buildingMenu) {
+        buildingTrigger.addEventListener('click', function() {
+            var open = !buildingMenu.hidden;
+            buildingMenu.hidden = open;
+        });
+        document.addEventListener('click', function(e) {
+            if (!buildingTrigger.contains(e.target) && !buildingMenu.contains(e.target)) {
+                buildingMenu.hidden = true;
+            }
+        });
+    }
+
+    // ── Window resize ──
+    window.addEventListener('resize', resetTransform);
+})();
+</script>
+</body>
+</html>

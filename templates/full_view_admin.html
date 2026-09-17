@@ -1,0 +1,2108 @@
+{% extends 'base.html' %}
+{% block title %}Full View Creator – MarketoState{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<link rel="stylesheet" href="/static/css/full_view_admin.css">
+<link rel="stylesheet" href="/static/css/share-workspace-modal.css?v=20260822-2">
+<script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="fv-page" id="fv-page">
+    <div class="fv-toast-stack" id="fv-toast-stack" aria-live="polite" aria-atomic="true"></div>
+    {% set active_page = 'fullview' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="fv-main">
+
+        <!-- Header -->
+        <div class="fv-header">
+            <div class="fv-header-eyebrow">
+                <iconify-icon icon="ph:layout-duotone"></iconify-icon>
+                Full View Creator
+            </div>
+            <h1 class="fv-title">Build Your Customer Experience</h1>
+            <p class="fv-subtitle">Assemble a navigation sidebar your customers see on every page — panoramas, floor plans, galleries, maps and more — all in one place.</p>
+        </div>
+
+        <!-- Step 1: Project selector -->
+        <div class="fv-step">
+            <div class="fv-step-heading">
+                <span class="fv-step-num">1</span>
+                <span class="fv-step-label">Select a Project</span>
+            </div>
+            <div class="fv-ws-row">
+                <select class="fv-select" id="fv-workspace-select">
+                    <option value="">— choose a project —</option>
+                </select>
+                <button class="btn btn-primary" id="fv-init-btn" disabled style="white-space:nowrap;">
+                    <iconify-icon icon="ph:play-bold"></iconify-icon>
+                    Open Builder
+                </button>
+            </div>
+            <div class="fv-inline-status" id="fv-ws-status" style="display:none;"></div>
+        </div>
+
+        <!-- Step 2: Builder (hidden until workspace selected) -->
+        <div class="fv-builder" id="fv-builder" style="display:none;">
+
+            <!-- Builder header -->
+            <div class="fv-builder-header">
+                <div class="fv-builder-title-wrap">
+                    <iconify-icon icon="ph:folder-open-duotone" style="color:var(--fv-accent);font-size:1.15rem;flex-shrink:0;"></iconify-icon>
+                    <span class="fv-builder-ws-name" id="fv-builder-ws-name"></span>
+                    <span class="fv-builder-badge">Full View</span>
+                </div>
+                <div class="fv-builder-actions">
+                    <label class="fv-toggle-wrap" title="Toggle Full View on / off for customers">
+                        <span class="fv-toggle-label">Live</span>
+                        <div class="fv-toggle" id="fv-active-toggle">
+                            <input type="checkbox" id="fv-active-check" checked>
+                            <span class="fv-toggle-slider"></span>
+                        </div>
+                    </label>
+                    <button class="btn btn-secondary btn-sm" id="fv-preview-btn">
+                        <iconify-icon icon="ph:eye"></iconify-icon>
+                        Preview
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="fv-share-btn">
+                        <iconify-icon icon="ph:link"></iconify-icon>
+                        Copy Link
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="fv-create-link-btn" title="Create a custom Full View share link with your own URL suffix">
+                        <iconify-icon icon="ph:link-simple"></iconify-icon>
+                        Create Link
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="fv-share-ref-btn" title="Create customised reference link (for CRM mapping, same as dashboard)">
+                        <iconify-icon icon="ph:users-three"></iconify-icon>
+                        Share Reference Link
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="fv-edit-screen-btn">
+                        <iconify-icon icon="ph:paint-brush-household"></iconify-icon>
+                        Edit Screen
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="fv-add-tab-btn">
+                        <iconify-icon icon="ph:plus-bold"></iconify-icon>
+                        Add Tab
+                    </button>
+                </div>
+            </div>
+
+            <!-- Share URL bar -->
+            <div class="fv-share-bar" id="fv-share-bar" style="display:none;">
+                <iconify-icon icon="ph:link-simple" class="fv-share-bar-icon"></iconify-icon>
+                <input class="fv-share-bar-input" id="fv-share-bar-url" type="text" readonly>
+                <button type="button" class="fv-share-bar-action fv-share-bar-action--primary" id="fv-share-bar-create-link" title="Create a custom Full View share link">
+                    <iconify-icon icon="ph:link-simple"></iconify-icon>
+                    Create Link
+                </button>
+                <button type="button" class="fv-share-bar-action" id="fv-share-bar-copy" title="Copy URL">
+                    <iconify-icon icon="ph:copy"></iconify-icon>
+                    Copy
+                </button>
+                <a class="fv-share-bar-action" id="fv-share-bar-open" href="#" target="_blank" rel="noopener" title="Open in new tab">
+                    <iconify-icon icon="ph:arrow-square-out"></iconify-icon>
+                    Open
+                </a>
+            </div>
+
+            <!-- Info strip -->
+            <div class="fv-info-strip">
+                <iconify-icon icon="ph:hand-grabbing"></iconify-icon>
+                Drag rows to reorder &nbsp;·&nbsp;
+                <iconify-icon icon="ph:floppy-disk"></iconify-icon>
+                Changes save instantly &nbsp;·&nbsp;
+                <iconify-icon icon="ph:devices"></iconify-icon>
+                Sidebar appears right (desktop) or bottom (mobile)
+            </div>
+
+            <div class="fv-branding-bar">
+                <div class="fv-branding-copy">
+                    <div class="fv-branding-eyebrow">Header Branding</div>
+                    <div class="fv-branding-sub">Upload a logo for the customer Full View top-left header. Use the size and spacing sliders to tighten the logo box, logo shell padding, header card, and shared modal chrome across panoramas, floor plans, galleries, day/night, sales map, and other linked tabs.</div>
+                </div>
+                <div class="fv-branding-preview" id="fv-branding-preview">
+                    <div class="fv-branding-preview-logo-shell">
+                        <img id="fv-branding-preview-logo" class="fv-branding-preview-logo" alt="Full View header logo preview" hidden>
+                        <div class="fv-branding-preview-logo-placeholder" id="fv-branding-preview-logo-placeholder">Logo</div>
+                    </div>
+                    <div class="fv-branding-preview-text">
+                        <div class="fv-branding-preview-title" id="fv-branding-preview-title">Project</div>
+                        <div class="fv-branding-preview-sub">Full View</div>
+                    </div>
+                </div>
+                <div class="fv-branding-actions">
+                    <div class="fv-branding-btn-row">
+                        <button class="btn btn-secondary btn-sm" id="fv-logo-upload-btn" type="button">Upload Logo</button>
+                        <button class="btn btn-secondary btn-sm" id="fv-logo-remove-btn" type="button">Remove Logo</button>
+                    </div>
+                    <div class="fv-branding-size-grid">
+                        <div class="fv-branding-size-field">
+                            <label class="fv-branding-size-label" for="fv-branding-logo-size">
+                                <span>Logo Size</span>
+                                <span class="fv-branding-size-value" id="fv-branding-logo-size-value"></span>
+                            </label>
+                            <input type="range" class="fv-branding-size-range" id="fv-branding-logo-size" min="60" max="160" step="1">
+                        </div>
+                        <div class="fv-branding-size-field">
+                            <label class="fv-branding-size-label" for="fv-branding-logo-padding">
+                                <span>Logo Shell Padding</span>
+                                <span class="fv-branding-size-value" id="fv-branding-logo-padding-value"></span>
+                            </label>
+                            <input type="range" class="fv-branding-size-range" id="fv-branding-logo-padding" min="0" max="160" step="1">
+                        </div>
+                        <div class="fv-branding-size-field">
+                            <label class="fv-branding-size-label" for="fv-branding-header-size">
+                                <span>Header Size</span>
+                                <span class="fv-branding-size-value" id="fv-branding-header-size-value"></span>
+                            </label>
+                            <input type="range" class="fv-branding-size-range" id="fv-branding-header-size" min="60" max="160" step="1">
+                        </div>
+                    </div>
+                    <div class="fv-branding-space-grid">
+                        <div class="fv-branding-size-field">
+                            <label class="fv-branding-size-label" for="fv-branding-header-padding">
+                                <span>Header Padding</span>
+                                <span class="fv-branding-size-value" id="fv-branding-header-padding-value"></span>
+                            </label>
+                            <input type="range" class="fv-branding-size-range" id="fv-branding-header-padding" min="0" max="160" step="1">
+                        </div>
+                        <div class="fv-branding-size-field">
+                            <label class="fv-branding-size-label" for="fv-branding-modal-padding">
+                                <span>Modal Padding</span>
+                                <span class="fv-branding-size-value" id="fv-branding-modal-padding-value"></span>
+                            </label>
+                            <input type="range" class="fv-branding-size-range" id="fv-branding-modal-padding" min="60" max="160" step="1">
+                        </div>
+                    </div>
+                    <input type="file" id="fv-logo-input" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
+                    <div class="fv-branding-status" id="fv-branding-status">Shows on the customer Full View header next to the Project name. Logo shell padding, header, and modal spacing changes save automatically.</div>
+                </div>
+            </div>
+            <div class="fv-inline-status fv-inline-status--compact" id="fv-resource-status" style="display:none;"></div>
+
+            <!-- Tab rows -->
+            <div class="fv-tabs-list" id="fv-tabs-list">
+                <div class="fv-tabs-empty" id="fv-tabs-empty" style="display:none;">
+                    <iconify-icon icon="ph:squares-four-duotone"></iconify-icon>
+                    <p>No tabs yet.<br>Click <strong>Add Tab</strong> to start building.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===================== ADD / EDIT TAB DIALOG ===================== -->
+<div class="modal-backdrop fv-dialog-backdrop" id="fv-tab-dialog-backdrop">
+    <div class="modal fv-tab-dialog">
+        <button class="modal-close" id="fv-dialog-close" type="button" aria-label="Close"><iconify-icon icon="ph:x-bold"></iconify-icon></button>
+        <div class="modal-title" id="fv-dialog-title">Add Tab</div>
+
+        <div class="fv-dialog-body">
+            <!-- Icon picker -->
+            <div class="fv-field">
+                <label class="fv-label">Icon</label>
+                <div class="fv-icon-preview-row">
+                    <div class="fv-icon-preview" id="fv-icon-preview">
+                        <div class="fv-icon-preview-media" id="fv-icon-preview-media">
+                            <iconify-icon icon="ph:house"></iconify-icon>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="fv-pick-icon-btn" type="button">Choose Icon</button>
+                    <button class="btn btn-secondary btn-sm" id="fv-upload-icon-btn" type="button">Upload Icon</button>
+                    <input type="hidden" id="fv-icon-value" value="ph:house">
+                    <input type="hidden" id="fv-icon-mode" value="iconify">
+                    <input type="hidden" id="fv-icon-upload-url" value="">
+                    <input type="hidden" id="fv-icon-offset-x" value="0">
+                    <input type="hidden" id="fv-icon-offset-y" value="0">
+                    <input type="file" id="fv-upload-icon-input" accept=".png,.webp,image/png,image/webp" hidden>
+                </div>
+                <span class="fv-hint" id="fv-icon-upload-status">Choose from the icon library, paste any Iconify ID in search, or upload a transparent PNG/WebP icon.</span>
+            </div>
+
+            <div class="fv-field">
+                <label class="fv-label">Sidebar Button Preview</label>
+                <div class="fv-sidebar-preview-card" id="fv-sidebar-preview-card">
+                    <div class="fv-sidebar-preview-icon-shell" id="fv-sidebar-preview-icon-shell" title="Drag to align icon">
+                        <div class="fv-sidebar-preview-icon" id="fv-sidebar-preview-icon">
+                            <iconify-icon icon="ph:house"></iconify-icon>
+                        </div>
+                    </div>
+                    <div class="fv-sidebar-preview-label" id="fv-sidebar-preview-label">Tab Label</div>
+                </div>
+                <div class="fv-icon-align-row">
+                    <span class="fv-hint" id="fv-icon-align-status">Drag the icon to align it inside the sidebar button.</span>
+                    <button class="btn btn-secondary btn-sm" id="fv-icon-align-reset" type="button">Reset Position</button>
+                </div>
+            </div>
+
+            <!-- Name -->
+            <div class="fv-field">
+                <label class="fv-label" for="fv-tab-name">Label</label>
+                <input class="fv-input" type="text" id="fv-tab-name" placeholder="e.g. Plotted Development, Floor Plan, Gallery..." maxlength="40">
+            </div>
+
+            <!-- Type -->
+            <div class="fv-field">
+                <label class="fv-label" for="fv-tab-type">Type</label>
+                <select class="fv-select" id="fv-tab-type">
+                    <option value="360_pano">Plotted Development</option>
+                    <option value="daynight">Day / Evening Toggle</option>
+                    <option value="floor_plan">Floor Plan</option>
+                    <option value="gallery">Gallery</option>
+                    <option value="video">Video (YouTube)</option>
+                    <option value="project_plan">Project Plan (Building Map)</option>
+                    <option value="sales_map">Sales Route Map</option>
+                    <option value="sales_flat360">Sales 360 View</option>
+                    <option value="location">Location / Map</option>
+                    <option value="brochure">Brochure / PDF</option>
+                    <option value="link">Website Link (Iframe)</option>
+                    <option value="custom">Custom URL / Embed</option>
+                </select>
+            </div>
+
+            <!-- Dynamic content ref -->
+            <div class="fv-field" id="fv-ref-panorama-wrap">
+                <label class="fv-label" for="fv-ref-panorama">Panorama</label>
+                <select class="fv-select" id="fv-ref-panorama">
+                    <option value="">— select panorama —</option>
+                </select>
+            </div>
+
+            <div class="fv-field" id="fv-ref-daynight-wrap" style="display:none;">
+                <label class="fv-label" for="fv-ref-daynight">Day/Night Project</label>
+                <select class="fv-select" id="fv-ref-daynight">
+                    <option value="">— select project —</option>
+                </select>
+            </div>
+
+            <div class="fv-field" id="fv-ref-floorplan-wrap" style="display:none;">
+                <label class="fv-label" for="fv-ref-floorplan">Floor Plan Catalogue</label>
+                <select class="fv-select" id="fv-ref-floorplan">
+                    <option value="">— select catalogue —</option>
+                </select>
+            </div>
+
+            <div class="fv-field" id="fv-ref-gallery-wrap" style="display:none;">
+                <label class="fv-label" for="fv-ref-gallery">Gallery</label>
+                <select class="fv-select" id="fv-ref-gallery">
+                    <option value="">— select gallery —</option>
+                </select>
+            </div>
+
+            <div class="fv-field" id="fv-ref-projectplan-wrap" style="display:none;">
+                <label class="fv-label" for="fv-ref-projectplan">Project Plan</label>
+                <select class="fv-select" id="fv-ref-projectplan">
+                    <option value="">— select project plan —</option>
+                </select>
+            </div>
+
+            <div class="fv-field" id="fv-ref-salesmap-wrap" style="display:none;">
+                <label class="fv-label" for="fv-ref-salesmap">Sales Route Map</label>
+                <select class="fv-select" id="fv-ref-salesmap">
+                    <option value="">-- select sales route map --</option>
+                </select>
+                <span class="fv-hint">Create maps in <a href="/salestools?tab=route-maps" target="_blank" rel="noopener">Sales Tool &rarr; Route Maps</a>.</span>
+            </div>
+            <div class="fv-field" id="fv-ref-salesflat360-wrap" style="display:none;">
+                <label class="fv-label" for="fv-ref-salesflat360">Sales 360 View</label>
+                <select class="fv-select" id="fv-ref-salesflat360">
+                    <option value="">-- select 360 view --</option>
+                </select>
+                <span class="fv-hint">Create 360 views in <a href="/salestools?tab=flat360" target="_blank" rel="noopener">Sales Tool &rarr; 360 Strip</a>.</span>
+            </div>
+            <div class="fv-field" id="fv-ref-url-wrap" style="display:none;">
+                <label class="fv-label" for="fv-ref-url">URL</label>
+                <input class="fv-input" type="url" id="fv-ref-url" placeholder="https://…">
+                <span class="fv-hint" id="fv-ref-url-hint"></span>
+            </div>
+
+            <!-- Visibility -->
+            <div class="fv-field fv-field-inline">
+                <label class="fv-label" for="fv-tab-visible">Visible to customers</label>
+                <input type="checkbox" id="fv-tab-visible" checked>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="modal-btn primary" id="fv-dialog-save">Save</button>
+            <button class="modal-btn secondary" id="fv-dialog-cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Share Workspace / Reference Link Modal (same as dashboard) -->
+{% include 'components/share_workspace_modal.html' %}
+
+<!-- Create custom Full View share link modal -->
+{% include 'components/create_share_link_modal.html' %}
+
+<!-- ===================== ICON PICKER DIALOG ===================== -->
+<div class="modal-backdrop fv-icon-picker-backdrop" id="fv-icon-picker-backdrop">
+    <div class="modal fv-icon-picker-modal">
+        <button class="modal-close" id="fv-icon-picker-close" type="button" aria-label="Close"><iconify-icon icon="ph:x"></iconify-icon></button>
+        <div class="modal-title">Choose Icon</div>
+        <input class="fv-input" type="search" id="fv-icon-search" placeholder="Search icons…" style="margin-bottom:1rem;">
+        <div class="fv-hint fv-icon-picker-hint">Search the curated list or paste any Iconify ID like `mdi:bed-queen-outline` or `tabler:camera`.</div>
+        <div class="fv-icon-grid" id="fv-icon-grid"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ------------------------------------------------------------------ */
+/*  Icon catalogue — real-estate & photography focused                 */
+/* ------------------------------------------------------------------ */
+const ICON_CATALOG = [
+  // Navigation / Views
+  { icon: 'ph:house', label: 'Home' },
+  { icon: 'ph:house-line', label: 'House' },
+  { icon: 'ph:buildings', label: 'Buildings' },
+  { icon: 'ph:building', label: 'Building' },
+  { icon: 'ph:building-apartment', label: 'Apartment' },
+  { icon: 'ph:building-office', label: 'Office' },
+  { icon: 'ph:door', label: 'Door' },
+  { icon: 'ph:garage', label: 'Garage' },
+  { icon: 'ph:warehouse', label: 'Warehouse' },
+  { icon: 'ph:castle-turret', label: 'Luxury / Villa' },
+  // 360 / Photography
+  { icon: 'ph:camera-rotate', label: '360° Tour' },
+  { icon: 'ph:camera', label: 'Camera' },
+  { icon: 'ph:images', label: 'Gallery' },
+  { icon: 'ph:image', label: 'Image' },
+  { icon: 'ph:film-strip', label: 'Film / Video' },
+  { icon: 'ph:video-camera', label: 'Video' },
+  { icon: 'ph:drone', label: 'Drone' },
+  { icon: 'ph:eye', label: 'View' },
+  { icon: 'ph:binoculars', label: 'Explore' },
+  { icon: 'ph:scan', label: 'Scan / 360' },
+  { icon: 'ph:frame-corners', label: 'Frame' },
+  { icon: 'ph:panorama', label: 'Panorama' },
+  { icon: 'ph:virtual-reality', label: 'VR Experience' },
+  { icon: 'ph:headset', label: 'VR Headset' },
+  { icon: 'ph:cube-focus', label: '3D Showcase' },
+  { icon: 'mdi:view-gallery', label: 'Gallery Grid' },
+  { icon: 'mdi:image-multiple-outline', label: 'Photo Collection' },
+  { icon: 'mdi:rotate-360', label: '360 Rotation' },
+  { icon: 'mdi:panorama-variant', label: 'Panorama Wide' },
+  { icon: 'mdi:panorama-fisheye', label: '360 Fisheye' },
+  { icon: 'mdi:video-3d', label: '3D Video' },
+  { icon: 'mdi:virtual-reality', label: 'Virtual Reality' },
+  { icon: 'mdi:google-cardboard', label: 'VR Viewer' },
+  // Day / Night
+  { icon: 'ph:sun', label: 'Day / Sun' },
+  { icon: 'ph:moon', label: 'Night / Moon' },
+  { icon: 'ph:sun-horizon', label: 'Dawn / Dusk' },
+  { icon: 'ph:cloud-sun', label: 'Partly Cloudy' },
+  { icon: 'ph:lightning', label: 'Lightning' },
+  { icon: 'ph:star', label: 'Highlights / Star' },
+  { icon: 'ph:sparkle', label: 'Sparkle' },
+  // Floor Plans / Maps
+  { icon: 'ph:squares-four', label: 'Floor Plan' },
+  { icon: 'ph:grid-four', label: 'Grid / Layout' },
+  { icon: 'ph:blueprint', label: 'Blueprint' },
+  { icon: 'ph:ruler', label: 'Measurements' },
+  { icon: 'ph:map-trifold', label: 'Map' },
+  { icon: 'ph:map-pin', label: 'Location Pin' },
+  { icon: 'ph:map-pin-simple', label: 'Pin' },
+  { icon: 'ph:navigation-arrow', label: 'Navigate' },
+  { icon: 'ph:compass', label: 'Compass' },
+  { icon: 'ph:globe', label: 'Globe' },
+  { icon: 'ph:globe-hemisphere-east', label: 'World' },
+  // Amenities
+  { icon: 'ph:tree', label: 'Garden / Nature' },
+  { icon: 'ph:leaf', label: 'Green' },
+  { icon: 'ph:flower', label: 'Landscape' },
+  { icon: 'ph:waves', label: 'Pool / Water' },
+  { icon: 'ph:barbell', label: 'Gym / Fitness' },
+  { icon: 'ph:tennis', label: 'Sports' },
+  { icon: 'ph:park', label: 'Park' },
+  { icon: 'ph:baby', label: 'Kids Play Area' },
+  { icon: 'ph:dog', label: 'Pet Friendly' },
+  { icon: 'ph:coffee', label: 'Cafe / Lounge' },
+  { icon: 'ph:fork-knife', label: 'Restaurant' },
+  { icon: 'ph:wine', label: 'Bar / Dining' },
+  { icon: 'ph:storefront', label: 'Retail' },
+  { icon: 'ph:shopping-cart', label: 'Shopping' },
+  // Infrastructure
+  { icon: 'ph:car', label: 'Parking' },
+  { icon: 'ph:bus', label: 'Transport' },
+  { icon: 'ph:elevator', label: 'Elevator' },
+  { icon: 'ph:stairs', label: 'Stairs' },
+  { icon: 'ph:wifi', label: 'Wi-Fi' },
+  { icon: 'ph:plug', label: 'Power / EV' },
+  { icon: 'ph:drop', label: 'Water' },
+  { icon: 'ph:fire', label: 'Heating' },
+  { icon: 'ph:wind', label: 'Ventilation / Air' },
+  { icon: 'ph:thermometer', label: 'Temperature' },
+  // Security / Services
+  { icon: 'ph:shield-check', label: 'Security' },
+  { icon: 'ph:lock', label: 'Lock / Private' },
+  { icon: 'ph:key', label: 'Key / Access' },
+  { icon: 'ph:bell', label: 'Alert / Notification' },
+  { icon: 'ph:first-aid', label: 'Medical / Health' },
+  { icon: 'ph:hospital', label: 'Hospital' },
+  { icon: 'ph:fire-extinguisher', label: 'Fire Safety' },
+  { icon: 'ph:wheelchair', label: 'Accessibility' },
+  // Documents / Info
+  { icon: 'ph:file-pdf', label: 'Brochure / PDF' },
+  { icon: 'ph:file-text', label: 'Document' },
+  { icon: 'ph:article', label: 'Article' },
+  { icon: 'ph:presentation-chart', label: 'Presentation' },
+  { icon: 'ph:chart-bar', label: 'Analytics' },
+  { icon: 'ph:chart-pie', label: 'Stats' },
+  { icon: 'ph:currency-dollar', label: 'Pricing' },
+  { icon: 'ph:tag', label: 'Tag / Offer' },
+  { icon: 'ph:percent', label: 'Discount' },
+  { icon: 'ph:info', label: 'Info' },
+  { icon: 'ph:question', label: 'FAQ' },
+  { icon: 'ph:phone', label: 'Contact' },
+  { icon: 'ph:envelope', label: 'Email' },
+  // Social / Sharing
+  { icon: 'ph:share-network', label: 'Share' },
+  { icon: 'ph:heart', label: 'Wishlist / Favourite' },
+  { icon: 'ph:bookmark', label: 'Save' },
+  { icon: 'ph:calendar', label: 'Schedule / Date' },
+  { icon: 'ph:clock', label: 'Timeline' },
+  { icon: 'ph:arrow-square-out', label: 'External Link' },
+  { icon: 'ph:play-circle', label: 'Play / Video Tour' },
+  { icon: 'ph:broadcast', label: 'Live Tour' },
+  { icon: 'ph:trophy', label: 'Award / Premium' },
+  { icon: 'ph:crown', label: 'Luxury' },
+  { icon: 'ph:medal', label: 'Certified' },
+];
+
+/* ------------------------------------------------------------------ */
+/*  State                                                              */
+/* ------------------------------------------------------------------ */
+let currentProjectId = null;
+let currentConfigId = null;
+let currentTabs = [];
+let editingTabId = null;
+let currentConfigStyle = {};
+
+// Resources for dropdowns
+let workspacePanoramas = [];
+let daynightProjects = [];
+let floorPlanCatalogues = [];
+let galleries = [];
+let projectPlans = [];
+let salesRouteMaps = [];
+let salesFlat360Views = [];
+let resourcesLoadedProjectId = null;
+let resourceLoadPromise = null;
+
+function setInlineStatus(id, message, kind) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (!message) {
+        el.style.display = 'none';
+        el.textContent = '';
+        el.className = el.className
+            .replace(/\bfv-status--ok\b/g, '')
+            .replace(/\bfv-status--warn\b/g, '')
+            .replace(/\bfv-status--error\b/g, '');
+        return;
+    }
+    el.style.display = '';
+    el.textContent = message;
+    el.className = el.className
+        .replace(/\bfv-status--ok\b/g, '')
+        .replace(/\bfv-status--warn\b/g, '')
+        .replace(/\bfv-status--error\b/g, '');
+    if (kind === 'ok') el.className += ' fv-status--ok';
+    if (kind === 'warn') el.className += ' fv-status--warn';
+    if (kind === 'error') el.className += ' fv-status--error';
+}
+
+function dismissToast(toastEl) {
+    if (!toastEl || toastEl.dataset.closed === '1') return;
+    toastEl.dataset.closed = '1';
+    toastEl.classList.remove('is-visible');
+    toastEl.classList.add('is-hiding');
+    setTimeout(function () {
+        if (toastEl.parentNode) toastEl.parentNode.removeChild(toastEl);
+    }, 220);
+}
+
+function showToast(message, kind) {
+    var text = String(message || '').trim();
+    if (!text) return;
+    var host = document.getElementById('fv-toast-stack');
+    if (!host) return;
+    var tone = kind === 'error' ? 'error' : (kind === 'warn' ? 'warn' : 'ok');
+    var icon = tone === 'error' ? 'ph:warning-circle-fill' : (tone === 'warn' ? 'ph:warning-circle' : 'ph:check-circle-fill');
+
+    var toastEl = document.createElement('div');
+    toastEl.className = 'fv-toast fv-toast--' + tone;
+
+    var iconEl = document.createElement('iconify-icon');
+    iconEl.className = 'fv-toast-icon';
+    iconEl.setAttribute('icon', icon);
+    iconEl.setAttribute('aria-hidden', 'true');
+
+    var textEl = document.createElement('span');
+    textEl.className = 'fv-toast-text';
+    textEl.textContent = text;
+
+    toastEl.appendChild(iconEl);
+    toastEl.appendChild(textEl);
+    host.appendChild(toastEl);
+    while (host.children.length > 3) {
+        host.removeChild(host.firstElementChild);
+    }
+    requestAnimationFrame(function () { toastEl.classList.add('is-visible'); });
+    var ttlMs = tone === 'error' ? 4800 : 2400;
+    var timer = setTimeout(function () { dismissToast(toastEl); }, ttlMs);
+    toastEl.addEventListener('click', function () {
+        clearTimeout(timer);
+        dismissToast(toastEl);
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Auth                                                               */
+/* ------------------------------------------------------------------ */
+function waitForAuthSession(maxAttempts, delayMs) {
+    var attempts = 0;
+    var limit = Math.max(1, parseInt(maxAttempts, 10) || 20);
+    var delay = Math.max(40, parseInt(delayMs, 10) || 180);
+    function step() {
+        if (window.pmApi && typeof window.pmApi.waitForSession === 'function') {
+            return window.pmApi.waitForSession(limit - attempts, delay).catch(function () { return null; });
+        }
+        if (!window._supabase || !window._supabase.auth) {
+            if (attempts >= limit) return Promise.resolve(null);
+            attempts += 1;
+            return new Promise(function (resolve) {
+                setTimeout(function () { resolve(step()); }, delay);
+            });
+        }
+        return window._supabase.auth.getSession().then(function (r) {
+            var session = r && r.data ? r.data.session : null;
+            if (session && session.access_token) return session;
+            if (attempts >= limit) return null;
+            attempts += 1;
+            return new Promise(function (resolve) {
+                setTimeout(function () { resolve(step()); }, delay);
+            });
+        }).catch(function () {
+            if (attempts >= limit) return null;
+            attempts += 1;
+            return new Promise(function (resolve) {
+                setTimeout(function () { resolve(step()); }, delay);
+            });
+        });
+    }
+    return step();
+}
+
+function withAccessTokenFallback(headers) {
+    var h = Object.assign({}, headers || {});
+    if (!h.Authorization && !h.authorization && window.__ACCESS_TOKEN__) {
+        h.Authorization = 'Bearer ' + window.__ACCESS_TOKEN__;
+    }
+    return h;
+}
+
+function authHeaders(includeJsonContentType) {
+    const withJson = includeJsonContentType !== false;
+    const baseHeaders = withJson ? { 'Content-Type': 'application/json' } : {};
+    if (window.pmApi && typeof window.pmApi.getAuthHeaders === 'function') {
+        return window.pmApi.getAuthHeaders({
+            headers: baseHeaders,
+            waitAttempts: 24,
+            waitDelayMs: 180
+        }).then(withAccessTokenFallback);
+    }
+    return waitForAuthSession(24, 180).then(function (session) {
+        var h = Object.assign({}, baseHeaders);
+        if (session && session.access_token) h.Authorization = 'Bearer ' + session.access_token;
+        return withAccessTokenFallback(h);
+    });
+}
+
+function initShareModals() {
+    if (typeof initShareWorkspaceModal === 'function') {
+        initShareWorkspaceModal({
+            getAuthHeaders: function () { return authHeaders(); },
+            showToast: showToast,
+            pickShareBaseUrl: function (share) {
+                var payload = share || {};
+                return payload.full_view_effective_url || payload.full_view_default_url || '';
+            },
+        });
+    }
+    if (typeof initCreateShareLinkModal === 'function') {
+        initCreateShareLinkModal({
+            getAuthHeaders: function () { return authHeaders(); },
+            showToast: showToast,
+            pathPrefix: '/fullview/',
+            pickEffectiveUrl: function (share) {
+                var payload = share || {};
+                return payload.full_view_effective_url || payload.full_view_default_url || '';
+            },
+            onSaved: function (share) {
+                applySharePayload(share, currentProjectId);
+            },
+        });
+    }
+}
+
+async function apiFetch(url, opts) {
+    async function requestOnce() {
+        const baseHeaders = await authHeaders();
+        const merged = Object.assign({}, opts || {});
+        merged.headers = Object.assign({}, baseHeaders, (opts && opts.headers) || {});
+        if (window.pmApi && typeof window.pmApi.fetchJsonWithRetry === 'function') {
+            return window.pmApi.fetchJsonWithRetry(url, merged, {
+                retries: 2,
+                baseDelayMs: 220,
+                waitAttempts: 24,
+                waitDelayMs: 180
+            });
+        }
+        const res = await fetch(url, merged);
+        const text = await res.text().catch(function () { return ''; });
+        let payload = null;
+        try { payload = text ? JSON.parse(text) : null; } catch (e) { payload = null; }
+        if (!res.ok) {
+            var err = new Error((payload && payload.error) || text || res.statusText);
+            err.status = res.status;
+            throw err;
+        }
+        return payload;
+    }
+    try {
+        return await requestOnce();
+    } catch (e) {
+        if (e && e.status === 401) {
+            await waitForAuthSession(12, 200);
+            return await requestOnce();
+        }
+        throw e;
+    }
+}
+
+async function apiPost(url, body) {
+    return apiFetch(url, { method: 'POST', body: JSON.stringify(body) });
+}
+async function apiPut(url, body) {
+    return apiFetch(url, { method: 'PUT', body: JSON.stringify(body) });
+}
+async function apiDelete(url) {
+    return apiFetch(url, { method: 'DELETE' });
+}
+
+function clonePlainObject(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch (e) {
+        return Object.assign({}, value);
+    }
+}
+
+function clampBrandingSizePct(value, fallback) {
+    const n = parseInt(value, 10);
+    if (!isFinite(n)) return fallback;
+    return Math.max(60, Math.min(160, n));
+}
+
+function clampBrandingPaddingPct(value, fallback) {
+    const n = parseInt(value, 10);
+    if (!isFinite(n)) return fallback;
+    return Math.max(0, Math.min(160, n));
+}
+
+function normalizeConfigStyle(value) {
+    const style = clonePlainObject(value);
+    style.header_logo_url = String(style.header_logo_url || '').trim();
+    style.header_logo_size_pct = clampBrandingSizePct(style.header_logo_size_pct, 100);
+    style.header_logo_padding_pct = clampBrandingPaddingPct(style.header_logo_padding_pct, 100);
+    style.header_size_pct = clampBrandingSizePct(style.header_size_pct, 100);
+    style.header_padding_pct = clampBrandingPaddingPct(style.header_padding_pct, 100);
+    style.modal_padding_pct = clampBrandingSizePct(style.modal_padding_pct, 100);
+    return style;
+}
+
+function syncBrandingSizeControls(style) {
+    const logoInput = document.getElementById('fv-branding-logo-size');
+    const logoPaddingInput = document.getElementById('fv-branding-logo-padding');
+    const headerInput = document.getElementById('fv-branding-header-size');
+    const headerPaddingInput = document.getElementById('fv-branding-header-padding');
+    const modalPaddingInput = document.getElementById('fv-branding-modal-padding');
+    const logoValue = document.getElementById('fv-branding-logo-size-value');
+    const logoPaddingValue = document.getElementById('fv-branding-logo-padding-value');
+    const headerValue = document.getElementById('fv-branding-header-size-value');
+    const headerPaddingValue = document.getElementById('fv-branding-header-padding-value');
+    const modalPaddingValue = document.getElementById('fv-branding-modal-padding-value');
+    const safeStyle = normalizeConfigStyle(style || currentConfigStyle);
+    const logoPct = clampBrandingSizePct(safeStyle.header_logo_size_pct, 100);
+    const logoPaddingPct = clampBrandingPaddingPct(safeStyle.header_logo_padding_pct, 100);
+    const headerPct = clampBrandingSizePct(safeStyle.header_size_pct, 100);
+    const headerPaddingPct = clampBrandingPaddingPct(safeStyle.header_padding_pct, 100);
+    const modalPaddingPct = clampBrandingSizePct(safeStyle.modal_padding_pct, 100);
+
+    if (logoInput && String(logoInput.value || '') !== String(logoPct)) logoInput.value = String(logoPct);
+    if (logoPaddingInput && String(logoPaddingInput.value || '') !== String(logoPaddingPct)) logoPaddingInput.value = String(logoPaddingPct);
+    if (headerInput && String(headerInput.value || '') !== String(headerPct)) headerInput.value = String(headerPct);
+    if (headerPaddingInput && String(headerPaddingInput.value || '') !== String(headerPaddingPct)) headerPaddingInput.value = String(headerPaddingPct);
+    if (modalPaddingInput && String(modalPaddingInput.value || '') !== String(modalPaddingPct)) modalPaddingInput.value = String(modalPaddingPct);
+    if (logoValue) logoValue.textContent = logoPct + '%';
+    if (logoPaddingValue) logoPaddingValue.textContent = logoPaddingPct + '%';
+    if (headerValue) headerValue.textContent = headerPct + '%';
+    if (headerPaddingValue) headerPaddingValue.textContent = headerPaddingPct + '%';
+    if (modalPaddingValue) modalPaddingValue.textContent = modalPaddingPct + '%';
+
+    return { logoPct, logoPaddingPct, headerPct, headerPaddingPct, modalPaddingPct, style: safeStyle };
+}
+
+async function saveCurrentConfigStyle() {
+    const configId = await ensureCurrentConfigId();
+    const nextStyle = normalizeConfigStyle(currentConfigStyle);
+    const result = await apiPut('/api/full-view/config/' + configId, { style: nextStyle });
+    const savedStyle = (result && result.config && result.config.style && typeof result.config.style === 'object')
+        ? result.config.style
+        : nextStyle;
+    currentConfigStyle = normalizeConfigStyle(savedStyle);
+    return currentConfigStyle;
+}
+
+function syncBrandingPreview(message, kind) {
+    const titleEl = document.getElementById('fv-branding-preview-title');
+    const previewEl = document.getElementById('fv-branding-preview');
+    const textEl = document.querySelector('.fv-branding-preview-text');
+    const subEl = document.querySelector('.fv-branding-preview-sub');
+    const logoEl = document.getElementById('fv-branding-preview-logo');
+    const logoShellEl = document.querySelector('.fv-branding-preview-logo-shell');
+    const placeholderEl = document.getElementById('fv-branding-preview-logo-placeholder');
+    const removeBtn = document.getElementById('fv-logo-remove-btn');
+    const statusEl = document.getElementById('fv-branding-status');
+    const builderNameEl = document.getElementById('fv-builder-ws-name');
+    const sizeState = syncBrandingSizeControls(currentConfigStyle);
+    const logoUrl = String((sizeState.style && sizeState.style.header_logo_url) || '').trim();
+    const workspaceName = String((builderNameEl && builderNameEl.textContent) || '').trim() || 'Project';
+    const logoScale = sizeState.logoPct / 100;
+    const logoPaddingScale = sizeState.logoPaddingPct / 100;
+    const headerScale = sizeState.headerPct / 100;
+    const headerPaddingScale = sizeState.headerPaddingPct / 100;
+
+    if (titleEl) titleEl.textContent = workspaceName;
+    if (previewEl) {
+        previewEl.style.setProperty('--fv-header-logo-scale', String(logoScale));
+        previewEl.style.setProperty('--fv-header-logo-padding-scale', String(logoPaddingScale));
+        previewEl.style.gap = (0.85 * headerPaddingScale).toFixed(2) + 'rem';
+        previewEl.style.padding = (0.8 * headerPaddingScale).toFixed(2) + 'rem ' + (0.95 * headerPaddingScale).toFixed(2) + 'rem';
+    }
+    if (logoShellEl) {
+        const shellSize = Math.max(42, Math.round(54 * logoScale));
+        logoShellEl.style.width = shellSize + 'px';
+        logoShellEl.style.height = shellSize + 'px';
+    }
+    if (titleEl) {
+        titleEl.style.fontSize = (0.92 * headerScale).toFixed(2) + 'rem';
+        titleEl.style.maxWidth = Math.max(120, Math.round(180 * headerScale)) + 'px';
+    }
+    if (textEl) textEl.style.maxWidth = Math.max(150, Math.round(220 * headerScale)) + 'px';
+    if (subEl) subEl.style.fontSize = (0.7 * headerScale).toFixed(2) + 'rem';
+    if (logoEl) {
+        if (logoUrl) {
+            if (logoEl.getAttribute('src') !== logoUrl) logoEl.src = logoUrl;
+            logoEl.hidden = false;
+        } else {
+            logoEl.hidden = true;
+            logoEl.removeAttribute('src');
+        }
+    }
+    if (placeholderEl) placeholderEl.hidden = !!logoUrl;
+    if (removeBtn) removeBtn.disabled = !logoUrl;
+    if (statusEl) {
+        statusEl.textContent = message || 'Shows on the customer Full View header next to the Project name. Logo shell padding, header, and modal spacing changes save automatically.';
+        statusEl.classList.remove('is-error', 'is-ok');
+        if (kind === 'error') statusEl.classList.add('is-error');
+        if (kind === 'ok') statusEl.classList.add('is-ok');
+    }
+}
+
+function setBrandingBusy(isBusy) {
+    const uploadBtn = document.getElementById('fv-logo-upload-btn');
+    const removeBtn = document.getElementById('fv-logo-remove-btn');
+    const logoSize = document.getElementById('fv-branding-logo-size');
+    const logoPadding = document.getElementById('fv-branding-logo-padding');
+    const headerSize = document.getElementById('fv-branding-header-size');
+    const headerPadding = document.getElementById('fv-branding-header-padding');
+    const modalPadding = document.getElementById('fv-branding-modal-padding');
+    const hasLogo = !!String((currentConfigStyle && currentConfigStyle.header_logo_url) || '').trim();
+    if (uploadBtn) uploadBtn.disabled = !!isBusy;
+    if (removeBtn) removeBtn.disabled = !!isBusy || !hasLogo;
+    if (logoSize) logoSize.disabled = !!isBusy;
+    if (logoPadding) logoPadding.disabled = !!isBusy;
+    if (headerSize) headerSize.disabled = !!isBusy;
+    if (headerPadding) headerPadding.disabled = !!isBusy;
+    if (modalPadding) modalPadding.disabled = !!isBusy;
+}
+
+async function uploadFullViewLogo(file) {
+    var headers = await authHeaders(false);
+    var formData = new FormData();
+    formData.append('file', file);
+    if (currentProjectId) formData.append('workspace_id', currentProjectId);
+    var res = await fetch('/api/full-view/logo-upload', {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+    });
+    var text = await res.text().catch(function () { return ''; });
+    var payload = null;
+    try { payload = text ? JSON.parse(text) : null; } catch (e) { payload = null; }
+    if (!res.ok) {
+        throw new Error((payload && payload.error) || text || res.statusText || 'Logo upload failed');
+    }
+    return payload || {};
+}
+
+async function saveHeaderLogoUrl(url) {
+    const cleanUrl = String(url || '').trim();
+    currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+    if (cleanUrl) currentConfigStyle.header_logo_url = cleanUrl;
+    else delete currentConfigStyle.header_logo_url;
+    return saveCurrentConfigStyle();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Init                                                               */
+/* ------------------------------------------------------------------ */
+async function init() {
+    initShareModals();
+    await loadProjects();
+    bindEvents();
+    buildIconGrid(getFilteredIconCatalog(''));
+    refreshDialogIconPreview();
+    refreshSidebarButtonPreview();
+    syncBrandingPreview();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Projects                                                         */
+/* ------------------------------------------------------------------ */
+function renderProjectOptions(workspaces) {
+    const sel = document.getElementById('fv-workspace-select');
+    const current = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    (workspaces || []).forEach(ws => {
+        const o = document.createElement('option');
+        o.value = ws.id;
+        o.textContent = ws.name;
+        sel.appendChild(o);
+    });
+    if (current) sel.value = current;
+}
+
+async function loadProjects() {
+    const cacheKey = 'fv_workspaces_light_v1';
+    let hadCachedRows = false;
+    try {
+        const raw = sessionStorage.getItem(cacheKey);
+        if (raw) {
+            const cached = JSON.parse(raw);
+            if (Array.isArray(cached) && cached.length) {
+                renderProjectOptions(cached);
+                hadCachedRows = true;
+            }
+        }
+    } catch (e) {}
+
+    setInlineStatus('fv-ws-status', 'Loading projects…', '');
+    try {
+        const d = await apiFetch('/api/workspaces?lightweight=1');
+        const rows = (d.workspaces || d || []);
+        renderProjectOptions(rows);
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(rows)); } catch (e) {}
+        if (!rows.length) {
+            setInlineStatus('fv-ws-status', 'No projects found yet.', 'warn');
+            return;
+        }
+        setInlineStatus('fv-ws-status', '');
+    } catch (e) {
+        console.error('loadProjects', e);
+        setInlineStatus(
+            'fv-ws-status',
+            hadCachedRows ? 'Showing cached projects. Refresh or retry if something looks outdated.' : 'Could not load projects right now. Please retry.',
+            'error'
+        );
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Open workspace config                                              */
+/* ------------------------------------------------------------------ */
+async function openProject(wsId) {
+    currentProjectId = wsId;
+    resourcesLoadedProjectId = null;
+    resourceLoadPromise = null;
+    document.getElementById('fv-builder').style.display = '';
+    applySharePayload(null, wsId);
+    setInlineStatus('fv-resource-status', 'Loading builder data…', '');
+
+    // Project name
+    const sel = document.getElementById('fv-workspace-select');
+    const opt = sel.querySelector(`option[value="${wsId}"]`);
+    document.getElementById('fv-builder-ws-name').textContent = opt ? opt.textContent : wsId;
+    currentConfigStyle = {};
+    syncBrandingPreview('Loading current logo...', null);
+
+    // Kick off secondary data in background (do not block tab rendering)
+    resourceLoadPromise = loadResources(wsId).finally(function () {
+        resourceLoadPromise = null;
+    });
+    const shareTask = loadShareUrl(wsId);
+
+    try {
+        // Fetch config (do not auto-create). If missing, render default UI state.
+        const d = await apiFetch('/api/full-view/config?workspace_id=' + encodeURIComponent(wsId));
+        currentConfigId = d.config ? d.config.id : null;
+        currentConfigStyle = normalizeConfigStyle(d && d.config ? d.config.style : null);
+        document.getElementById('fv-active-check').checked = d.config ? !!d.config.is_active : true;
+        currentTabs = d.tabs || [];
+        syncBrandingPreview();
+        renderTabs();
+    } catch (err) {
+        currentConfigId = null;
+        currentConfigStyle = {};
+        currentTabs = [];
+        syncBrandingPreview();
+        renderTabs();
+        setInlineStatus('fv-resource-status', (err && err.message) ? err.message : 'Unable to load builder data.', 'error');
+        return;
+    }
+
+    // Let background tasks settle without affecting first paint
+    Promise.allSettled([resourceLoadPromise, shareTask]).then(function () {
+        if (!resourcesLoadedProjectId) {
+            setInlineStatus('fv-resource-status', 'Some linked lists are still unavailable. Open Add Tab again to retry.', 'warn');
+        } else {
+            setInlineStatus('fv-resource-status', '');
+        }
+    }).catch(function () {
+        setInlineStatus('fv-resource-status', 'Some linked lists are still unavailable. Open Add Tab again to retry.', 'warn');
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Share URL                                                          */
+/* ------------------------------------------------------------------ */
+let currentShareUrl = null;
+
+function fullViewShellUrlFor(wsId) {
+    return wsId ? ('/customer/full-view/' + encodeURIComponent(wsId)) : null;
+}
+
+function applySharePayload(share, wsId) {
+    const bar = document.getElementById('fv-share-bar');
+    const input = document.getElementById('fv-share-bar-url');
+    const openLink = document.getElementById('fv-share-bar-open');
+    const payload = share || {};
+    currentShareUrl = payload.full_view_effective_url || payload.full_view_custom_url || payload.full_view_default_url || fullViewShellUrlFor(wsId);
+    if (currentShareUrl && input) {
+        input.value = currentShareUrl;
+        if (openLink) openLink.href = currentShareUrl;
+        if (bar) bar.style.display = 'flex';
+    }
+}
+
+async function loadShareUrl(wsId) {
+    applySharePayload(null, wsId);
+    try {
+        const d = await apiFetch('/api/workspaces/' + encodeURIComponent(wsId) + '/share-endpoint');
+        const share = d.share || {};
+        applySharePayload(share, wsId);
+    } catch (e) {
+        console.error('loadShareUrl', e);
+        if (String((e && e.message) || '').toLowerCase().indexOf('401') >= 0 || String(e || '').indexOf('401') >= 0) {
+            showToast('Sign in again to load custom share links.', 'warn');
+        }
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Resource dropdowns                                                 */
+/* ------------------------------------------------------------------ */
+async function loadResources(wsId) {
+    const wsQ = '?workspace_id=' + encodeURIComponent(wsId);
+    const tasks = [
+        { key: 'panoramas', label: 'Panoramas', url: '/api/panoramas' + wsQ, pick: function (v) { return (v && (v.panoramas || v)) || []; } },
+        { key: 'daynight', label: 'Day/Night', url: '/api/daynight' + wsQ, pick: function (v) { return Array.isArray(v) ? v : ((v && v.projects) || []); } },
+        { key: 'floorplans', label: 'Floor plans', url: '/api/floorplans/catalogues' + wsQ, pick: function (v) { return (v && (v.catalogues || v)) || []; } },
+        { key: 'galleries', label: 'Galleries', url: '/api/galleries' + wsQ, pick: function (v) { return (v && (v.galleries || v)) || []; } },
+        { key: 'projectplans', label: 'Project plans', url: '/api/project-plans' + wsQ, pick: function (v) { return (v && (v.plans || v)) || []; } },
+        { key: 'salesmaps', label: 'Sales maps', url: '/api/sales-maps' + wsQ, pick: function (v) { return (v && (v.maps || v)) || []; } },
+        { key: 'salesflat360', label: 'Sales 360', url: '/api/sales-flat360' + wsQ, pick: function (v) { return (v && (v.views || v)) || []; } }
+    ];
+    setInlineStatus('fv-resource-status', 'Loading linked lists…', '');
+
+    function normalizeList(value) {
+        return Array.isArray(value) ? value : [];
+    }
+
+    const values = {
+        panoramas: [],
+        daynight: [],
+        floorplans: [],
+        galleries: [],
+        projectplans: [],
+        salesmaps: [],
+        salesflat360: []
+    };
+
+    const failed = [];
+    const settled = await Promise.allSettled(tasks.map(function (task) { return apiFetch(task.url); }));
+    settled.forEach(function (result, index) {
+        const task = tasks[index];
+        if (result.status === 'fulfilled') {
+            values[task.key] = normalizeList(task.pick(result.value));
+        } else {
+            failed.push(task);
+        }
+    });
+
+    if (failed.length) {
+        for (let i = 0; i < failed.length; i += 1) {
+            const task = failed[i];
+            try {
+                const data = await apiFetch(task.url);
+                values[task.key] = normalizeList(task.pick(data));
+                failed.splice(i, 1);
+                i -= 1;
+            } catch (err) {
+                console.warn('Full View resource retry failed:', task.key, err);
+            }
+        }
+    }
+
+    workspacePanoramas = values.panoramas;
+    daynightProjects = values.daynight;
+    floorPlanCatalogues = values.floorplans;
+    galleries = values.galleries;
+    projectPlans = values.projectplans;
+    salesRouteMaps = values.salesmaps;
+    salesFlat360Views = values.salesflat360;
+
+    if (failed.length) {
+        resourcesLoadedProjectId = null;
+        setInlineStatus('fv-resource-status', 'Some linked lists failed: ' + failed.map(function (x) { return x.label; }).join(', ') + '.', 'warn');
+        return false;
+    }
+    resourcesLoadedProjectId = wsId;
+    setInlineStatus('fv-resource-status', '');
+    return true;
+}
+
+async function ensureResourcesLoaded() {
+    if (!currentProjectId) return;
+    if (resourcesLoadedProjectId === currentProjectId) return;
+    if (!resourceLoadPromise) {
+        resourceLoadPromise = loadResources(currentProjectId).finally(function () {
+            resourceLoadPromise = null;
+        });
+    }
+    await resourceLoadPromise;
+}
+
+function populateSelect(selId, items, valueKey, labelKey) {
+    const sel = document.getElementById(selId);
+    // keep first placeholder option
+    while (sel.options.length > 1) sel.remove(1);
+    items.forEach(item => {
+        const o = document.createElement('option');
+        o.value = item[valueKey];
+        o.textContent = item[labelKey] || item[valueKey];
+        sel.appendChild(o);
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Render tabs list                                                   */
+/* ------------------------------------------------------------------ */
+function renderTabs() {
+    const list = document.getElementById('fv-tabs-list');
+    const empty = document.getElementById('fv-tabs-empty');
+
+    // Remove existing rows (not the empty state)
+    list.querySelectorAll('.fv-tab-row').forEach(el => el.remove());
+
+    if (!currentTabs.length) {
+        empty.style.display = 'flex';
+        return;
+    }
+    empty.style.display = 'none';
+
+    currentTabs.forEach((tab, idx) => {
+        const row = document.createElement('div');
+        row.className = 'fv-tab-row' + (tab.is_visible ? '' : ' fv-tab-row--hidden');
+        row.dataset.id = tab.id;
+        row.draggable = true;
+        row.innerHTML = `
+            <span class="fv-row-drag" title="Drag to reorder"><iconify-icon icon="ph:dots-six-vertical-bold"></iconify-icon></span>
+            <span class="fv-row-icon">${buildTabIconHtml(tab.icon, tab.content_data)}</span>
+            <span class="fv-row-name">${escHtml(tab.name)}</span>
+            <span class="fv-row-type">${typeLabel(tab.tab_type)}</span>
+            <div class="fv-row-actions">
+                <button class="fv-row-btn fv-row-btn--toggle" data-id="${tab.id}" title="${tab.is_visible ? 'Hide' : 'Show'}">
+                    <iconify-icon icon="${tab.is_visible ? 'ph:eye' : 'ph:eye-slash'}"></iconify-icon>
+                </button>
+                <button class="fv-row-btn fv-row-btn--edit" data-id="${tab.id}" title="Edit">
+                    <iconify-icon icon="ph:pencil-simple"></iconify-icon>
+                </button>
+                <button class="fv-row-btn fv-row-btn--delete" data-id="${tab.id}" title="Delete">
+                    <iconify-icon icon="ph:trash"></iconify-icon>
+                </button>
+            </div>
+        `;
+        list.appendChild(row);
+    });
+
+    bindDragAndDrop();
+    bindRowButtons();
+}
+
+function typeLabel(t) {
+    const map = {
+        '360_pano': 'Plotted Development', 'drone_view': 'Plotted Development',
+        'daynight': 'Day / Evening', 'floor_plan': 'Floor Plan',
+        'gallery': 'Gallery', 'video': 'Video',
+        'highlights': 'Gallery',
+        'amenities': 'Gallery', 'project_plan': 'Project Plan', 'sales_map': 'Sales Route Map', 'sales_flat360': 'Sales 360 View',
+        'location': 'Location', 'brochure': 'Brochure',
+        'link': 'Website Link',
+        'custom': 'Custom',
+    };
+    return map[t] || t;
+}
+
+function normalizeTabType(t) {
+    var type = String(t || '').trim();
+    if (type === 'drone_view') return '360_pano';
+    if (type === 'highlights' || type === 'amenities') return 'gallery';
+    return type || '360_pano';
+}
+
+function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function escAttr(s) {
+    return escHtml(s);
+}
+
+const ICON_OFFSET_LIMIT = 22;
+let iconPreviewDrag = null;
+
+function normalizeTabContentData(raw) {
+    return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+}
+
+function clampIconOffset(value) {
+    var n = parseInt(value, 10);
+    if (Number.isNaN(n)) return 0;
+    return Math.max(-ICON_OFFSET_LIMIT, Math.min(ICON_OFFSET_LIMIT, n));
+}
+
+function getIconMetaFromContent(contentData) {
+    var data = normalizeTabContentData(contentData);
+    var uploadUrl = String(data.icon_upload_url || '').trim();
+    return {
+        mode: uploadUrl && data.icon_mode === 'upload' ? 'upload' : 'iconify',
+        uploadUrl: uploadUrl,
+        offsetX: clampIconOffset(data.icon_offset_x_px != null ? data.icon_offset_x_px : data.icon_offset_x),
+        offsetY: clampIconOffset(data.icon_offset_y_px != null ? data.icon_offset_y_px : data.icon_offset_y),
+    };
+}
+
+function buildTabIconHtml(icon, contentData) {
+    var meta = getIconMetaFromContent(contentData);
+    if (meta.mode === 'upload' && meta.uploadUrl) {
+        return '<img src="' + escAttr(meta.uploadUrl) + '" alt="">';
+    }
+    return '<iconify-icon icon="' + escAttr(icon || 'ph:house') + '"></iconify-icon>';
+}
+
+function renderIconIntoHost(host, icon, mode, uploadUrl) {
+    if (!host) return;
+    host.innerHTML = '';
+    if (mode === 'upload' && uploadUrl) {
+        var img = document.createElement('img');
+        img.src = uploadUrl;
+        img.alt = '';
+        host.appendChild(img);
+        return;
+    }
+    var iconEl = document.createElement('iconify-icon');
+    iconEl.setAttribute('icon', icon || 'ph:house');
+    host.appendChild(iconEl);
+}
+
+function getDialogIconState() {
+    return {
+        icon: String((document.getElementById('fv-icon-value') || {}).value || 'ph:house').trim() || 'ph:house',
+        mode: String((document.getElementById('fv-icon-mode') || {}).value || 'iconify').trim() === 'upload' ? 'upload' : 'iconify',
+        uploadUrl: String((document.getElementById('fv-icon-upload-url') || {}).value || '').trim(),
+        offsetX: clampIconOffset((document.getElementById('fv-icon-offset-x') || {}).value),
+        offsetY: clampIconOffset((document.getElementById('fv-icon-offset-y') || {}).value),
+    };
+}
+
+function setDialogIconState(patch) {
+    var next = Object.assign({}, getDialogIconState(), patch || {});
+    next.icon = String(next.icon || 'ph:house').trim() || 'ph:house';
+    next.mode = next.mode === 'upload' && next.uploadUrl ? 'upload' : 'iconify';
+    next.uploadUrl = String(next.uploadUrl || '').trim();
+    next.offsetX = clampIconOffset(next.offsetX);
+    next.offsetY = clampIconOffset(next.offsetY);
+
+    document.getElementById('fv-icon-value').value = next.icon;
+    document.getElementById('fv-icon-mode').value = next.mode;
+    document.getElementById('fv-icon-upload-url').value = next.uploadUrl;
+    document.getElementById('fv-icon-offset-x').value = String(next.offsetX);
+    document.getElementById('fv-icon-offset-y').value = String(next.offsetY);
+
+    refreshDialogIconPreview();
+    refreshSidebarButtonPreview();
+}
+
+function refreshDialogIconPreview() {
+    var state = getDialogIconState();
+    renderIconIntoHost(document.getElementById('fv-icon-preview-media'), state.icon, state.mode, state.uploadUrl);
+    var statusEl = document.getElementById('fv-icon-upload-status');
+    if (!statusEl) return;
+    if (state.mode === 'upload' && state.uploadUrl) {
+        statusEl.textContent = 'Uploaded custom icon selected. Choose another icon or upload a new one any time.';
+        return;
+    }
+    statusEl.textContent = 'Choose from the icon library, paste any Iconify ID in search, or upload a transparent PNG/WebP icon.';
+}
+
+function refreshSidebarButtonPreview() {
+    var state = getDialogIconState();
+    var previewIcon = document.getElementById('fv-sidebar-preview-icon');
+    if (previewIcon) {
+        previewIcon.style.setProperty('--fv-preview-icon-offset-x', state.offsetX + 'px');
+        previewIcon.style.setProperty('--fv-preview-icon-offset-y', state.offsetY + 'px');
+        renderIconIntoHost(previewIcon, state.icon, state.mode, state.uploadUrl);
+    }
+    var labelEl = document.getElementById('fv-sidebar-preview-label');
+    if (labelEl) {
+        var rawName = String((document.getElementById('fv-tab-name') || {}).value || '').trim();
+        labelEl.textContent = rawName || 'Tab Label';
+    }
+    var alignStatus = document.getElementById('fv-icon-align-status');
+    if (alignStatus) {
+        alignStatus.textContent = 'Drag the icon to align it inside the sidebar button. X: ' + state.offsetX + 'px, Y: ' + state.offsetY + 'px.';
+    }
+}
+
+function bindSidebarPreviewDrag() {
+    var shell = document.getElementById('fv-sidebar-preview-icon-shell');
+    if (!shell || shell.dataset.dragBound === '1') return;
+    shell.dataset.dragBound = '1';
+
+    shell.addEventListener('pointerdown', function (evt) {
+        if (evt.button != null && evt.button !== 0) return;
+        evt.preventDefault();
+        var state = getDialogIconState();
+        iconPreviewDrag = {
+            pointerId: evt.pointerId,
+            startX: evt.clientX,
+            startY: evt.clientY,
+            baseX: state.offsetX,
+            baseY: state.offsetY,
+        };
+        shell.classList.add('is-dragging');
+        if (typeof shell.setPointerCapture === 'function') {
+            try { shell.setPointerCapture(evt.pointerId); } catch (e) { }
+        }
+    });
+
+    shell.addEventListener('pointermove', function (evt) {
+        if (!iconPreviewDrag || iconPreviewDrag.pointerId !== evt.pointerId) return;
+        evt.preventDefault();
+        setDialogIconState({
+            offsetX: iconPreviewDrag.baseX + Math.round(evt.clientX - iconPreviewDrag.startX),
+            offsetY: iconPreviewDrag.baseY + Math.round(evt.clientY - iconPreviewDrag.startY),
+        });
+    });
+
+    function endDrag(evt) {
+        if (!iconPreviewDrag || (evt.pointerId != null && iconPreviewDrag.pointerId !== evt.pointerId)) return;
+        iconPreviewDrag = null;
+        shell.classList.remove('is-dragging');
+    }
+
+    shell.addEventListener('pointerup', endDrag);
+    shell.addEventListener('pointercancel', endDrag);
+    shell.addEventListener('lostpointercapture', endDrag);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Drag & drop reorder                                                */
+/* ------------------------------------------------------------------ */
+let dragSrc = null;
+
+function bindDragAndDrop() {
+    const rows = document.querySelectorAll('.fv-tab-row');
+    rows.forEach(row => {
+        row.addEventListener('dragstart', e => {
+            dragSrc = row;
+            row.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        row.addEventListener('dragend', () => {
+            row.classList.remove('dragging');
+            dragSrc = null;
+            saveOrder();
+        });
+        row.addEventListener('dragenter', () => { if (dragSrc && dragSrc !== row) row.classList.add('drag-over'); });
+        row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+        row.addEventListener('drop',      () => row.classList.remove('drag-over'));
+        row.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (dragSrc && dragSrc !== row) {
+                const list = row.parentNode;
+                const rows = [...list.querySelectorAll('.fv-tab-row')];
+                const srcIdx = rows.indexOf(dragSrc);
+                const tgtIdx = rows.indexOf(row);
+                if (srcIdx < tgtIdx) list.insertBefore(dragSrc, row.nextSibling);
+                else list.insertBefore(dragSrc, row);
+            }
+        });
+    });
+}
+
+async function saveOrder() {
+    const rows = [...document.querySelectorAll('.fv-tab-row')];
+    const ids = rows.map(r => r.dataset.id);
+    // update local state order
+    const byId = {};
+    currentTabs.forEach(t => byId[t.id] = t);
+    currentTabs = ids.map(id => byId[id]).filter(Boolean);
+    try {
+        await apiPost('/api/full-view/tabs/reorder', { config_id: currentConfigId, tab_ids: ids });
+    } catch (e) { console.error('saveOrder', e); }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Row buttons                                                        */
+/* ------------------------------------------------------------------ */
+function bindRowButtons() {
+    document.querySelectorAll('.fv-row-btn--toggle').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            const tab = currentTabs.find(t => t.id === id);
+            if (!tab) return;
+            const newVisible = !tab.is_visible;
+            tab.is_visible = newVisible;
+            try {
+                await apiPut('/api/full-view/tabs/' + id, { is_visible: newVisible });
+                renderTabs();
+            } catch (e) {
+                tab.is_visible = !newVisible;
+                setInlineStatus('fv-resource-status', (e && e.message) ? e.message : 'Failed to update visibility.', 'error');
+            }
+        });
+    });
+    document.querySelectorAll('.fv-row-btn--edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const tab = currentTabs.find(t => t.id === id);
+            if (tab) openTabDialog(tab);
+        });
+    });
+    document.querySelectorAll('.fv-row-btn--delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            if (!confirm('Delete this subtab?')) return;
+            try {
+                await apiDelete('/api/full-view/tabs/' + id);
+                currentTabs = currentTabs.filter(t => t.id !== id);
+                renderTabs();
+            } catch (e) {
+                setInlineStatus('fv-resource-status', (e && e.message) ? e.message : 'Failed to delete tab.', 'error');
+            }
+        });
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tab dialog                                                         */
+/* ------------------------------------------------------------------ */
+async function openTabDialog(tab) {
+    const saveBtn = document.getElementById('fv-dialog-save');
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+        await ensureResourcesLoaded();
+    } catch (e) {
+        setInlineStatus('fv-resource-status', 'Could not refresh linked lists. You can still save URL/custom tabs.', 'warn');
+    } finally {
+        if (saveBtn) saveBtn.disabled = false;
+    }
+
+    editingTabId = tab ? tab.id : null;
+    document.getElementById('fv-dialog-title').textContent = tab ? 'Edit Subtab' : 'Add Subtab';
+
+    const icon = tab ? tab.icon : 'ph:house';
+    const name = tab ? tab.name : '';
+    const type = normalizeTabType(tab ? tab.tab_type : '360_pano');
+    const visible = tab ? tab.is_visible : true;
+    const contentData = normalizeTabContentData(tab ? tab.content_data : null);
+    const iconMeta = getIconMetaFromContent(contentData);
+
+    document.getElementById('fv-tab-name').value = name;
+    document.getElementById('fv-tab-type').value = type;
+    document.getElementById('fv-tab-visible').checked = visible;
+    setDialogIconState({
+        icon: icon,
+        mode: iconMeta.mode,
+        uploadUrl: iconMeta.uploadUrl,
+        offsetX: iconMeta.offsetX,
+        offsetY: iconMeta.offsetY,
+    });
+
+    // Populate content selects
+    populateSelect('fv-ref-panorama', workspacePanoramas, 'id', 'name');
+    populateSelect('fv-ref-daynight', daynightProjects, 'id', 'name');
+    populateSelect('fv-ref-floorplan', floorPlanCatalogues, 'id', 'name');
+    populateSelect('fv-ref-gallery', galleries, 'id', 'name');
+    populateSelect('fv-ref-projectplan', projectPlans, 'id', 'name');
+    populateSelect('fv-ref-salesmap', salesRouteMaps, 'id', 'name');
+    populateSelect('fv-ref-salesflat360', salesFlat360Views, 'id', 'name');
+
+    if (tab) {
+        if (tab.ref_panorama_id) document.getElementById('fv-ref-panorama').value = tab.ref_panorama_id;
+        if (tab.ref_daynight_id) document.getElementById('fv-ref-daynight').value = tab.ref_daynight_id;
+        if (tab.ref_floor_plan_id) document.getElementById('fv-ref-floorplan').value = tab.ref_floor_plan_id;
+        if (tab.ref_gallery_id) document.getElementById('fv-ref-gallery').value = tab.ref_gallery_id;
+        if (tab.ref_project_plan_id) document.getElementById('fv-ref-projectplan').value = tab.ref_project_plan_id;
+        if (tab.ref_sales_map_id) document.getElementById('fv-ref-salesmap').value = tab.ref_sales_map_id;
+        if (tab.ref_sales_flat360_id) document.getElementById('fv-ref-salesflat360').value = tab.ref_sales_flat360_id;
+        const url = contentData.url || '';
+        document.getElementById('fv-ref-url').value = url;
+    } else {
+        document.getElementById('fv-ref-url').value = '';
+    }
+
+    updateTypeFields(type);
+    refreshSidebarButtonPreview();
+    document.getElementById('fv-tab-dialog-backdrop').classList.add('visible');
+}
+
+function closeTabDialog() {
+    document.getElementById('fv-tab-dialog-backdrop').classList.remove('visible');
+    editingTabId = null;
+}
+
+function updateTypeFields(type) {
+    const show = (id, vis) => { document.getElementById(id).style.display = vis ? '' : 'none'; };
+    show('fv-ref-panorama-wrap',    ['360_pano'].includes(type));
+    show('fv-ref-daynight-wrap',    type === 'daynight');
+    show('fv-ref-floorplan-wrap',   type === 'floor_plan');
+    show('fv-ref-gallery-wrap',     type === 'gallery');
+    show('fv-ref-projectplan-wrap', type === 'project_plan');
+    show('fv-ref-salesmap-wrap',    type === 'sales_map');
+    show('fv-ref-salesflat360-wrap', type === 'sales_flat360');
+    show('fv-ref-url-wrap',         ['location', 'brochure', 'link', 'custom', 'video'].includes(type));
+
+    const urlHint = document.getElementById('fv-ref-url-hint');
+    urlHint.textContent = type === 'video' ? 'Paste a YouTube watch/share URL. It will autoplay in Full View.'
+        : type === 'brochure' ? 'PDF or webpage URL (opens in new tab).'
+        : type === 'location' ? 'Google Maps, Earth View, or any map URL.'
+        : type === 'link' ? 'The website opens inside Full View while the sidebar stays visible. Some websites may block iframe embedding.'
+        : 'URL to embed or open in new tab.';
+
+}
+
+function selectedOptionLabel(selectId) {
+    var sel = document.getElementById(selectId);
+    if (!sel) return '';
+    var idx = sel.selectedIndex;
+    if (idx < 0) return '';
+    var option = sel.options[idx];
+    if (!option) return '';
+    var value = String(option.value || '').trim();
+    if (!value) return '';
+    return String(option.textContent || '').trim();
+}
+
+function fallbackTabName(type) {
+    if (type === '360_pano') return selectedOptionLabel('fv-ref-panorama');
+    if (type === 'daynight') return selectedOptionLabel('fv-ref-daynight');
+    if (type === 'floor_plan') return selectedOptionLabel('fv-ref-floorplan');
+    if (type === 'gallery') return selectedOptionLabel('fv-ref-gallery');
+    if (type === 'project_plan') return selectedOptionLabel('fv-ref-projectplan');
+    if (type === 'sales_map') return selectedOptionLabel('fv-ref-salesmap');
+    if (type === 'sales_flat360') return selectedOptionLabel('fv-ref-salesflat360');
+    if (type === 'video') return 'Video';
+    if (type === 'brochure') return 'Brochure';
+    if (type === 'location') return 'Location';
+    if (type === 'link') return 'Website';
+    if (type === 'custom') return 'Custom';
+    return '';
+}
+
+function normalizeWebsiteLink(rawValue) {
+    var value = String(rawValue || '').trim();
+    if (!value) return '';
+    if (value.startsWith('/')) return value;
+    if (value.startsWith('//')) value = 'https:' + value;
+    else if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) value = 'https://' + value;
+
+    try {
+        var parsed = new URL(value);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+        return parsed.href;
+    } catch (e) {
+        return '';
+    }
+}
+
+async function ensureCurrentConfigId() {
+    if (currentConfigId) return currentConfigId;
+    if (!currentProjectId) throw new Error('Please select a project first.');
+    const d = await apiFetch('/api/full-view/config?workspace_id=' + encodeURIComponent(currentProjectId));
+    currentConfigId = (d && d.config && d.config.id) ? d.config.id : null;
+    if (!currentConfigId) {
+        const created = await apiPost('/api/full-view/config', { workspace_id: currentProjectId });
+        currentConfigId = (created && created.config && created.config.id) ? created.config.id : null;
+    }
+    if (!currentConfigId) throw new Error('Full View config is not ready. Please reopen the builder and try again.');
+    return currentConfigId;
+}
+
+async function saveTab() {
+    const iconState = getDialogIconState();
+    const icon = iconState.icon || 'ph:house';
+    let name = document.getElementById('fv-tab-name').value.trim();
+    const type = normalizeTabType(document.getElementById('fv-tab-type').value);
+    const visible = document.getElementById('fv-tab-visible').checked;
+    const isEditing = !!editingTabId;
+
+    if (!name) name = fallbackTabName(type);
+    if (!name) { alert('Please enter a label.'); return; }
+
+    const contentData = {};
+    if (iconState.mode === 'upload' && iconState.uploadUrl) {
+        contentData.icon_mode = 'upload';
+        contentData.icon_upload_url = iconState.uploadUrl;
+    }
+    if (iconState.offsetX) contentData.icon_offset_x_px = iconState.offsetX;
+    if (iconState.offsetY) contentData.icon_offset_y_px = iconState.offsetY;
+
+    const body = {
+        icon, name, tab_type: type, is_visible: visible,
+        ref_panorama_id:    null,
+        ref_daynight_id:    null,
+        ref_floor_plan_id:  null,
+        ref_gallery_id:     null,
+        ref_project_plan_id: null,
+        ref_sales_map_id:   null,
+        ref_sales_flat360_id: null,
+        content_data: contentData,
+    };
+
+    if (type === '360_pano') {
+        const v = document.getElementById('fv-ref-panorama').value;
+        if (!v) { alert('Please select a panorama.'); return; }
+        if (v) body.ref_panorama_id = Number(v);
+    }
+    if (type === 'daynight') {
+        const v = document.getElementById('fv-ref-daynight').value;
+        if (!v) { alert('Please select a Day/Night project.'); return; }
+        if (v) body.ref_daynight_id = v;
+    }
+    if (type === 'floor_plan') {
+        const v = document.getElementById('fv-ref-floorplan').value;
+        if (!v) { alert('Please select a floor plan catalogue.'); return; }
+        if (v) body.ref_floor_plan_id = v;
+    }
+    if (type === 'gallery') {
+        const v = document.getElementById('fv-ref-gallery').value;
+        if (!v) { alert('Please select a gallery.'); return; }
+        if (v) body.ref_gallery_id = v;
+    }
+    if (type === 'project_plan') {
+        const v = document.getElementById('fv-ref-projectplan').value;
+        if (!v) { alert('Please select a project plan.'); return; }
+        if (v) body.ref_project_plan_id = v;
+    }
+    if (type === 'sales_map') {
+        const v = document.getElementById('fv-ref-salesmap').value;
+        if (!v) { alert('Please select a Sales Route Map.'); return; }
+        if (v) body.ref_sales_map_id = v;
+    }
+    if (type === 'sales_flat360') {
+        const v = document.getElementById('fv-ref-salesflat360').value;
+        if (!v) { alert('Please select a Sales 360 View.'); return; }
+        if (v) body.ref_sales_flat360_id = v;
+    }
+    if (['location', 'brochure', 'link', 'custom', 'video'].includes(type)) {
+        var urlValue = document.getElementById('fv-ref-url').value.trim();
+        if (!urlValue) { alert('Please enter a URL.'); return; }
+        if (type === 'link') {
+            urlValue = normalizeWebsiteLink(urlValue);
+            if (!urlValue) { alert('Please enter a valid http:// or https:// website URL.'); return; }
+        }
+        body.content_data.url = urlValue;
+    }
+
+    try {
+        if (editingTabId) {
+            const r = await apiPut('/api/full-view/tabs/' + editingTabId, body);
+            const idx = currentTabs.findIndex(t => t.id === editingTabId);
+            if (idx >= 0) currentTabs[idx] = r.tab;
+        } else {
+            body.config_id = await ensureCurrentConfigId();
+            body.workspace_id = currentProjectId || null;
+            body.sort_order = currentTabs.length;
+            const r = await apiPost('/api/full-view/tabs', body);
+            currentTabs.push(r.tab);
+        }
+        closeTabDialog();
+        renderTabs();
+        var successMessage = isEditing ? 'Tab updated successfully.' : 'Tab added successfully.';
+        setInlineStatus('fv-resource-status', successMessage, 'ok');
+        showToast(successMessage, 'ok');
+    } catch (e) {
+        var saveErr = String((e && e.message) || 'Could not save tab');
+        setInlineStatus('fv-resource-status', 'Save failed: ' + saveErr, 'error');
+        showToast('Save failed: ' + saveErr, 'error');
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Icon picker                                                        */
+/* ------------------------------------------------------------------ */
+function getFilteredIconCatalog(rawQuery) {
+    var query = String(rawQuery || '').trim();
+    var normalized = query.toLowerCase();
+    var filtered = normalized ? ICON_CATALOG.filter(function (item) {
+        return item.label.toLowerCase().includes(normalized) || item.icon.toLowerCase().includes(normalized);
+    }) : ICON_CATALOG.slice();
+    if (query && query.indexOf(':') > 0 && !filtered.some(function (item) { return item.icon === normalized; })) {
+        filtered.unshift({ icon: normalized, label: 'Use ' + query });
+    }
+    return filtered;
+}
+
+function buildIconGrid(icons) {
+    const grid = document.getElementById('fv-icon-grid');
+    grid.innerHTML = '';
+    icons.forEach(({ icon, label }) => {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'fv-icon-cell';
+        cell.dataset.icon = icon;
+        cell.title = label;
+        const iconNode = document.createElement('iconify-icon');
+        iconNode.setAttribute('icon', icon);
+        const labelNode = document.createElement('span');
+        labelNode.textContent = label;
+        cell.appendChild(iconNode);
+        cell.appendChild(labelNode);
+        cell.addEventListener('click', () => selectIcon(icon));
+        grid.appendChild(cell);
+    });
+}
+
+function selectIcon(icon) {
+    setDialogIconState({
+        icon: icon,
+        mode: 'iconify',
+        uploadUrl: '',
+    });
+    document.getElementById('fv-icon-picker-backdrop').classList.remove('visible');
+}
+
+async function uploadFullViewIcon(file) {
+    var headers = await authHeaders(false);
+    var formData = new FormData();
+    formData.append('file', file);
+    if (currentProjectId) formData.append('workspace_id', currentProjectId);
+    var res = await fetch('/api/full-view/icon-upload', {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+    });
+    var text = await res.text().catch(function () { return ''; });
+    var payload = null;
+    try { payload = text ? JSON.parse(text) : null; } catch (e) { payload = null; }
+    if (!res.ok) {
+        throw new Error((payload && payload.error) || text || res.statusText || 'Icon upload failed');
+    }
+    return payload || {};
+}
+
+/* ------------------------------------------------------------------ */
+/*  Bind events                                                        */
+/* ------------------------------------------------------------------ */
+function bindEvents() {
+    function fullViewShellUrl() {
+        return currentProjectId ? ('/customer/full-view/' + encodeURIComponent(currentProjectId)) : null;
+    }
+
+    // Project selector
+    document.getElementById('fv-workspace-select').addEventListener('change', function () {
+        document.getElementById('fv-init-btn').disabled = !this.value;
+    });
+    document.getElementById('fv-init-btn').addEventListener('click', function () {
+        const wsId = document.getElementById('fv-workspace-select').value;
+        if (wsId) openProject(wsId);
+    });
+
+    // Active toggle
+    document.getElementById('fv-active-check').addEventListener('change', async function () {
+        if (!currentConfigId) return;
+        var nextChecked = this.checked;
+        try {
+            await apiPut('/api/full-view/config/' + currentConfigId, { is_active: nextChecked });
+            var statusMsg = nextChecked ? 'Full View is now live for customers.' : 'Full View is now hidden from customers.';
+            setInlineStatus('fv-resource-status', statusMsg, 'ok');
+            showToast(statusMsg, 'ok');
+        } catch (e) {
+            this.checked = !nextChecked;
+            var activeErr = String((e && e.message) || 'Could not update Full View visibility');
+            setInlineStatus('fv-resource-status', 'Live toggle failed: ' + activeErr, 'error');
+            showToast('Live toggle failed: ' + activeErr, 'error');
+        }
+    });
+
+    // Preview button
+    document.getElementById('fv-preview-btn').addEventListener('click', function () {
+        const url = fullViewShellUrl();
+        if (!url) return;
+        window.open(url, '_blank', 'noopener');
+    });
+
+    // Edit screen button
+    document.getElementById('fv-edit-screen-btn').addEventListener('click', function () {
+        if (!currentProjectId) return;
+        window.open('/customer/full-view/edit/' + encodeURIComponent(currentProjectId), '_blank', 'noopener');
+    });
+
+    function openCreateLinkModal() {
+        if (!currentProjectId) {
+            showToast('Select a project first', 'warn');
+            return;
+        }
+        if (typeof showCreateShareLinkModal === 'function') {
+            showCreateShareLinkModal(currentProjectId);
+        } else {
+            showToast('Create Link is not available', 'error');
+        }
+    }
+
+    // Create Link button (custom suffix, same pattern as dashboard)
+    document.getElementById('fv-create-link-btn').addEventListener('click', openCreateLinkModal);
+    var shareBarCreateLinkBtn = document.getElementById('fv-share-bar-create-link');
+    if (shareBarCreateLinkBtn) shareBarCreateLinkBtn.addEventListener('click', openCreateLinkModal);
+
+    // Copy Link button
+    document.getElementById('fv-share-btn').addEventListener('click', function () {
+        const url = currentShareUrl || fullViewShellUrl();
+        if (!url) return;
+        const abs = url.startsWith('http') ? url : (window.location.origin + url);
+        navigator.clipboard.writeText(abs).then(() => {
+            const btn = this;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<iconify-icon icon="ph:check"></iconify-icon> Copied!';
+            setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        }).catch(() => {
+            document.getElementById('fv-share-bar-url').select();
+        });
+    });
+
+    // Share Reference Link (customised ref link for CRM, same as dashboard)
+    document.getElementById('fv-share-ref-btn').addEventListener('click', function () {
+        if (!currentProjectId) {
+            showToast('Select a project first', 'warn');
+            return;
+        }
+        if (typeof showProjectShareModal === 'function') {
+            showProjectShareModal(currentProjectId);
+        } else {
+            showToast('Reference link feature not available', 'error');
+        }
+    });
+
+    // Share bar copy
+    document.getElementById('fv-share-bar-copy').addEventListener('click', function () {
+        const input = document.getElementById('fv-share-bar-url');
+        const abs = input.value.startsWith('http') ? input.value : (window.location.origin + input.value);
+        navigator.clipboard.writeText(abs).then(() => {
+            this.innerHTML = '<iconify-icon icon="ph:check"></iconify-icon>';
+            setTimeout(() => { this.innerHTML = '<iconify-icon icon="ph:copy"></iconify-icon>'; }, 2000);
+        });
+    });
+
+    // Add tab
+    document.getElementById('fv-add-tab-btn').addEventListener('click', function () { openTabDialog(null); });
+
+    const logoInput = document.getElementById('fv-logo-input');
+    const logoSizeInput = document.getElementById('fv-branding-logo-size');
+    const logoPaddingInput = document.getElementById('fv-branding-logo-padding');
+    const headerSizeInput = document.getElementById('fv-branding-header-size');
+    const headerPaddingInput = document.getElementById('fv-branding-header-padding');
+    const modalPaddingInput = document.getElementById('fv-branding-modal-padding');
+    document.getElementById('fv-logo-upload-btn').addEventListener('click', function () {
+        if (!currentProjectId || !logoInput) return;
+        logoInput.click();
+    });
+    if (logoSizeInput) {
+        logoSizeInput.addEventListener('input', function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_logo_size_pct = clampBrandingSizePct(this.value, 100);
+            syncBrandingPreview();
+        });
+        logoSizeInput.addEventListener('change', async function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_logo_size_pct = clampBrandingSizePct(this.value, 100);
+            setBrandingBusy(true);
+            syncBrandingPreview('Saving logo size...', null);
+            try {
+                await saveCurrentConfigStyle();
+                syncBrandingPreview('Logo size saved.', 'ok');
+                setInlineStatus('fv-resource-status', 'Logo size updated.', 'ok');
+            } catch (e) {
+                const message = String((e && e.message) || 'Could not save logo size');
+                syncBrandingPreview(message, 'error');
+                setInlineStatus('fv-resource-status', 'Logo size save failed: ' + message, 'error');
+            } finally {
+                setBrandingBusy(false);
+            }
+        });
+    }
+    if (logoPaddingInput) {
+        logoPaddingInput.addEventListener('input', function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_logo_padding_pct = clampBrandingPaddingPct(this.value, 100);
+            syncBrandingPreview();
+        });
+        logoPaddingInput.addEventListener('change', async function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_logo_padding_pct = clampBrandingPaddingPct(this.value, 100);
+            setBrandingBusy(true);
+            syncBrandingPreview('Saving logo shell padding...', null);
+            try {
+                await saveCurrentConfigStyle();
+                syncBrandingPreview('Logo shell padding saved.', 'ok');
+                setInlineStatus('fv-resource-status', 'Logo shell padding updated.', 'ok');
+            } catch (e) {
+                const message = String((e && e.message) || 'Could not save logo shell padding');
+                syncBrandingPreview(message, 'error');
+                setInlineStatus('fv-resource-status', 'Logo shell padding save failed: ' + message, 'error');
+            } finally {
+                setBrandingBusy(false);
+            }
+        });
+    }
+    if (headerSizeInput) {
+        headerSizeInput.addEventListener('input', function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_size_pct = clampBrandingSizePct(this.value, 100);
+            syncBrandingPreview();
+        });
+        headerSizeInput.addEventListener('change', async function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_size_pct = clampBrandingSizePct(this.value, 100);
+            setBrandingBusy(true);
+            syncBrandingPreview('Saving header size...', null);
+            try {
+                await saveCurrentConfigStyle();
+                syncBrandingPreview('Header size saved.', 'ok');
+                setInlineStatus('fv-resource-status', 'Header size updated.', 'ok');
+            } catch (e) {
+                const message = String((e && e.message) || 'Could not save header size');
+                syncBrandingPreview(message, 'error');
+                setInlineStatus('fv-resource-status', 'Header size save failed: ' + message, 'error');
+            } finally {
+                setBrandingBusy(false);
+            }
+        });
+    }
+    if (headerPaddingInput) {
+        headerPaddingInput.addEventListener('input', function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_padding_pct = clampBrandingPaddingPct(this.value, 100);
+            syncBrandingPreview();
+        });
+        headerPaddingInput.addEventListener('change', async function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.header_padding_pct = clampBrandingPaddingPct(this.value, 100);
+            setBrandingBusy(true);
+            syncBrandingPreview('Saving header spacing...', null);
+            try {
+                await saveCurrentConfigStyle();
+                syncBrandingPreview('Header spacing saved.', 'ok');
+                setInlineStatus('fv-resource-status', 'Header spacing updated.', 'ok');
+            } catch (e) {
+                const message = String((e && e.message) || 'Could not save header spacing');
+                syncBrandingPreview(message, 'error');
+                setInlineStatus('fv-resource-status', 'Header spacing save failed: ' + message, 'error');
+            } finally {
+                setBrandingBusy(false);
+            }
+        });
+    }
+    if (modalPaddingInput) {
+        modalPaddingInput.addEventListener('input', function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.modal_padding_pct = clampBrandingSizePct(this.value, 100);
+            syncBrandingPreview();
+        });
+        modalPaddingInput.addEventListener('change', async function () {
+            currentConfigStyle = normalizeConfigStyle(currentConfigStyle);
+            currentConfigStyle.modal_padding_pct = clampBrandingSizePct(this.value, 100);
+            setBrandingBusy(true);
+            syncBrandingPreview('Saving modal spacing...', null);
+            try {
+                await saveCurrentConfigStyle();
+                syncBrandingPreview('Modal spacing saved.', 'ok');
+                setInlineStatus('fv-resource-status', 'Modal spacing updated.', 'ok');
+            } catch (e) {
+                const message = String((e && e.message) || 'Could not save modal spacing');
+                syncBrandingPreview(message, 'error');
+                setInlineStatus('fv-resource-status', 'Modal spacing save failed: ' + message, 'error');
+            } finally {
+                setBrandingBusy(false);
+            }
+        });
+    }
+    if (logoInput) {
+        logoInput.addEventListener('change', async function () {
+            const file = this.files && this.files[0] ? this.files[0] : null;
+            if (!file) return;
+            setBrandingBusy(true);
+            syncBrandingPreview('Uploading logo...', null);
+            try {
+                const result = await uploadFullViewLogo(file);
+                await saveHeaderLogoUrl(String((result && result.url) || '').trim());
+                syncBrandingPreview('Logo saved. It will appear on the customer Full View header.', 'ok');
+                setInlineStatus('fv-resource-status', 'Header logo updated.', 'ok');
+            } catch (e) {
+                const message = String((e && e.message) || 'Logo upload failed');
+                syncBrandingPreview(message, 'error');
+                setInlineStatus('fv-resource-status', 'Logo upload failed: ' + message, 'error');
+            } finally {
+                setBrandingBusy(false);
+                this.value = '';
+            }
+        });
+    }
+    document.getElementById('fv-logo-remove-btn').addEventListener('click', async function () {
+        const hasLogo = !!String((currentConfigStyle && currentConfigStyle.header_logo_url) || '').trim();
+        if (!hasLogo) return;
+        setBrandingBusy(true);
+        syncBrandingPreview('Removing logo...', null);
+        try {
+            await saveHeaderLogoUrl('');
+            syncBrandingPreview('Logo removed. The Project name will remain in the header.', 'ok');
+            setInlineStatus('fv-resource-status', 'Header logo removed.', 'ok');
+        } catch (e) {
+            const message = String((e && e.message) || 'Could not remove logo');
+            syncBrandingPreview(message, 'error');
+            setInlineStatus('fv-resource-status', 'Logo remove failed: ' + message, 'error');
+        } finally {
+            setBrandingBusy(false);
+        }
+    });
+
+    // Dialog
+    document.getElementById('fv-dialog-close').addEventListener('click', closeTabDialog);
+    document.getElementById('fv-dialog-cancel').addEventListener('click', closeTabDialog);
+    document.getElementById('fv-dialog-save').addEventListener('click', saveTab);
+    document.getElementById('fv-tab-name').addEventListener('input', refreshSidebarButtonPreview);
+    document.getElementById('fv-icon-align-reset').addEventListener('click', function () {
+        setDialogIconState({ offsetX: 0, offsetY: 0 });
+    });
+    bindSidebarPreviewDrag();
+
+    // Type change → show/hide refs
+    document.getElementById('fv-tab-type').addEventListener('change', function () {
+        updateTypeFields(this.value);
+    });
+
+    // Icon picker trigger
+    document.getElementById('fv-pick-icon-btn').addEventListener('click', () => {
+        var searchEl = document.getElementById('fv-icon-search');
+        if (searchEl) {
+            searchEl.value = '';
+            buildIconGrid(getFilteredIconCatalog(''));
+        }
+        document.getElementById('fv-icon-picker-backdrop').classList.add('visible');
+    });
+    document.getElementById('fv-icon-picker-close').addEventListener('click', () => {
+        document.getElementById('fv-icon-picker-backdrop').classList.remove('visible');
+    });
+
+    const uploadInput = document.getElementById('fv-upload-icon-input');
+    document.getElementById('fv-upload-icon-btn').addEventListener('click', function () {
+        if (uploadInput) uploadInput.click();
+    });
+    if (uploadInput) {
+        uploadInput.addEventListener('change', async function () {
+            const file = this.files && this.files[0] ? this.files[0] : null;
+            if (!file) return;
+            const statusEl = document.getElementById('fv-icon-upload-status');
+            if (statusEl) statusEl.textContent = 'Uploading icon...';
+            try {
+                const result = await uploadFullViewIcon(file);
+                setDialogIconState({
+                    mode: 'upload',
+                    uploadUrl: String((result && result.url) || '').trim(),
+                });
+            } catch (e) {
+                if (statusEl) statusEl.textContent = String((e && e.message) || 'Icon upload failed');
+            } finally {
+                this.value = '';
+            }
+        });
+    }
+
+    // Icon search
+    document.getElementById('fv-icon-search').addEventListener('input', function () {
+        buildIconGrid(getFilteredIconCatalog(this.value));
+    });
+
+    // Close dialogs on backdrop click
+    document.getElementById('fv-tab-dialog-backdrop').addEventListener('click', function (e) {
+        if (e.target === this) closeTabDialog();
+    });
+    document.getElementById('fv-icon-picker-backdrop').addEventListener('click', function (e) {
+        if (e.target === this) document.getElementById('fv-icon-picker-backdrop').classList.remove('visible');
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Boot — deferred until sidebar.js sets up window._supabase         */
+/* ------------------------------------------------------------------ */
+window.__fvInit = init;
+
+})();
+</script>
+{% endblock %}
+{% block scripts %}
+    <script>
+        window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
+        window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
+    </script>
+    <script src="/static/js/sidebar.js?v=20260625-auth-fallback"></script>
+    <script src="/static/js/share-workspace-modal.js?v=20260625-auth-fallback"></script>
+    <script src="/static/js/create-share-link-modal.js?v=20260625-create-link"></script>
+    <script>
+        window.sidebarReady.then(function () {
+            if (window.__fvInit) window.__fvInit();
+        });
+    </script>
+{% endblock %}
+

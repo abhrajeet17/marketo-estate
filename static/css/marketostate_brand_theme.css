@@ -1,0 +1,894 @@
+/**
+ * MarketoState brand theme — warm surfaces + logo charcoal/orange chrome.
+ * Token values are set on :root by marketostate_brand_theme.js.
+ */
+
+html.ms-brand-theme,
+html.ms-brand-theme body {
+  background-color: var(--ms-brand-surface) !important;
+  color: var(--ms-brand-ink);
+}
+
+html.ms-brand-theme .content-wrapper {
+  background: transparent;
+}
+
+html.ms-brand-theme .content-wrapper > .container-xxl.flex-grow-1.container-p-y {
+  background: transparent;
+}
+
+/* ── Light sidebar; logo-dark header strip only (#333333) ── */
+html.ms-brand-theme #portal-sidebar {
+  background: linear-gradient(180deg, var(--ms-brand-surface-card) 0%, var(--ms-brand-surface) 100%) !important;
+  border-right: 1px solid var(--ms-brand-border-warm) !important;
+  box-shadow: 2px 0 18px rgba(var(--ms-brand-dark-rgb), 0.06) !important;
+}
+
+html.ms-brand-theme .portal-unified-header {
+  background: var(--ms-brand-dark) !important;
+  border-bottom-color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .portal-unified-header__brand .portal-brand-header {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+html.ms-brand-theme #portal-sidebar .portal-nav-link {
+  color: var(--ms-brand-ink) !important;
+}
+
+html.ms-brand-theme #portal-sidebar .portal-nav-link.active {
+  background: rgba(var(--ms-brand-primary-rgb), 0.16) !important;
+  color: var(--ms-brand-primary) !important;
+  box-shadow: inset 3px 0 0 var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme #portal-sidebar .portal-nav-link:hover {
+  background: rgba(var(--ms-brand-primary-rgb), 0.1) !important;
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme #portal-sidebar .portal-nav-link:hover svg,
+html.ms-brand-theme #portal-sidebar .portal-nav-link.active svg {
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme #portal-sidebar .portal-nav-section {
+  color: rgba(var(--ms-brand-dark-rgb), 0.52) !important;
+}
+
+html.ms-brand-theme #portal-sidebar-collapse-btn {
+  background: var(--ms-brand-surface-card) !important;
+  border-color: var(--ms-brand-border-warm) !important;
+  color: var(--ms-brand-ink) !important;
+}
+
+html.ms-brand-theme #portal-sidebar-collapse-btn:hover {
+  background: rgba(var(--ms-brand-primary-rgb), 0.12) !important;
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .portal-unified-header__page .portal-navbar {
+  background: transparent !important;
+  color: var(--ms-brand-on-dark) !important;
+}
+
+/* ── Sneat layout menu (legacy pages) — light warm with orange accents ── */
+html.ms-brand-theme #layout-menu.layout-menu,
+html.ms-brand-theme .layout-menu.bg-menu-theme {
+  background: linear-gradient(180deg, var(--ms-brand-surface-card) 0%, var(--ms-brand-surface) 100%) !important;
+  border-right: 1px solid var(--ms-brand-border-warm);
+  box-shadow: 2px 0 18px rgba(var(--ms-brand-dark-rgb), 0.06);
+}
+
+html.ms-brand-theme .layout-menu .app-brand-text,
+html.ms-brand-theme .layout-menu .menu-link,
+html.ms-brand-theme .layout-menu .menu-icon,
+html.ms-brand-theme .layout-menu .menu-link .menu-icon {
+  color: var(--ms-brand-ink) !important;
+}
+
+html.ms-brand-theme .layout-menu .menu-header-text {
+  color: rgba(var(--ms-brand-dark-rgb), 0.52) !important;
+  letter-spacing: 0.06em;
+}
+
+html.ms-brand-theme .layout-menu .menu-divider,
+html.ms-brand-theme .layout-menu .menu-inner-shadow {
+  opacity: 0.35;
+}
+
+html.ms-brand-theme .layout-menu .menu-item.active > .menu-link,
+html.ms-brand-theme .layout-menu .menu-item.active > .menu-link .menu-icon {
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .layout-menu .menu-item.active > .menu-link:not(.menu-toggle) {
+  background: rgba(var(--ms-brand-primary-rgb), 0.16) !important;
+}
+
+html.ms-brand-theme .layout-menu .menu-inner > .menu-item.active::before {
+  background: var(--ms-brand-primary-strong);
+  box-shadow: 0 0 10px rgba(var(--ms-brand-primary-rgb), 0.45);
+}
+
+html.ms-brand-theme .layout-menu .menu-link:hover {
+  background: rgba(var(--ms-brand-primary-rgb), 0.1) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme #layout-menu .sneat-menu-collapse-toggle.menu-link {
+  background: var(--ms-brand-surface-card);
+  border-color: var(--ms-brand-border-warm);
+  color: var(--ms-brand-ink);
+}
+
+html.ms-brand-theme #layout-menu .sneat-menu-collapse-toggle.menu-link:hover {
+  color: var(--ms-brand-primary-strong);
+  border-color: rgba(var(--ms-brand-primary-rgb), 0.38);
+  background: rgba(var(--ms-brand-primary-rgb), 0.12);
+}
+
+/* ── Top navbar (dashboard / team pages) ── */
+html.ms-brand-theme .layout-navbar.bg-navbar-theme {
+  background: var(--ms-brand-dark) !important;
+  color: var(--ms-brand-on-dark) !important;
+  border-bottom: 2px solid var(--ms-brand-primary);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+}
+
+.dashboard-plot-search-wrap {
+  position: relative;
+  min-width: 12rem;
+}
+
+.dashboard-plot-search-dropdown {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 1080;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--ms-brand-border-warm, rgba(0, 0, 0, 0.08));
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 28px rgba(var(--ms-brand-dark-rgb, 30, 41, 59), 0.14);
+  overflow: hidden;
+}
+
+.dashboard-plot-search-list {
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.dashboard-plot-search-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboard-plot-search-item:hover,
+.dashboard-plot-search-item:focus-visible {
+  background: rgba(var(--ms-brand-primary-rgb, 255, 163, 0), 0.1);
+  outline: none;
+}
+
+.dashboard-plot-search-item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--bs-heading-color, #384551);
+}
+
+.dashboard-plot-search-item-sub {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color, #697a8d);
+}
+
+.dashboard-plot-search-empty {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--bs-secondary-color, #697a8d);
+}
+
+/* ── Cards & panels ── */
+html.ms-brand-theme .card {
+  background: var(--ms-brand-surface-card);
+  border: 1px solid var(--ms-brand-border-warm);
+  border-top: 3px solid var(--ms-brand-primary);
+  box-shadow: 0 10px 28px rgba(var(--ms-brand-dark-rgb), 0.07);
+}
+
+html.ms-brand-theme .card-header {
+  background: linear-gradient(90deg, rgba(var(--ms-brand-primary-rgb), 0.08), rgba(var(--ms-brand-dark-rgb), 0.03));
+  border-bottom: 1px solid var(--ms-brand-border-warm);
+}
+
+html.ms-brand-theme .table > thead {
+  background: rgba(var(--ms-brand-primary-rgb), 0.08);
+}
+
+html.ms-brand-theme .table > thead th {
+  color: var(--ms-brand-primary-text-emphasis, var(--bs-primary-text-emphasis));
+}
+
+/* ── Customer dashboard welcome hero ── */
+html.ms-brand-theme .container-p-y .row > .col-xxl-8.order-0 .card {
+  background: linear-gradient(120deg, var(--ms-brand-dark) 0%, var(--ms-brand-dark-soft) 48%, rgba(var(--ms-brand-primary-rgb), 0.92) 100%);
+  border: none;
+  border-top: none;
+  color: var(--ms-brand-on-dark);
+  box-shadow: 0 16px 40px rgba(var(--ms-brand-dark-rgb), 0.22);
+}
+
+html.ms-brand-theme .container-p-y .row > .col-xxl-8.order-0 .card .card-title,
+html.ms-brand-theme .container-p-y .row > .col-xxl-8.order-0 .card p,
+html.ms-brand-theme .container-p-y .row > .col-xxl-8.order-0 .card .text-primary {
+  color: var(--ms-brand-on-dark) !important;
+}
+
+html.ms-brand-theme .container-p-y .row > .col-xxl-8.order-0 .card .btn-outline-primary {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.72);
+}
+
+html.ms-brand-theme .container-p-y .row > .col-xxl-8.order-0 .card .btn-outline-primary:hover {
+  background: var(--ms-brand-primary);
+  border-color: var(--ms-brand-primary);
+  color: var(--ms-brand-dark);
+}
+
+/* ── CRM workspace ── */
+html.ms-brand-theme .crm-page {
+  --crm-blue: var(--ms-brand-primary);
+  --crm-blue-strong: var(--ms-brand-primary-hover);
+  --crm-amber: var(--ms-brand-primary);
+  --crm-canvas: var(--ms-brand-canvas);
+  --crm-panel: var(--ms-brand-surface-card);
+  --crm-panel-muted: var(--ms-brand-surface-warm);
+  --crm-line: var(--ms-brand-border-warm);
+  background:
+    radial-gradient(circle at top right, rgba(var(--ms-brand-primary-rgb), 0.14), transparent 34rem),
+    radial-gradient(circle at bottom left, rgba(var(--ms-brand-dark-rgb), 0.06), transparent 28rem),
+    var(--ms-brand-canvas);
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tabs {
+  background: linear-gradient(180deg, var(--ms-brand-dark) 0%, var(--ms-brand-dark-deep) 100%);
+  border-bottom: 2px solid var(--ms-brand-primary);
+  box-shadow: 0 6px 22px rgba(var(--ms-brand-dark-rgb), 0.22);
+}
+
+html.ms-brand-theme #portal-page-header .crm-tabs {
+  background: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tabs-top-center,
+html.ms-brand-theme #portal-page-header .crm-tabs-top-center {
+  border-inline-start-color: var(--ms-brand-border-warm);
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-workspace-title,
+html.ms-brand-theme #portal-page-header .crm-workspace-title {
+  color: var(--ms-brand-on-dark);
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-workspace-add,
+html.ms-brand-theme #portal-page-header .crm-workspace-add {
+  border: 1px solid rgba(var(--ms-brand-primary-rgb), 0.42);
+  background: rgba(var(--ms-brand-primary-rgb), 0.14);
+  color: var(--ms-brand-primary-strong);
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tab,
+html.ms-brand-theme #portal-page-header .crm-tab {
+  color: var(--ms-brand-on-dark-muted);
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tab.active,
+html.ms-brand-theme #portal-page-header .crm-tab.active {
+  color: var(--ms-brand-dark) !important;
+  border-color: var(--ms-brand-primary) !important;
+  background: var(--ms-brand-primary) !important;
+  box-shadow: none !important;
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tab:hover,
+html.ms-brand-theme #portal-page-header .crm-tab:hover {
+  color: var(--ms-brand-primary);
+  background: rgba(var(--ms-brand-primary-rgb), 0.14);
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tab-action,
+html.ms-brand-theme #portal-page-header .crm-tab-action {
+  color: var(--ms-brand-on-dark-muted);
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tab-action:hover,
+html.ms-brand-theme #portal-page-header .crm-tab-action:hover {
+  background: rgba(var(--ms-brand-primary-rgb), 0.16);
+  color: var(--ms-brand-primary);
+}
+
+html.ms-brand-theme .crm-page .crm-tab.active {
+  border-bottom-color: var(--ms-brand-primary);
+}
+
+html.ms-brand-theme .crm-page .btn.primary,
+html.ms-brand-theme .crm-page .btn-primary {
+  background: var(--ms-brand-primary);
+  border-color: var(--ms-brand-primary);
+  color: var(--ms-brand-dark);
+  font-weight: 700;
+}
+
+html.ms-brand-theme .crm-page .btn.primary:hover,
+html.ms-brand-theme .crm-page .btn-primary:hover {
+  background: var(--ms-brand-primary-hover);
+  border-color: var(--ms-brand-primary-hover);
+  color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .crm-page .btn.outline,
+html.ms-brand-theme .crm-page .btn-outline-primary {
+  color: var(--ms-brand-primary-strong);
+  border-color: var(--ms-brand-primary);
+}
+
+html.ms-brand-theme .crm-page .btn.outline:hover,
+html.ms-brand-theme .crm-page .btn-outline-primary:hover {
+  background: var(--ms-brand-primary);
+  border-color: var(--ms-brand-primary);
+  color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .crm-page .crm-pill--primary {
+  background: rgba(var(--ms-brand-primary-rgb), 0.16);
+  color: var(--ms-brand-primary-strong);
+}
+
+html.ms-brand-theme .crm-page .interest-primary {
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+}
+
+html.ms-brand-theme .crm-page .spinner-border.text-primary,
+html.ms-brand-theme .crm-page .text-primary {
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .kpi-chip {
+  background: var(--ms-brand-surface-card);
+  border: 1px solid var(--ms-brand-border-warm);
+  border-top: 3px solid rgba(var(--ms-brand-primary-rgb), 0.65);
+}
+
+html.ms-brand-theme .kpi-chip--accent {
+  background: linear-gradient(135deg, var(--ms-brand-dark) 0%, var(--ms-brand-primary-strong) 52%, var(--ms-brand-primary) 100%);
+  color: var(--ms-brand-on-dark);
+}
+
+html.ms-brand-theme .kpi-chip-val {
+  color: var(--ms-brand-primary-strong);
+}
+
+html.ms-brand-theme .crm-page .card,
+html.ms-brand-theme .crm-page .crm-panel,
+html.ms-brand-theme .crm-page .crm-section .card {
+  background: var(--ms-brand-surface-card);
+  border-color: var(--ms-brand-border-warm);
+}
+
+/* ── CRM Masters ── */
+html.ms-brand-theme #sec-masters .crm-add-action,
+html.ms-brand-theme #sec-masters #btn-add-master,
+html.ms-brand-theme #sec-masters .master-value-add .btn,
+html.ms-brand-theme #master-create-modal #master-create-save {
+  background: var(--ms-brand-primary) !important;
+  border-color: var(--ms-brand-primary) !important;
+  color: var(--ms-brand-dark) !important;
+  box-shadow: 0 0.125rem 0.375rem rgba(var(--ms-brand-primary-rgb), 0.32) !important;
+}
+
+html.ms-brand-theme #sec-masters .crm-add-action:hover,
+html.ms-brand-theme #sec-masters #btn-add-master:hover,
+html.ms-brand-theme #sec-masters .master-value-add .btn:hover,
+html.ms-brand-theme #master-create-modal #master-create-save:hover {
+  background: var(--ms-brand-primary-hover) !important;
+  border-color: var(--ms-brand-primary-hover) !important;
+  color: var(--ms-brand-dark) !important;
+}
+
+html.ms-brand-theme #sec-masters .crm-add-action span,
+html.ms-brand-theme #sec-masters .crm-add-action i,
+html.ms-brand-theme #sec-masters .master-value-add .btn span,
+html.ms-brand-theme #sec-masters .master-value-add .btn i,
+html.ms-brand-theme #master-create-modal #master-create-save span,
+html.ms-brand-theme #master-create-modal #master-create-save i {
+  color: var(--ms-brand-dark) !important;
+}
+
+html.ms-brand-theme #sec-masters .crm-master-switch .form-check-input:checked,
+html.ms-brand-theme #sec-masters .master-entity-check .form-check-input:checked,
+html.ms-brand-theme #master-create-modal .form-check-input:checked {
+  background-color: var(--ms-brand-primary) !important;
+  border-color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme #sec-masters > .card {
+  border-top-color: var(--ms-brand-primary);
+}
+
+html.ms-brand-theme #sec-masters .crm-master-item {
+  background: var(--ms-brand-surface-card);
+  border-color: var(--ms-brand-border-warm);
+}
+
+html.ms-brand-theme #sec-masters .crm-master-title strong,
+html.ms-brand-theme #master-create-modal .crm-modal-header h2 {
+  color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme #sec-masters .master-value-chip {
+  border-color: rgba(var(--ms-brand-primary-rgb), 0.3);
+  background: rgba(var(--ms-brand-primary-rgb), 0.12);
+  color: var(--ms-brand-ink);
+}
+
+html.ms-brand-theme #sec-masters .crm-master-create-options,
+html.ms-brand-theme #master-create-modal .crm-master-create-options,
+html.ms-brand-theme #sec-masters .master-values-row {
+  background: rgba(var(--ms-brand-primary-rgb), 0.07);
+  border-color: var(--ms-brand-border-warm);
+}
+
+html.ms-brand-theme #sec-masters .master-entity-check .form-check-label {
+  color: var(--ms-brand-ink);
+}
+
+html.ms-brand-theme #sec-masters .btn.btn-secondary,
+html.ms-brand-theme #master-create-modal .btn.btn-secondary {
+  border-color: var(--ms-brand-border-warm);
+  color: var(--ms-brand-dark);
+  background: var(--ms-brand-surface-warm);
+}
+
+html.ms-brand-theme #sec-masters .btn.btn-secondary:hover,
+html.ms-brand-theme #master-create-modal .btn.btn-secondary:hover {
+  background: rgba(var(--ms-brand-primary-rgb), 0.12);
+  border-color: rgba(var(--ms-brand-primary-rgb), 0.35);
+  color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .crm-page .master-switch input:checked + span {
+  background: var(--ms-brand-primary);
+}
+
+/* ── Team management ── */
+html.ms-brand-theme .team-page {
+  --team-border: var(--ms-brand-border-warm);
+  --team-surface: var(--ms-brand-surface-card);
+}
+
+html.ms-brand-theme .team-page .team-kpi-card {
+  background: linear-gradient(165deg, var(--ms-brand-surface-card) 0%, var(--ms-brand-surface-warm) 100%);
+  border-color: var(--ms-brand-border-warm);
+}
+
+html.ms-brand-theme .team-page .team-kpi-card__accent {
+  background: linear-gradient(90deg, var(--ms-brand-primary), rgba(var(--ms-brand-primary-rgb), 0.55));
+}
+
+html.ms-brand-theme .team-page .team-kpi-card__icon {
+  color: var(--ms-brand-primary-strong);
+  background: rgba(var(--ms-brand-primary-rgb), 0.16);
+  box-shadow: inset 0 0 0 1px rgba(var(--ms-brand-primary-rgb), 0.2);
+}
+
+html.ms-brand-theme .team-page .team-kpi-card:hover {
+  border-color: rgba(var(--ms-brand-primary-rgb), 0.35);
+  box-shadow: 0 10px 24px rgba(var(--ms-brand-primary-rgb), 0.14);
+}
+
+html.ms-brand-theme .team-page .team-kpi-card__value {
+  color: var(--ms-brand-dark, #1e293b);
+}
+
+/* ── CRM filter panels ── */
+html.ms-brand-theme .crm-filter-panel,
+html.ms-brand-theme .entity-filter-modal.filter-modal {
+  border-color: var(--ms-brand-border-warm);
+  background: var(--ms-brand-surface-warm);
+}
+
+html.ms-brand-theme .crm-filter-panel__head,
+html.ms-brand-theme .entity-filter-modal .filter-modal-head,
+html.ms-brand-theme .crm-filter-panel__foot,
+html.ms-brand-theme .entity-filter-modal .filter-modal-foot {
+  background: var(--ms-brand-surface-card);
+  border-color: var(--ms-brand-border-warm);
+}
+
+html.ms-brand-theme .crm-page--sneat .filter-btn--panel-open {
+  background: rgba(var(--ms-brand-primary-rgb), 0.14) !important;
+  color: var(--ms-brand-primary-strong) !important;
+  border-color: rgba(var(--ms-brand-primary-rgb), 0.42) !important;
+}
+
+html.ms-brand-theme .crm-page--sneat .filter-btn--has-filters .filter-badge {
+  background: var(--ms-brand-primary);
+  color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .team-page .team-filter-card,
+html.ms-brand-theme .team-page .team-group-card {
+  background: linear-gradient(165deg, var(--ms-brand-surface-card) 0%, var(--ms-brand-surface-warm) 100%);
+  border-color: var(--ms-brand-border-warm);
+}
+
+html.ms-brand-theme .team-page .team-filter-card__accent {
+  background: linear-gradient(90deg, var(--ms-brand-primary), rgba(var(--ms-brand-primary-rgb), 0.55));
+}
+
+html.ms-brand-theme .team-page .team-filter-search__icon {
+  color: var(--ms-brand-primary-strong);
+}
+
+html.ms-brand-theme .team-page .team-group-header {
+  background: linear-gradient(90deg, rgba(var(--ms-brand-dark-rgb), 0.05), rgba(var(--ms-brand-primary-rgb), 0.1));
+  border-bottom: 2px solid rgba(var(--ms-brand-primary-rgb), 0.28);
+}
+
+html.ms-brand-theme .team-page .member-role-label {
+  color: var(--ms-brand-primary-strong);
+  background: rgba(var(--ms-brand-primary-rgb), 0.16);
+}
+
+html.ms-brand-theme .team-page .group-subtab.active,
+html.ms-brand-theme .team-page .group-subtab:hover {
+  color: var(--ms-brand-dark);
+  border-bottom-color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .team-page .icon-action-btn:hover {
+  color: var(--ms-brand-primary);
+  background: rgba(var(--ms-brand-primary-rgb), 0.14);
+}
+
+html.ms-brand-theme .team-page .team-capacity-indicator {
+  color: var(--ms-brand-primary-strong);
+  background: rgba(var(--ms-brand-primary-rgb), 0.12);
+}
+
+html.ms-brand-theme .team-page .member-avatar.bg-label-primary,
+html.ms-brand-theme .team-page .team-group-avatar.bg-label-primary,
+html.ms-brand-theme .team-page .team-kpi-icon.bg-label-primary,
+html.ms-brand-theme .team-page .badge.bg-label-primary {
+  background: rgba(var(--ms-brand-primary-rgb), 0.18) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .team-page .member-status-pill--active {
+  color: var(--ms-brand-primary-strong);
+  background: rgba(var(--ms-brand-primary-rgb), 0.18);
+}
+
+html.ms-brand-theme .team-page .spinner-border.text-primary {
+  color: var(--ms-brand-primary) !important;
+}
+
+/* ── Shared controls ── */
+html.ms-brand-theme .btn-primary {
+  --bs-btn-bg: var(--ms-brand-primary);
+  --bs-btn-border-color: var(--ms-brand-primary);
+  --bs-btn-color: var(--ms-brand-dark);
+  --bs-btn-hover-bg: var(--ms-brand-primary-hover);
+  --bs-btn-hover-border-color: var(--ms-brand-primary-hover);
+  --bs-btn-hover-color: var(--ms-brand-dark);
+  --bs-btn-active-bg: var(--ms-brand-primary-strong);
+  --bs-btn-active-border-color: var(--ms-brand-primary-strong);
+  --bs-btn-active-color: var(--ms-brand-dark);
+  --bs-btn-disabled-bg: var(--ms-brand-primary);
+  --bs-btn-disabled-border-color: var(--ms-brand-primary);
+  --bs-btn-disabled-color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .btn-outline-primary {
+  --bs-btn-color: var(--ms-brand-primary-strong);
+  --bs-btn-border-color: var(--ms-brand-primary);
+  --bs-btn-hover-bg: var(--ms-brand-primary);
+  --bs-btn-hover-border-color: var(--ms-brand-primary);
+  --bs-btn-hover-color: var(--ms-brand-dark);
+  --bs-btn-active-bg: var(--ms-brand-primary-hover);
+  --bs-btn-active-border-color: var(--ms-brand-primary-hover);
+  --bs-btn-active-color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .form-check-input:checked {
+  background-color: var(--ms-brand-primary);
+  border-color: var(--ms-brand-primary);
+}
+
+html.ms-brand-theme .form-control:focus,
+html.ms-brand-theme .form-select:focus {
+  border-color: var(--ms-brand-primary);
+  box-shadow: 0 0 0.25rem 0.05rem rgba(var(--ms-brand-primary-rgb), 0.2);
+}
+
+html.ms-brand-theme .page-link.active,
+html.ms-brand-theme .active > .page-link {
+  background-color: var(--ms-brand-primary);
+  border-color: var(--ms-brand-primary);
+  color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .progress-bar {
+  background-color: var(--ms-brand-primary);
+}
+
+html.ms-brand-theme .bg-label-primary {
+  background-color: rgba(var(--ms-brand-primary-rgb), 0.16) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+/* Sneat avatars default to white text on gray — override on warm cards */
+html.ms-brand-theme .avatar .avatar-initial.bg-label-primary {
+  background: linear-gradient(
+    145deg,
+    rgba(var(--ms-brand-primary-rgb), 0.28) 0%,
+    rgba(var(--ms-brand-primary-rgb), 0.14) 100%
+  ) !important;
+  color: var(--ms-brand-dark) !important;
+  border: 1.5px solid rgba(var(--ms-brand-primary-rgb), 0.42);
+  font-weight: 700;
+}
+
+/* Navbar / CRM header user avatar — fill the circular trigger, not a nested square */
+html.ms-brand-theme .portal-user-avatar {
+  background: var(--ms-brand-primary) !important;
+  color: var(--ms-brand-dark) !important;
+  border: none !important;
+  font-weight: 700;
+}
+
+html.ms-brand-theme .portal-user-avatar .portal-user-avatar__initial,
+html.ms-brand-theme .portal-user-avatar #navbar-user-avatar,
+html.ms-brand-theme .portal-user-avatar #navbar-user-avatar-2 {
+  background: transparent !important;
+  color: inherit !important;
+  border: none !important;
+}
+
+/* Sneat / legacy dropdown header avatars (not portal-user-avatar trigger) */
+html.ms-brand-theme .avatar-initial#navbar-user-avatar,
+html.ms-brand-theme .avatar-initial#navbar-user-avatar-2 {
+  background: var(--ms-brand-primary) !important;
+  color: var(--ms-brand-dark) !important;
+  border: none !important;
+  font-weight: 700;
+}
+
+
+
+html.ms-brand-theme .text-primary {
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme ::selection {
+  background-color: var(--ms-brand-dark);
+  color: #fff;
+}
+
+/* ── Replace Sneat blue/green label & text utilities with logo palette ── */
+html.ms-brand-theme .bg-label-success,
+html.ms-brand-theme .badge.bg-label-success {
+  background-color: rgba(var(--ms-brand-primary-rgb), 0.18) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .bg-label-info,
+html.ms-brand-theme .badge.bg-label-info {
+  background-color: rgba(var(--ms-brand-dark-rgb), 0.12) !important;
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .bg-label-warning,
+html.ms-brand-theme .badge.bg-label-warning {
+  background-color: rgba(var(--ms-brand-primary-rgb), 0.22) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .bg-label-secondary,
+html.ms-brand-theme .badge.bg-label-secondary {
+  background-color: rgba(var(--ms-brand-dark-rgb), 0.08) !important;
+  color: var(--ms-brand-dark) !important;
+}
+
+html.ms-brand-theme .text-success,
+html.ms-brand-theme .text-info,
+html.ms-brand-theme .text-cyan {
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .text-warning {
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .alert-success {
+  --bs-alert-color: var(--ms-brand-primary-strong);
+  --bs-alert-bg: rgba(var(--ms-brand-primary-rgb), 0.12);
+  --bs-alert-border-color: rgba(var(--ms-brand-primary-rgb), 0.28);
+}
+
+html.ms-brand-theme .alert-info {
+  --bs-alert-color: var(--ms-brand-dark);
+  --bs-alert-bg: rgba(var(--ms-brand-dark-rgb), 0.08);
+  --bs-alert-border-color: rgba(var(--ms-brand-primary-rgb), 0.22);
+}
+
+/* ── CRM pipeline / KPI accent dots (legacy blue, purple, teal, green) ── */
+html.ms-brand-theme .crm-page {
+  --crm-purple: var(--ms-brand-primary);
+  --crm-teal: var(--ms-brand-primary-strong);
+}
+
+html.ms-brand-theme .kpi-chip-dot--new,
+html.ms-brand-theme .kanban-dot--new,
+html.ms-brand-theme .kpi-fill--new,
+html.ms-brand-theme .crm-page .pill.new .dot {
+  background: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .kpi-chip-dot--contacted,
+html.ms-brand-theme .kanban-dot--contacted,
+html.ms-brand-theme .kpi-fill--contacted,
+html.ms-brand-theme .crm-page .pill.contacted .dot {
+  background: var(--ms-brand-primary-hover) !important;
+}
+
+html.ms-brand-theme .kpi-chip-dot--qualified,
+html.ms-brand-theme .kanban-dot--qualified,
+html.ms-brand-theme .kpi-fill--qualified,
+html.ms-brand-theme .crm-page .pill.qualified .dot {
+  background: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .kpi-chip-dot--won,
+html.ms-brand-theme .kanban-dot--won,
+html.ms-brand-theme .kpi-fill--won,
+html.ms-brand-theme .crm-page .pill.won .dot {
+  background: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .kpi-chip--accent {
+  background: linear-gradient(135deg, var(--ms-brand-dark) 0%, var(--ms-brand-primary-strong) 52%, var(--ms-brand-primary) 100%) !important;
+}
+
+html.ms-brand-theme .kpi-chip-val {
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .crm-page--sneat .crm-tab-action:hover {
+  background: rgba(var(--ms-brand-primary-rgb), 0.16) !important;
+}
+
+/* Status pills — brand tint for text labels */
+html.ms-brand-theme .status-pill--available {
+  background: rgba(var(--ms-brand-primary-rgb), 0.16) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .status-pill--hold {
+  background: rgba(234, 179, 8, 0.14) !important;
+  color: #a16207 !important;
+}
+
+/* Plot status swatches — semantic green / yellow / red */
+html.ms-brand-theme .plot-status-swatch.status-pill--available {
+  background: #22c55e !important;
+  border-color: rgba(22, 163, 74, 0.35) !important;
+}
+
+html.ms-brand-theme .plot-status-swatch.status-pill--hold {
+  background: #eab308 !important;
+  border-color: rgba(202, 138, 4, 0.35) !important;
+}
+
+html.ms-brand-theme .plot-status-swatch.status-pill--sold {
+  background: #ef4444 !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+html.ms-brand-theme .lock-pill--unlocked {
+  background: rgba(var(--ms-brand-primary-rgb), 0.14) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .lock-pill--locked {
+  background: rgba(var(--ms-brand-primary-rgb), 0.1) !important;
+  color: var(--ms-brand-dark) !important;
+}
+
+/* Team page — replace hardcoded blue/cyan role & capacity chips */
+html.ms-brand-theme .team-page .team-capacity-indicator {
+  border-color: rgba(var(--ms-brand-primary-rgb), 0.24) !important;
+  background: rgba(var(--ms-brand-primary-rgb), 0.1) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .team-page .member-role-label--broker {
+  color: var(--ms-brand-primary-strong) !important;
+  background: rgba(var(--ms-brand-primary-rgb), 0.16) !important;
+}
+
+html.ms-brand-theme .team-page .member-role-label--admin {
+  color: var(--ms-brand-dark) !important;
+  background: rgba(var(--ms-brand-primary-rgb), 0.2) !important;
+}
+
+html.ms-brand-theme .team-page .group-subtab.active,
+html.ms-brand-theme .team-page .group-subtab:hover {
+  color: var(--ms-brand-dark) !important;
+  border-bottom-color: var(--ms-brand-dark) !important;
+}
+
+html.ms-brand-theme .team-page .icon-action-btn:hover {
+  color: var(--ms-brand-primary) !important;
+  background: rgba(var(--ms-brand-primary-rgb), 0.14) !important;
+}
+
+html.ms-brand-theme .team-page .spinner-border.text-primary,
+html.ms-brand-theme .spinner-border.text-success,
+html.ms-brand-theme .spinner-border.text-info {
+  color: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme a:not(.btn):not(.menu-link):not(.dropdown-item):not(.dashboard-open-crm-btn) {
+  color: var(--ms-brand-primary-strong);
+}
+
+html.ms-brand-theme a:not(.btn):not(.menu-link):not(.dropdown-item):not(.dashboard-open-crm-btn):hover {
+  color: var(--ms-brand-primary);
+}
+
+html.ms-brand-theme .kpi-chip-dot {
+  border-color: rgba(var(--ms-brand-primary-rgb), 0.2) !important;
+  background: var(--ms-brand-primary) !important;
+}
+
+html.ms-brand-theme .kpi-chip--accent .kpi-chip-dot {
+  background: var(--ms-brand-dark) !important;
+}
+
+html.ms-brand-theme .crm-page .btn-check:checked + .btn-outline-primary,
+html.ms-brand-theme .crm-page .btn-check:active + .btn-outline-primary {
+  background-color: var(--ms-brand-primary);
+  border-color: var(--ms-brand-primary);
+  color: var(--ms-brand-dark);
+}
+
+html.ms-brand-theme .badge.bg-success,
+html.ms-brand-theme .badge.bg-info {
+  background-color: var(--ms-brand-primary) !important;
+  color: var(--ms-brand-dark) !important;
+}
+
+html.ms-brand-theme .badge.bg-label-success,
+html.ms-brand-theme .badge.bg-label-info {
+  background-color: rgba(var(--ms-brand-primary-rgb), 0.16) !important;
+  color: var(--ms-brand-primary-strong) !important;
+}
+
+html.ms-brand-theme .badge.bg-label-info {
+  background-color: rgba(var(--ms-brand-dark-rgb), 0.12) !important;
+  color: var(--ms-brand-primary) !important;
+}

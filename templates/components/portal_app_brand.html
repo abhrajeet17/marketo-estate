@@ -1,0 +1,18 @@
+<a
+  href="{{ home_href|default('/customer-dashboard') }}"
+  class="portal-brand-header flex items-center gap-x-2"
+  {% if home_link_id %}id="{{ home_link_id }}"{% else %}id="portal-home-link"{% endif %}
+  aria-label="MarketoState"
+>
+  <img
+    src="/static/Marketostate/Marketostate%20logo.png"
+    alt="MarketoState"
+    class="portal-brand-img-full w-auto max-w-[10rem] object-contain"
+  />
+  <img
+    src="/static/Marketostate/Marketostate%20Favicon.svg"
+    alt=""
+    class="portal-brand-img-collapsed object-contain mx-auto"
+    aria-hidden="true"
+  />
+</a>

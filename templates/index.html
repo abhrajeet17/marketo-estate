@@ -1,103 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horizon Estates - Plot Marker</title>
+    <title>MarketoState - Plot Marker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/components/buttons.css">
+    <link rel="stylesheet" href="/static/css/components/cards.css">
+    <link rel="stylesheet" href="/static/css/components/layout.css">
+    <script src="/static/js/supabase.min.js"></script>
     <style>
-        :root {
-            --color-bg: #0a0a0b;
-            --color-bg-elevated: #141416;
-            --color-bg-card: #1a1a1c;
-            --color-text: #f5f5f0;
-            --color-text-dim: #a0a0a0;
-            --color-accent: #c9a962;
-            --color-accent-dim: rgba(201, 169, 98, 0.3);
-            --color-accent-hover: #d4b06e;
-            --color-success: #4ade80;
-            --color-danger: #ef4444;
-            --color-border: rgba(255, 255, 255, 0.08);
-            --font-display: 'Instrument Serif', Georgia, serif;
-            --font-body: 'Syne', sans-serif;
-            --radius: 12px;
-            --radius-sm: 8px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            min-height: 100vh;
-            font-family: var(--font-body);
-            background: var(--color-bg);
-            color: var(--color-text);
-        }
-
-        body {
-            background: 
-                radial-gradient(ellipse at 20% 0%, rgba(201, 169, 98, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 100%, rgba(201, 169, 98, 0.05) 0%, transparent 50%),
-                var(--color-bg);
-        }
-
-        /* Header */
+        body { background: var(--color-bg); }
         .header {
-            padding: 2rem 3rem;
+            padding: 1.5rem 2.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg-elevated);
         }
-
-        .logo {
-            font-family: var(--font-display);
-            font-size: 1.75rem;
-            font-style: italic;
-            color: var(--color-text);
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .header-nav a {
+            color: var(--color-muted);
             text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
-
-        .logo span {
-            color: var(--color-accent);
-        }
-
-        /* Main Container */
+        .header-nav a:hover { color: var(--color-text); }
         .container {
-            max-width: 1200px;
+            max-width: var(--content-max-width);
             margin: 0 auto;
-            padding: 3rem 2rem;
+            padding: 2.5rem 2rem;
         }
-
-        /* Hero Section */
         .hero {
-            text-align: center;
-            margin-bottom: 4rem;
+            text-align: left;
+            margin-bottom: 2.5rem;
         }
-
         .hero-title {
             font-family: var(--font-display);
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            font-weight: 400;
-            font-style: italic;
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
             line-height: 1.2;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--color-text);
         }
-
-        .hero-title span {
-            color: var(--color-accent);
-        }
-
+        .hero-title span { color: var(--color-text); }
         .hero-subtitle {
-            font-size: 1rem;
-            color: var(--color-text-dim);
-            max-width: 500px;
-            margin: 0 auto;
+            font-size: 0.95rem;
+            color: var(--color-muted);
+            max-width: 520px;
             line-height: 1.6;
         }
 
@@ -472,7 +432,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Delete Confirmation Modal */
@@ -558,6 +520,7 @@
                 opacity: 0;
                 transform: translateX(100%);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -593,16 +556,25 @@
         }
     </style>
 </head>
+
 <body>
     <header class="header">
-        <a href="/" class="logo">Horizon <span>Estates</span></a>
+        <a href="/" class="brand-pill" aria-label="MarketoState">
+            <img src="/static/Marketostate/Marketostate%20logo.png" alt="MarketoState">
+        </a>
+        <nav class="header-nav" id="header-nav">
+            <a href="/login" id="nav-login">Sign in</a>
+            <a href="/user-management?open=invite" id="nav-users" style="display:none;">Add user</a>
+            <a href="/login" id="nav-logout" style="display:none;">Sign out</a>
+        </nav>
     </header>
 
     <main class="container">
         <!-- Hero -->
         <section class="hero">
             <h1 class="hero-title">Interactive <span>Plot Marker</span></h1>
-            <p class="hero-subtitle">Upload panoramic images and create interactive plot mappings for your real estate properties</p>
+            <p class="hero-subtitle">Upload panoramic images and create interactive plot mappings for your real estate
+                properties</p>
         </section>
 
         <!-- Upload Section -->
@@ -610,13 +582,13 @@
             <div class="section-header">
                 <h2 class="section-title">Create New Project</h2>
             </div>
-            
+
             <div class="upload-zone" id="upload-zone">
                 <div class="upload-icon">📷</div>
                 <div class="upload-text">Drag & drop your panorama image here</div>
                 <div class="upload-hint">or click to browse • JPG, PNG, WebP up to 50MB</div>
                 <input type="file" class="upload-input" id="upload-input" accept="image/*">
-                
+
                 <div class="upload-form" id="upload-form">
                     <div class="upload-preview">
                         <img src="" alt="Preview" class="preview-image" id="preview-image">
@@ -625,32 +597,35 @@
                             <div class="preview-size" id="preview-size">2.5 MB • 8064 × 4536</div>
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Project Name</label>
-                            <input type="text" class="form-input" id="project-name" placeholder="e.g., Sunset Valley Estate">
+                            <input type="text" class="form-input" id="project-name"
+                                placeholder="e.g., Sunset Valley Estate">
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                 <input type="checkbox" id="is-360" style="width: auto; cursor: pointer;">
-                                <span style="font-size: 0.85rem; color: var(--color-text);">360° Equirectangular Image</span>
+                                <span style="font-size: 0.85rem; color: var(--color-text);">360° Equirectangular
+                                    Image</span>
                             </label>
-                            <div style="font-size: 0.7rem; color: var(--color-text-dim); margin-top: 0.25rem; margin-left: 1.75rem;">
+                            <div
+                                style="font-size: 0.7rem; color: var(--color-text-dim); margin-top: 0.25rem; margin-left: 1.75rem;">
                                 Enable for full 360-degree spherical panoramas
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button class="btn btn-secondary" id="cancel-upload">Cancel</button>
                         <button class="btn btn-primary" id="start-upload">Create Project</button>
                     </div>
                 </div>
-                
+
                 <div class="upload-progress" id="upload-progress">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
@@ -665,7 +640,7 @@
             <div class="section-header">
                 <h2 class="section-title">Your Projects</h2>
             </div>
-            
+
             <div id="projects-container">
                 <div class="loading">
                     <div class="spinner"></div>
@@ -678,7 +653,8 @@
     <div class="modal-backdrop" id="delete-modal">
         <div class="modal">
             <div class="modal-title">Delete Project?</div>
-            <div class="modal-text">This will permanently delete this panorama and all its plot markings. This action cannot be undone.</div>
+            <div class="modal-text">This will permanently delete this panorama and all its plot markings. This action
+                cannot be undone.</div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" id="cancel-delete">Cancel</button>
                 <button class="btn btn-danger" id="confirm-delete">Delete</button>
@@ -690,9 +666,43 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script>
+        // Auth: show Login / Add user / Sign out based on Supabase session
+        (function () {
+            var url = {{ (supabase_url or '')| tojson
+        }};
+        var key = {{ (supabase_anon_key or '')| tojson }};
+        if (url && key && window.supabase) {
+            var supabase = window.supabase.createClient(url, key);
+            supabase.auth.getSession().then(function (r) {
+                var session = r.data.session;
+                var loginEl = document.getElementById('nav-login');
+                var usersEl = document.getElementById('nav-users');
+                var logoutEl = document.getElementById('nav-logout');
+                if (session) {
+                    if (loginEl) loginEl.style.display = 'none';
+                    if (usersEl) usersEl.style.display = '';
+                    if (logoutEl) {
+                        logoutEl.style.display = '';
+                        logoutEl.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            supabase.auth.signOut()
+                                .catch(function () { /* ignore transient signOut aborts */ })
+                                .finally(function () { window.location.href = '/login'; });
+                        });
+                    }
+                } else {
+                    if (loginEl) loginEl.style.display = '';
+                    if (usersEl) usersEl.style.display = 'none';
+                    if (logoutEl) logoutEl.style.display = 'none';
+                }
+            });
+        }
+        }) ();
+
         // State
         let projects = [];
         let selectedFile = null;
+        let previewObjectUrl = '';
         let deleteTargetId = null;
 
         // DOM Elements
@@ -719,7 +729,7 @@
 
         // File Upload Handlers
         uploadZone.addEventListener('click', (e) => {
-            if (e.target === uploadZone || e.target.classList.contains('upload-icon') || 
+            if (e.target === uploadZone || e.target.classList.contains('upload-icon') ||
                 e.target.classList.contains('upload-text') || e.target.classList.contains('upload-hint')) {
                 uploadInput.click();
             }
@@ -752,24 +762,24 @@
 
         function handleFileSelect(file) {
             selectedFile = file;
-            
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewImage.src = e.target.result;
-                
-                // Get image dimensions
-                const img = new Image();
-                img.onload = () => {
-                    previewSize.textContent = `${formatFileSize(file.size)} • ${img.width} × ${img.height}`;
-                };
-                img.src = e.target.result;
+
+            if (previewObjectUrl) {
+                try { URL.revokeObjectURL(previewObjectUrl); } catch (e) {}
+                previewObjectUrl = '';
+            }
+            previewSize.textContent = `${formatFileSize(file.size)}`;
+            previewObjectUrl = URL.createObjectURL(file);
+            previewImage.onload = () => {
+                if (previewImage.naturalWidth && previewImage.naturalHeight) {
+                    previewSize.textContent = `${formatFileSize(file.size)} • ${previewImage.naturalWidth} × ${previewImage.naturalHeight}`;
+                }
             };
-            reader.readAsDataURL(file);
-            
+            previewImage.onerror = () => {};
+            previewImage.src = previewObjectUrl;
+
             previewFilename.textContent = file.name;
             projectName.value = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-            
+
             uploadForm.classList.add('visible');
         }
 
@@ -780,23 +790,23 @@
 
         startUpload.addEventListener('click', async (e) => {
             e.stopPropagation();
-            
+
             if (!selectedFile) return;
-            
+
             const name = projectName.value.trim() || 'Untitled Project';
-            
+
             uploadForm.classList.remove('visible');
             uploadProgress.classList.add('visible');
             uploadZone.classList.add('uploading');
-            
+
             const formData = new FormData();
             formData.append('file', selectedFile);
             formData.append('name', name);
             formData.append('is_360', document.getElementById('is-360').checked);
-            
+
             try {
                 const xhr = new XMLHttpRequest();
-                
+
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
                         const percent = Math.round((e.loaded / e.total) * 100);
@@ -804,14 +814,14 @@
                         progressText.textContent = `Uploading... ${percent}%`;
                     }
                 });
-                
+
                 xhr.addEventListener('load', () => {
                     if (xhr.status === 201) {
                         const project = JSON.parse(xhr.responseText);
                         showToast('Project created successfully!', 'success');
                         resetUploadForm();
                         loadProjects();
-                        
+
                         // Redirect to editor (check if 360 and route to 3D)
                         setTimeout(() => {
                             if (project.is_360) {
@@ -824,15 +834,15 @@
                         throw new Error('Upload failed');
                     }
                 });
-                
+
                 xhr.addEventListener('error', () => {
                     showToast('Upload failed. Please try again.', 'error');
                     resetUploadForm();
                 });
-                
+
                 xhr.open('POST', '/api/panoramas');
                 xhr.send(formData);
-                
+
             } catch (error) {
                 showToast('Upload failed. Please try again.', 'error');
                 resetUploadForm();
@@ -846,6 +856,10 @@
             uploadProgress.classList.remove('visible');
             uploadZone.classList.remove('uploading');
             progressFill.style.width = '0%';
+            if (previewObjectUrl) {
+                try { URL.revokeObjectURL(previewObjectUrl); } catch (e) {}
+                previewObjectUrl = '';
+            }
             previewImage.src = '';
             projectName.value = '';
         }
@@ -921,12 +935,12 @@
 
         confirmDelete.addEventListener('click', async () => {
             if (!deleteTargetId) return;
-            
+
             try {
                 const response = await fetch(`/api/panoramas/${deleteTargetId}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (response.ok) {
                     showToast('Project deleted', 'success');
                     deleteModal.classList.remove('visible');
@@ -937,7 +951,7 @@
             } catch (error) {
                 showToast('Failed to delete project', 'error');
             }
-            
+
             deleteTargetId = null;
         });
 
@@ -952,12 +966,12 @@
             const date = new Date(dateStr);
             const now = new Date();
             const diff = now - date;
-            
+
             if (diff < 60000) return 'Just now';
             if (diff < 3600000) return Math.floor(diff / 60000) + ' min ago';
             if (diff < 86400000) return Math.floor(diff / 3600000) + ' hours ago';
             if (diff < 604800000) return Math.floor(diff / 86400000) + ' days ago';
-            
+
             return date.toLocaleDateString();
         }
 
@@ -975,7 +989,7 @@
                 <span>${message}</span>
             `;
             toastContainer.appendChild(toast);
-            
+
             setTimeout(() => {
                 toast.remove();
             }, 3000);
@@ -990,5 +1004,5 @@
         });
     </script>
 </body>
-</html>
 
+</html>

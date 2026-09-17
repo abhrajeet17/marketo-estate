@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ flat360_view.name or 'Sales 360 View' }} - MarketoState</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/sales_flat360_view.css">
+</head>
+<body class="{% if embed %}sf3v-embed{% endif %}">
+    <div class="sf3v-page">
+        {% if not embed %}
+        <header class="sf3v-header">
+            <h1 class="sf3v-title">{{ flat360_view.name or 'Sales 360 View' }}</h1>
+            <p class="sf3v-subtitle">Drag left or right to rotate this flat 360 view.</p>
+        </header>
+        {% endif %}
+
+        <div class="sf3v-stage" id="sf3v-stage">
+            <canvas id="sf3v-canvas" class="sf3v-canvas"></canvas>
+        </div>
+
+        <div class="sf3v-status" id="sf3v-status">Drag left or right to view around.</div>
+    </div>
+
+<script>
+(function () {
+    'use strict';
+
+    var IMAGE_URL = {{ (flat360_view.image_url or '')|tojson }};
+    var stageEl = document.getElementById('sf3v-stage');
+    var canvasEl = document.getElementById('sf3v-canvas');
+    var statusEl = document.getElementById('sf3v-status');
+    var ctx = canvasEl.getContext('2d');
+
+    var state = {
+        image: null,
+        offsetPx: 0,
+        scale: 1,
+        dragging: false,
+        startX: 0,
+        startOffsetPx: 0
+    };
+
+    function resizeCanvas() {
+        var rect = stageEl.getBoundingClientRect();
+        var dpr = Math.max(1, window.devicePixelRatio || 1);
+        canvasEl.width = Math.max(1, Math.round(rect.width * dpr));
+        canvasEl.height = Math.max(1, Math.round(rect.height * dpr));
+        canvasEl.style.width = rect.width + 'px';
+        canvasEl.style.height = rect.height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        render();
+    }
+
+    function render() {
+        var rect = stageEl.getBoundingClientRect();
+        var drawW = Math.max(1, Math.round(rect.width));
+        var drawH = Math.max(1, Math.round(rect.height));
+        ctx.clearRect(0, 0, drawW, drawH);
+
+        if (!state.image || !state.image.width || !state.image.height) {
+            ctx.fillStyle = 'rgba(22, 35, 56, 0.22)';
+            ctx.fillRect(0, 0, drawW, drawH);
+            return;
+        }
+
+        state.scale = drawH / state.image.height;
+        var scaledW = state.image.width * state.scale;
+        if (!Number.isFinite(scaledW) || scaledW < 1) return;
+
+        var wrapOffset = ((state.offsetPx % state.image.width) + state.image.width) % state.image.width;
+        var drawOffset = wrapOffset * state.scale;
+        for (var x = -drawOffset; x < drawW; x += scaledW) {
+            ctx.drawImage(state.image, x, 0, scaledW, drawH);
+        }
+    }
+
+    function onPointerDown(event) {
+        if (!state.image) return;
+        state.dragging = true;
+        state.startX = event.clientX;
+        state.startOffsetPx = state.offsetPx;
+        canvasEl.setPointerCapture(event.pointerId);
+    }
+
+    function onPointerMove(event) {
+        if (!state.dragging || !state.image) return;
+        var dx = event.clientX - state.startX;
+        state.offsetPx = state.startOffsetPx - (dx / Math.max(0.0001, state.scale));
+        render();
+    }
+
+    function onPointerUp(event) {
+        if (!state.dragging) return;
+        state.dragging = false;
+        try { canvasEl.releasePointerCapture(event.pointerId); } catch (_e) {}
+    }
+
+    function init() {
+        canvasEl.addEventListener('pointerdown', onPointerDown);
+        canvasEl.addEventListener('pointermove', onPointerMove);
+        canvasEl.addEventListener('pointerup', onPointerUp);
+        canvasEl.addEventListener('pointercancel', onPointerUp);
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        if (!IMAGE_URL) {
+            statusEl.textContent = 'Image not available for this 360 view.';
+            return;
+        }
+        var image = new Image();
+        image.onload = function () {
+            state.image = image;
+            render();
+        };
+        image.onerror = function () {
+            statusEl.textContent = 'Failed to load the 360 image.';
+        };
+        image.src = IMAGE_URL;
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>
+

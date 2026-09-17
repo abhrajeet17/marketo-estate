@@ -1,0 +1,14 @@
+{# Usage: {% include 'components/modal.html' with modal_id='my-modal', modal_title='Title', modal_class='details-modal' %}
+   Then use {% block modal_body %} ... {% endblock %} or pass body via caller if needed.
+   For custom content, include and override block or use modal_body block. #}
+<div class="modal-backdrop {{ modal_class|default('') }}" id="{{ modal_id }}" aria-hidden="true">
+    <div class="modal">
+        <button class="modal-close" type="button" aria-label="Close" data-modal-close="{{ modal_id }}">×</button>
+        {% if modal_title %}
+        <div class="modal-header">
+            <h2 class="modal-title">{{ modal_title }}</h2>
+        </div>
+        {% endif %}
+        {% block modal_body %}{% endblock %}
+    </div>
+</div>
