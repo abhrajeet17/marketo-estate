@@ -6664,9 +6664,12 @@
     _proto.vector3ToViewerCoords = function vector3ToViewerCoords(vector) {
       var vectorClone = vector.clone();
       vectorClone.project(this.psv.renderer.camera);
+      // MarketoState patch: keep sub-pixel precision. Rounding to whole pixels
+      // made markers/polygons snap by 1px against the smoothly moving panorama
+      // ("shaking" while panning or zooming).
       return {
-        x: Math.round((vectorClone.x + 1) / 2 * this.prop.size.width),
-        y: Math.round((1 - vectorClone.y) / 2 * this.prop.size.height)
+        x: (vectorClone.x + 1) / 2 * this.prop.size.width,
+        y: (1 - vectorClone.y) / 2 * this.prop.size.height
       };
     }
     /**

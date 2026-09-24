@@ -40,10 +40,10 @@ body {
     text-transform: uppercase;
     text-shadow: 0 2px 7px rgba(0, 0, 0, 0.55);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.36);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     pointer-events: none;
     white-space: nowrap;
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 .psv-plot-label::before {
@@ -3282,3 +3282,13 @@ body.overlays-hidden .psv-glass-marker .marker-photo-name {
         bottom: 90px;
     }
 }
+
+/* Smooth marker motion (MarketoState): composite on the GPU; never round positions. */
+.psv-markers .psv-marker--normal {
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+.psv-markers-svg-container { shape-rendering: geometricPrecision; }
+.psv-markers-svg-container .psv-marker--svg { transition: filter 0.15s ease; }
+.psv-markers-svg-container .psv-marker--svg:hover { filter: brightness(1.1) saturate(1.12); }

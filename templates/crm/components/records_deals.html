@@ -1,0 +1,89 @@
+            <!-- ══════════ DEALS SECTION (unified crm_leads, record_status = deal) ══════════ -->
+            <section class="crm-section" id="sec-deals">
+                <div class="crm-records-shell" data-records-tab="deals">
+                    <div class="crm-deals-toolbar crm-records-toolbar">
+                        <div class="interest-toolbar-left" style="display:flex;align-items:center;gap:0.55rem;">
+                            <button class="filter-btn" id="btn-open-deals-filter-modal" type="button" aria-expanded="false" aria-controls="deals-filter-modal">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                <span>Filter</span>
+                                <span class="filter-badge" id="deals-filter-badge" style="display:none;">0</span>
+                            </button>
+                                <div class="crm-records-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg><input class="toolbar-search crm-records-search__input" id="deal-q" placeholder="Search deals…" autocomplete="off" aria-label="Search deals…"></div>
+                            <div class="view-toggle crm-mode-toggle" id="deals-mode-toggle" aria-label="Deals view">
+                                <button class="view-btn active" data-mode="list" type="button" aria-pressed="true" title="List view">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                                </button>
+                                <button class="view-btn" data-mode="kanban" type="button" aria-pressed="false" title="Board view">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                                </button>
+                                <span class="crm-mode-toggle-loader" id="deals-mode-loader" hidden aria-hidden="true"></span>
+                            </div>
+                            <span class="crm-records-meta" id="deals-results-meta" aria-live="polite"></span>
+                        </div>
+                        <button class="btn" id="btn-refresh-deals" type="button" title="Reload deals">Refresh</button>
+                        <button class="filter-btn" id="btn-export-deals" type="button" title="Export all deals to Excel">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+                            <span>Export as Excel</span>
+                        </button>
+                    </div>
+                    <div class="crm-list-layout" id="deals-list-layout">
+                        <aside class="crm-filter-rail filter-modal-backdrop" id="deals-filter-modal-backdrop" aria-label="Deal filters" aria-hidden="true">
+                            <div class="crm-filter-panel filter-modal" id="deals-filter-modal">
+                                <div class="crm-filter-panel__head filter-modal-head">
+                                    <h3 class="crm-filter-panel__title">Filter Deals by <span class="zf-count" id="deals-filter-count" hidden>0</span></h3>
+                                    <button class="crm-filter-panel__close filter-modal-close" id="deals-filter-modal-close" type="button" aria-label="Close filters">&times;</button>
+                                </div>
+                                <div class="crm-filter-panel__scroll filter-modal-body zf-body">
+                                    <div class="crm-records-filter-fields zf" id="deals-filter-fields" data-loading-text="Loading fields…"></div>
+                                </div>
+                                <div class="crm-filter-panel__foot filter-modal-foot zf-foot">
+                                    <button class="btn btn-primary crm-add-action zf-apply" id="deals-filter-apply" type="button">Apply Filter</button>
+                                    <button class="btn zf-clear" id="deals-filter-clear" type="button">Clear</button>
+                                </div>
+                            </div>
+                        </aside>
+
+                        <div class="crm-list-main">
+                            <div id="deals-list-view">
+                                <div class="card crm-data-table crm-records-table" id="deals-table-card" aria-busy="false">
+                                    <div class="crm-records-table__progress" aria-hidden="true"></div>
+                                    <div class="table-wrap">
+                                        <table class="crm-data-table__table">
+                                            <thead><tr>
+                                                <th data-sort-key="deal_title">Deal</th>
+                                                <th data-sort-key="deal_stage">Stage</th>
+                                                <th data-sort-key="customer_name">Customer</th>
+                                                <th data-sort-key="customer_email">Contact</th>
+                                                <th data-sort-key="deal_project_name">Project</th>
+                                                <th>Amount</th>
+                                                <th>Plots</th>
+                                                <th>Reference</th>
+                                                <th>Ref Role</th>
+                                                <th aria-label="Actions"></th>
+                                            </tr></thead>
+                                            <tbody id="deals-tbody"></tbody>
+                                        </table>
+                                        <div class="empty" id="deals-empty" style="display:none;">
+                                            <strong>No deals yet</strong>
+                                            <div>Convert an interest to start your pipeline.</div>
+                                        </div>
+                                    </div>
+                                    <div class="crm-pagination" id="deals-pagination"></div>
+                                </div>
+                            </div>
+                            <div class="kanban crm-records-kanban" id="deals-kanban-board" style="display:none;" aria-label="Deals board">
+                                <div class="kanban-col" data-stage="new"><div class="kanban-col-header"><span class="kanban-dot kanban-dot--new"></span><span class="kanban-col-title">New</span><span class="kanban-col-count" id="dk-count-new">0</span></div><div class="kanban-cards" id="dk-new"></div></div>
+                                <div class="kanban-col" data-stage="contacted"><div class="kanban-col-header"><span class="kanban-dot kanban-dot--contacted"></span><span class="kanban-col-title">Contacted</span><span class="kanban-col-count" id="dk-count-contacted">0</span></div><div class="kanban-cards" id="dk-contacted"></div></div>
+                                <div class="kanban-col" data-stage="site_visit"><div class="kanban-col-header"><span class="kanban-dot kanban-dot--qualified"></span><span class="kanban-col-title">Site Visit</span><span class="kanban-col-count" id="dk-count-site_visit">0</span></div><div class="kanban-cards" id="dk-site_visit"></div></div>
+                                <div class="kanban-col" data-stage="negotiation"><div class="kanban-col-header"><span class="kanban-dot kanban-dot--qualified"></span><span class="kanban-col-title">Negotiation</span><span class="kanban-col-count" id="dk-count-negotiation">0</span></div><div class="kanban-cards" id="dk-negotiation"></div></div>
+                                <div class="kanban-col" data-stage="won"><div class="kanban-col-header"><span class="kanban-dot kanban-dot--won"></span><span class="kanban-col-title">Won</span><span class="kanban-col-count" id="dk-count-won">0</span></div><div class="kanban-cards" id="dk-won"></div></div>
+                                <div class="kanban-col" data-stage="lost"><div class="kanban-col-header"><span class="kanban-dot kanban-dot--lost"></span><span class="kanban-col-title">Lost</span><span class="kanban-col-count" id="dk-count-lost">0</span></div><div class="kanban-cards" id="dk-lost"></div></div>
+                            </div>
+                            <div class="kanban-empty" id="deals-kanban-empty" style="display:none;">
+                                <strong>No deals on the board</strong>
+                                <div>Convert an interest or adjust your filters.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>

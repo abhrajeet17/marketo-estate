@@ -1,0 +1,65 @@
+            <!-- ══════════ CONTACTS SECTION (every deal, from the unified crm_leads table) ══════════ -->
+            <section class="crm-section" id="sec-contacts">
+                <div class="crm-records-shell" data-records-tab="contacts">
+                    <div class="crm-deals-toolbar crm-records-toolbar">
+                        <div class="interest-toolbar-left" style="display:flex;align-items:center;gap:0.55rem;">
+                            <button class="filter-btn" id="btn-open-contacts-filter-modal" type="button" aria-expanded="false" aria-controls="contacts-filter-modal">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                <span>Filter</span>
+                                <span class="filter-badge" id="contacts-filter-badge" style="display:none;">0</span>
+                            </button>
+                                <div class="crm-records-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg><input class="toolbar-search crm-records-search__input" id="contact-q" placeholder="Search contacts…" autocomplete="off" aria-label="Search contacts…"></div>
+                            <span class="crm-records-meta" id="contacts-results-meta" aria-live="polite"></span>
+                        </div>
+                        <span class="crm-records-hint">Contacts are customers with a deal. Convert an interest to add one.</span>
+                        <button class="filter-btn" id="btn-export-contacts" type="button" title="Export all contacts to Excel">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+                            <span>Export as Excel</span>
+                        </button>
+                    </div>
+                    <div class="crm-list-layout" id="contacts-list-layout">
+                        <aside class="crm-filter-rail filter-modal-backdrop" id="contacts-filter-modal-backdrop" aria-label="Contact filters" aria-hidden="true">
+                            <div class="crm-filter-panel filter-modal" id="contacts-filter-modal">
+                                <div class="crm-filter-panel__head filter-modal-head">
+                                    <h3 class="crm-filter-panel__title">Filter Contacts by <span class="zf-count" id="contacts-filter-count" hidden>0</span></h3>
+                                    <button class="crm-filter-panel__close filter-modal-close" id="contacts-filter-modal-close" type="button" aria-label="Close filters">&times;</button>
+                                </div>
+                                <div class="crm-filter-panel__scroll filter-modal-body zf-body">
+                                    <div class="crm-records-filter-fields zf" id="contacts-filter-fields" data-loading-text="Loading fields…"></div>
+                                </div>
+                                <div class="crm-filter-panel__foot filter-modal-foot zf-foot">
+                                    <button class="btn btn-primary crm-add-action zf-apply" id="contacts-filter-apply" type="button">Apply Filter</button>
+                                    <button class="btn zf-clear" id="contacts-filter-clear" type="button">Clear</button>
+                                </div>
+                            </div>
+                        </aside>
+
+                        <div class="crm-list-main">
+                            <div class="card crm-data-table crm-records-table" id="contacts-table-card" aria-busy="false">
+                                <div class="crm-records-table__progress" aria-hidden="true"></div>
+                                <div class="table-wrap">
+                                    <table class="crm-data-table__table">
+                                        <thead><tr>
+                                            <th data-sort-key="customer_name">Name</th>
+                                            <th data-sort-key="customer_email">Email</th>
+                                            <th data-sort-key="customer_phone">Phone</th>
+                                            <th data-sort-key="customer_birthday">Birthday</th>
+                                            <th>Address</th>
+                                            <th data-sort-key="deal_project_name">Project</th>
+                                            <th data-sort-key="deal_stage">Deal Stage</th>
+                                            <th>Reference</th>
+                                            <th aria-label="Actions"></th>
+                                        </tr></thead>
+                                        <tbody id="contacts-tbody"></tbody>
+                                    </table>
+                                    <div class="empty" id="contacts-empty" style="display:none;">
+                                        <strong>No contacts yet</strong>
+                                        <div>Contacts are created automatically when an interest is converted to a deal.</div>
+                                    </div>
+                                </div>
+                                <div class="crm-pagination" id="contacts-pagination"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>

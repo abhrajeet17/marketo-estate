@@ -1,0 +1,71 @@
+            <!-- ══════════ INTERESTS SECTION (unified crm_leads, record_status = interest) ══════════ -->
+            <section class="crm-section active" id="sec-interests">
+                <div class="interest-list-shell crm-records-shell" data-records-tab="interests">
+                    <div class="interest-toolbar crm-records-toolbar">
+                        <div class="interest-toolbar-left">
+                            <button class="filter-btn" id="btn-open-filters" type="button" aria-expanded="false" aria-controls="filter-modal">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                <span>Filter</span>
+                                <span class="filter-badge" id="interests-filter-badge" style="display:none;">0</span>
+                            </button>
+                                <div class="crm-records-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg><input class="toolbar-search crm-records-search__input" id="q" placeholder="Search interests…" autocomplete="off" aria-label="Search interests…"></div>
+                            <button class="btn btn-primary crm-add-action" id="btn-add-interest" type="button" title="Create an interest manually">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span>Add Interest</span>
+                            </button>
+                            <span class="crm-records-meta" id="interests-results-meta" aria-live="polite"></span>
+                        </div>
+                        <div class="interest-toolbar-right">
+                            <button class="filter-btn" id="btn-export-interests" type="button" title="Export all interests to Excel">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+                                <span>Export as Excel</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="interest-list-layout crm-list-layout" id="interest-list-layout">
+                        <aside class="crm-filter-rail filter-modal-backdrop" id="filter-modal-backdrop" aria-label="Interest filters" aria-hidden="true">
+                            <div class="crm-filter-panel filter-modal" id="filter-modal">
+                                <div class="crm-filter-panel__head filter-modal-head">
+                                    <h3 class="crm-filter-panel__title">Filter Interests by <span class="zf-count" id="interests-filter-count" hidden>0</span></h3>
+                                    <button class="crm-filter-panel__close filter-modal-close" id="filter-modal-close" type="button" aria-label="Close filters">&times;</button>
+                                </div>
+                                <div class="crm-filter-panel__scroll filter-modal-body zf-body">
+                                    <div class="crm-records-filter-fields zf" id="interests-filter-fields" data-loading-text="Loading fields…"></div>
+                                </div>
+                                <div class="crm-filter-panel__foot filter-modal-foot zf-foot">
+                                    <button class="btn btn-primary crm-add-action zf-apply" id="btn-apply-filters" type="button">Apply Filter</button>
+                                    <button class="btn zf-clear" id="btn-clear" type="button">Clear</button>
+                                </div>
+                            </div>
+                        </aside>
+
+                        <div class="interest-list-main crm-list-main">
+                            <div class="card crm-data-table crm-records-table" id="interests-table-card" aria-busy="false">
+                                <div class="crm-records-table__progress" aria-hidden="true"></div>
+                                <div class="table-wrap">
+                                    <table class="crm-data-table__table">
+                                        <thead><tr>
+                                            <th style="width:12%" data-sort-key="created_at">Created</th>
+                                            <th style="width:17%" data-sort-key="customer_name">Customer</th>
+                                            <th style="width:15%" data-sort-key="customer_email">Contact</th>
+                                            <th style="width:10%" data-sort-key="category">Category</th>
+                                            <th style="width:14%">Project</th>
+                                            <th style="width:9%">Plots</th>
+                                            <th style="width:11%">Reference</th>
+                                            <th style="width:8%">Ref Role</th>
+                                            <th style="width:4%" aria-label="Actions"></th>
+                                        </tr></thead>
+                                        <tbody id="tbody"></tbody>
+                                    </table>
+                                    <div class="empty" id="table-empty" style="display:none;">
+                                        <strong>No interests yet</strong>
+                                        <div>Interests appear here when customers submit a checkout, or when you add one.</div>
+                                    </div>
+                                </div>
+                                <div class="crm-pagination" id="interests-pagination"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>

@@ -5,22 +5,17 @@ import uuid
 
 from flask import jsonify, request
 
-from app import config as app_config
 from app.core.auth import get_profile, require_admin, require_auth
-from app.core.database import get_supabase, is_transient_supabase_error, require_supabase, with_supabase_retry
+from app.core.database import get_supabase
 from app.services.access_policy import _chunks, annotate_resource_rows_with_client_scope, get_client_memberships
-from app.services.email_service import send_email as send_smtp_email
 from app.controllers.features.crm_pagination import (
     crm_page_payload,
     crm_parse_page_args,
     crm_parse_sort_args,
     crm_sort_rows,
 )
+from app.services.crm_lead_service import LEAD_TABLE, STATUS_DEAL, STATUS_INTEREST, apply_broker_visibility
 
-CRM_CONTACT_SORT_FIELDS = ('full_name', 'email', 'phone', 'birthday', 'address', 'updated_at', 'created_at')
-# Email/phone are blanked for reference-scoped brokers; sorting by them would
-# expose the hidden ordering.
-CRM_CONTACT_SORT_FIELDS_MASKED = ('full_name', 'birthday', 'updated_at', 'created_at')
 CRM_PLOT_SORT_FIELDS = ('name', 'area', 'status', 'description', 'panorama_name', 'workspace_name')
 from app.services.plot_service import get_plot_panorama_id, update_plot as plot_update
 from app.services.uam_reference_service import (
@@ -271,28 +266,30 @@ def register_crm_broker_routes(app, *, crm_panorama_ids, crm_client_scope_ids):
                 pass
 
         lead_counts = {cid: 0 for cid in client_ids}
-        contact_sets = {cid: set() for cid in client_ids}
+        interest_counts = {cid: 0 for cid in client_ids}
+        deal_counts = {cid: 0 for cid in client_ids}
         try:
             for chunk in _chunks(client_ids):
-                def fetch_interest_page(start, end):
+                def fetch_lead_page(start, end):
                     query = (
-                        sb.table('buy_interests')
-                        .select('client_id, contact_id')
+                        sb.table(LEAD_TABLE)
+                        .select('client_id, record_status')
                         .in_('client_id', chunk)
                     )
                     if not is_client_admin:
-                        query = query.eq('reference_user_id', str(user_id))
+                        query = apply_broker_visibility(query, str(user_id))
                     return query.range(start, end).execute().data or []
 
-                rows = _fetch_pages(fetch_interest_page)
+                rows = _fetch_pages(fetch_lead_page)
                 for row in rows:
                     cid = str(row.get('client_id') or '')
                     if cid not in lead_counts:
                         continue
                     lead_counts[cid] += 1
-                    contact_id = row.get('contact_id')
-                    if contact_id:
-                        contact_sets[cid].add(str(contact_id))
+                    if str(row.get('record_status') or STATUS_INTEREST) == STATUS_DEAL:
+                        deal_counts[cid] += 1
+                    else:
+                        interest_counts[cid] += 1
         except Exception:
             pass
 
@@ -304,8 +301,9 @@ def register_crm_broker_routes(app, *, crm_panorama_ids, crm_client_scope_ids):
                 'member_role': next((m.get('member_role') for m in memberships if m.get('client_id') == cid), ''),
                 'project_count': len(project_sets.get(cid) or set()),
                 'lead_count': int(lead_counts.get(cid, 0)),
-                'interest_count': int(lead_counts.get(cid, 0)),
-                'contact_count': len(contact_sets.get(cid) or set()),
+                'interest_count': int(interest_counts.get(cid, 0)),
+                'deal_count': int(deal_counts.get(cid, 0)),
+                'contact_count': int(deal_counts.get(cid, 0)),
                 'plot_count': int(plot_counts.get(cid, {}).get('total', 0)),
                 'sold_plot_count': int(plot_counts.get(cid, {}).get('sold', 0)),
                 'pending_plot_count': int(plot_counts.get(cid, {}).get('pending', 0)),
@@ -1582,426 +1580,3 @@ def register_crm_master_routes(app, *, crm_client_scope_ids, crm_cache_bump):
         crm_cache_bump()
         _CRM_MASTER_CONFIG_CACHE.clear()
         return jsonify({'success': True, 'attribute': (created[0] if created else row)}), 201
-
-
-def _crm_contact_list_select():
-    return ('id, org_id, client_id, panorama_id, full_name, email, phone, birthday, address, '
-            'notes, custom_fields, created_at, updated_at')
-
-
-def _crm_apply_contact_list_filters(query, *, requested_client_id=None, client_scope_ids=None, q=''):
-    if requested_client_id:
-        query = query.eq('client_id', requested_client_id)
-    elif client_scope_ids is not None:
-        query = query.in_('client_id', client_scope_ids)
-    token = str(q or '').strip().lower()
-    if token:
-        token = token.replace('%', '').replace('(', '').replace(')', '').replace(',', '')
-        if token:
-            query = query.or_(f"full_name.ilike.%{token}%,email.ilike.%{token}%,phone.ilike.%{token}%")
-    return query
-
-
-def _crm_fetch_contact_rows(
-    sb,
-    panorama_ids,
-    *,
-    client_scope_ids=None,
-    requested_client_id=None,
-    reference_scope_user_id=None,
-    reference_contact_ids=None,
-    reference_interest_ids=None,
-    q='',
-    offset=0,
-    limit=10,
-    sort_field='updated_at',
-    sort_desc=True,
-):
-    select_cols = _crm_contact_list_select()
-    rows_by_id = {}
-
-    def add_rows(data):
-        for row in (data or []):
-            row_id = row.get('id')
-            if row_id:
-                rows_by_id[str(row_id)] = row
-
-    if reference_scope_user_id:
-        if not reference_contact_ids and not reference_interest_ids:
-            return [], 0
-        if reference_contact_ids:
-            for chunk in _chunks(reference_contact_ids):
-                query = _crm_apply_contact_list_filters(
-                    sb.table('crm_contacts').select(select_cols).in_('id', chunk),
-                    requested_client_id=requested_client_id,
-                    client_scope_ids=client_scope_ids,
-                    q=q,
-                )
-                add_rows(query.execute().data)
-        if reference_interest_ids:
-            for chunk in _chunks(reference_interest_ids):
-                query = _crm_apply_contact_list_filters(
-                    sb.table('crm_contacts').select(select_cols).in_('source_interest_id', chunk),
-                    requested_client_id=requested_client_id,
-                    client_scope_ids=client_scope_ids,
-                    q=q,
-                )
-                add_rows(query.execute().data)
-    else:
-        if len(panorama_ids) <= 100:
-            query = _crm_apply_contact_list_filters(
-                sb.table('crm_contacts').select(select_cols, count='exact').in_('panorama_id', panorama_ids),
-                requested_client_id=requested_client_id,
-                client_scope_ids=client_scope_ids,
-                q=q,
-            )
-            query = query.order(sort_field or 'updated_at', desc=bool(sort_desc))
-            if (sort_field or 'updated_at') != 'updated_at':
-                query = query.order('updated_at', desc=True)
-            resp = query.range(offset, offset + limit - 1).execute()
-            return resp.data or [], int(getattr(resp, 'count', None) or 0)
-        for chunk in _chunks(panorama_ids):
-            query = _crm_apply_contact_list_filters(
-                sb.table('crm_contacts').select(select_cols).in_('panorama_id', chunk),
-                requested_client_id=requested_client_id,
-                client_scope_ids=client_scope_ids,
-                q=q,
-            )
-            add_rows(query.execute().data)
-
-    rows = crm_sort_rows(list(rows_by_id.values()), sort_field or 'updated_at', bool(sort_desc))
-    total = len(rows)
-    return rows[offset:offset + limit], total
-
-
-def register_crm_contact_routes(
-    app,
-    *,
-    crm_panorama_ids,
-    crm_client_scope_ids,
-    crm_interest_reference_scope_user_id,
-    crm_apply_broker_referred_contact_mask,
-    crm_reference_linked_ids,
-    crm_cache_get,
-    crm_cache_set,
-    crm_cache_version,
-):
-    @app.route('/api/crm/contacts', methods=['GET'])
-    @require_auth
-    def list_crm_contacts(user_id, role):
-        sb = get_supabase()
-        if not sb:
-            return jsonify({'error': 'Database not configured'}), 503
-        try:
-            panorama_ids = with_supabase_retry(
-                lambda: crm_panorama_ids(require_supabase(), user_id, role),
-                attempts=3,
-            )
-        except Exception as e:
-            if is_transient_supabase_error(e):
-                return jsonify({'error': 'Temporary CRM connection issue. Please retry.'}), 503
-            return jsonify({'error': str(e) or 'Failed to load CRM panoramas'}), 503
-        page, limit, offset = crm_parse_page_args(default_limit=10, max_limit=100)
-        if not panorama_ids:
-            return jsonify(crm_page_payload([], 0, page, limit))
-        try:
-            client_scope_ids = with_supabase_retry(
-                lambda: crm_client_scope_ids(require_supabase(), user_id, role),
-                attempts=3,
-            )
-        except Exception as e:
-            if is_transient_supabase_error(e):
-                return jsonify({'error': 'Temporary CRM connection issue. Please retry.'}), 503
-            return jsonify({'error': str(e) or 'Failed to load CRM client scope'}), 503
-        if client_scope_ids is not None and not client_scope_ids:
-            return jsonify(crm_page_payload([], 0, page, limit))
-        try:
-            reference_scope_user_id = with_supabase_retry(
-                lambda: crm_interest_reference_scope_user_id(
-                    require_supabase(),
-                    user_id,
-                    role,
-                    client_scope_ids,
-                ),
-                attempts=3,
-            )
-        except Exception:
-            reference_scope_user_id = None
-        requested_client_id = (request.args.get('client_id') or '').strip() or None
-        q = str(request.args.get('q') or '').strip().lower()
-        include_counts = str(request.args.get('include_counts', '1')).strip() != '0'
-        if requested_client_id and client_scope_ids is not None and requested_client_id not in client_scope_ids:
-            return jsonify({'error': 'Forbidden for this client group'}), 403
-        reference_interest_ids, reference_contact_ids = [], []
-        if reference_scope_user_id:
-            try:
-                reference_interest_ids, reference_contact_ids = with_supabase_retry(
-                    lambda: crm_reference_linked_ids(
-                        require_supabase(),
-                        reference_scope_user_id,
-                        panorama_ids,
-                        client_ids=client_scope_ids,
-                        requested_client_id=requested_client_id,
-                    ),
-                    attempts=3,
-                )
-            except Exception:
-                reference_interest_ids, reference_contact_ids = [], []
-            if not reference_interest_ids and not reference_contact_ids:
-                return jsonify(crm_page_payload([], 0, page, limit))
-        contact_sort_field, contact_sort_desc = crm_parse_sort_args(
-            CRM_CONTACT_SORT_FIELDS_MASKED if reference_scope_user_id else CRM_CONTACT_SORT_FIELDS,
-            default_field='updated_at',
-            default_desc=True,
-        )
-        cache_key = (
-            'crm_contacts',
-            contact_sort_field,
-            contact_sort_desc,
-            crm_cache_version.get('v', 1),
-            str(user_id),
-            str(role or ''),
-            tuple(panorama_ids),
-            tuple(client_scope_ids) if isinstance(client_scope_ids, list) else '__ALL__',
-            reference_scope_user_id or '',
-            tuple(reference_interest_ids),
-            tuple(reference_contact_ids),
-            requested_client_id or '',
-            q,
-            int(include_counts),
-            page,
-            limit,
-            offset,
-        )
-        cached = crm_cache_get(cache_key, ttl_seconds=3)
-        if cached is not None:
-            return jsonify(cached)
-        try:
-            rows, total = with_supabase_retry(
-                lambda: _crm_fetch_contact_rows(
-                    require_supabase(),
-                    panorama_ids,
-                    client_scope_ids=client_scope_ids,
-                    requested_client_id=requested_client_id,
-                    reference_scope_user_id=reference_scope_user_id,
-                    reference_contact_ids=reference_contact_ids,
-                    reference_interest_ids=reference_interest_ids,
-                    q=q,
-                    offset=offset,
-                    limit=limit,
-                    sort_field=contact_sort_field,
-                    sort_desc=contact_sort_desc,
-                ),
-                attempts=3,
-            )
-        except Exception as e:
-            msg = str(e)
-            if is_transient_supabase_error(e):
-                return jsonify({'error': 'Temporary CRM connection issue. Please retry.'}), 503
-            if 'crm_contacts' in msg and ('does not exist' in msg.lower() or 'relation' in msg.lower()):
-                return jsonify({'error': 'crm_contacts table not found. Run db/migration_crm_contacts_deals_quotes.sql in Supabase.'}), 503
-            return jsonify({'error': msg}), 500
-
-        contact_ids = [row.get('id') for row in rows if row.get('id')]
-        deals_count = {}
-        interests_count = {}
-        if include_counts and contact_ids:
-            try:
-                dr_rows = []
-                counts_sb = require_supabase()
-                for chunk in _chunks(contact_ids):
-                    drq = (
-                        counts_sb.table('crm_deals')
-                        .select('id, contact_id, interest_id')
-                        .in_('contact_id', chunk)
-                    )
-                    if requested_client_id:
-                        drq = drq.eq('client_id', requested_client_id)
-                    elif client_scope_ids is not None:
-                        drq = drq.in_('client_id', client_scope_ids)
-                    chunk_rows = drq.execute().data or []
-                    if reference_scope_user_id and reference_interest_ids:
-                        allowed = {str(i) for i in reference_interest_ids}
-                        chunk_rows = [d for d in chunk_rows if str(d.get('interest_id') or '') in allowed]
-                    dr_rows.extend(chunk_rows)
-                for d in dr_rows:
-                    cid = d.get('contact_id')
-                    if not cid:
-                        continue
-                    deals_count[cid] = deals_count.get(cid, 0) + 1
-            except Exception:
-                deals_count = {}
-            try:
-                ir_rows = []
-                counts_sb = require_supabase()
-                for chunk in _chunks(contact_ids):
-                    irq = (
-                        counts_sb.table('buy_interests')
-                        .select('id, contact_id')
-                        .in_('contact_id', chunk)
-                    )
-                    if requested_client_id:
-                        irq = irq.eq('client_id', requested_client_id)
-                    elif client_scope_ids is not None:
-                        irq = irq.in_('client_id', client_scope_ids)
-                    if reference_scope_user_id:
-                        irq = irq.eq('reference_user_id', reference_scope_user_id)
-                    ir_rows.extend(irq.execute().data or [])
-                for irow in ir_rows:
-                    cid = irow.get('contact_id')
-                    if not cid:
-                        continue
-                    interests_count[cid] = interests_count.get(cid, 0) + 1
-                if reference_scope_user_id and reference_interest_ids:
-                    source_by_interest = {
-                        str(row.get('source_interest_id') or ''): row.get('id')
-                        for row in rows
-                        if row.get('source_interest_id')
-                    }
-                    for iid in reference_interest_ids:
-                        cid = source_by_interest.get(str(iid))
-                        if cid:
-                            interests_count[cid] = interests_count.get(cid, 0) + 1
-            except Exception:
-                interests_count = {}
-
-        from app.services.uam_reference_service import (
-            apply_broker_referred_contact_mask_to_contact,
-            load_broker_refer_interest_reveal_map,
-        )
-
-        source_interest_ids = [
-            str(row.get('source_interest_id') or '').strip()
-            for row in rows
-            if str(row.get('source_interest_id') or '').strip()
-        ]
-        interest_reveal_map = load_broker_refer_interest_reveal_map(sb, source_interest_ids)
-
-        out = []
-        for row in rows:
-            cid = row.get('id')
-            source_interest_id = str(row.get('source_interest_id') or '').strip()
-            interest_row = interest_reveal_map.get(source_interest_id) or {}
-            o = apply_broker_referred_contact_mask_to_contact(
-                row,
-                interest_row,
-                user_id=user_id,
-                role=role,
-                reference_scope_user_id=reference_scope_user_id,
-                sb=sb,
-            )
-            o['deals_count'] = int(deals_count.get(cid, 0))
-            o['interests_count'] = int(interests_count.get(cid, 0))
-            out.append(o)
-        payload = crm_page_payload(out, total, page, limit)
-        crm_cache_set(cache_key, payload)
-        return jsonify(payload)
-
-
-def register_crm_quote_routes(
-    app,
-    *,
-    crm_panorama_ids,
-    crm_client_scope_ids,
-    crm_apply_client_scope,
-    crm_interest_reference_scope_user_id,
-    crm_reference_linked_ids,
-    get_contact_for_user,
-    crm_cache_bump,
-):
-    @app.route('/api/crm/deals/<deal_id>/quotation/share', methods=['POST'])
-    @require_auth
-    def share_deal_quote(user_id, role, deal_id):
-        sb = get_supabase()
-        if not sb:
-            return jsonify({'error': 'Database not configured'}), 503
-        panorama_ids = crm_panorama_ids(sb, user_id, role)
-        if not panorama_ids:
-            return jsonify({'error': 'Forbidden'}), 403
-        client_scope_ids = crm_client_scope_ids(sb, user_id, role)
-        # Brokers may only share quotes on their own referred deals; without
-        # this they could mail another broker's contact details to any address.
-        reference_scope_user_id = crm_interest_reference_scope_user_id(sb, user_id, role, client_scope_ids)
-        reference_interest_ids = []
-        if reference_scope_user_id:
-            reference_interest_ids, _reference_contact_ids = crm_reference_linked_ids(
-                sb,
-                reference_scope_user_id,
-                panorama_ids,
-                client_ids=client_scope_ids,
-            )
-            if not reference_interest_ids:
-                return jsonify({'error': 'Deal not found or access denied'}), 404
-        data = request.get_json(silent=True) or {}
-        quote_id = str(data.get('quote_id') or '').strip()
-        if not quote_id:
-            return jsonify({'error': 'quote_id is required'}), 400
-        qr = (
-            sb.table('crm_deal_quotes')
-            .select('id, deal_id, contact_id, quote_payload, share_token')
-            .eq('id', quote_id)
-            .eq('deal_id', str(deal_id))
-            .limit(1)
-            .execute()
-        )
-        if not qr.data:
-            return jsonify({'error': 'Quote not found'}), 404
-        quote = qr.data[0]
-        drq = (
-            sb.table('crm_deals')
-            .select('id, panorama_id, title')
-            .eq('id', str(deal_id))
-        )
-        drq = drq.in_('panorama_id', panorama_ids)
-        if client_scope_ids is not None:
-            drq = crm_apply_client_scope(drq, client_scope_ids)
-            if drq is None:
-                return jsonify({'error': 'Deal not found or access denied'}), 404
-        if reference_scope_user_id:
-            drq = drq.in_('interest_id', reference_interest_ids)
-        dr = drq.limit(1).execute()
-        if not dr.data:
-            return jsonify({'error': 'Deal not found or access denied'}), 404
-        to_email = str(data.get('email') or '').strip()[:254]
-        to_phone = str(data.get('phone') or '').strip()[:32]
-        if to_email and ('@' not in to_email or ' ' in to_email):
-            return jsonify({'error': 'Invalid recipient email'}), 400
-        if not to_email and quote.get('contact_id'):
-            contact = get_contact_for_user(sb, quote.get('contact_id'), panorama_ids, client_ids=client_scope_ids)
-            if contact:
-                to_email = str(contact.get('email') or '').strip()
-                to_phone = str(contact.get('phone') or '').strip()
-        if not to_email:
-            return jsonify({'error': 'No recipient email found'}), 400
-        share_url = f"{request.url_root.rstrip('/')}/api/crm/deals/{deal_id}/quotation/{quote_id}?token={quote.get('share_token')}"
-        subject = f"Quotation for {dr.data[0].get('title') or 'your deal'}"
-        body = (
-            f"Hello,\n\nPlease review your quotation using the link below:\n{share_url}\n\n"
-            f"Shared via MarketoState CRM on {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}.\n"
-        )
-        try:
-            send_smtp_email(
-                smtp_host=app_config.SMTP_HOST,
-                smtp_port=app_config.SMTP_PORT,
-                smtp_username=app_config.SMTP_USERNAME,
-                smtp_password=app_config.SMTP_PASSWORD,
-                smtp_use_tls=app_config.SMTP_USE_TLS,
-                from_email=app_config.SMTP_FROM_EMAIL,
-                from_name=app_config.SMTP_FROM_NAME,
-                to_email=to_email,
-                subject=subject,
-                text_body=body,
-            )
-        except Exception as e:
-            return jsonify({'error': f'Email send failed: {e}'}), 500
-        now = datetime.utcnow().isoformat()
-        sb.table('crm_deal_quotes').update({
-            'sent_to_email': to_email,
-            'sent_to_phone': to_phone,
-            'shared_via': 'email',
-            'sent_at': now,
-            'updated_at': now,
-            'status': 'sent',
-        }).eq('id', quote_id).execute()
-        crm_cache_bump()
-        return jsonify({'success': True, 'share_url': share_url})

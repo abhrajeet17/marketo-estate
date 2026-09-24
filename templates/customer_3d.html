@@ -10,12 +10,12 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Abel&family=Abril+Fatface&family=Acme&family=Alfa+Slab+One&family=Amatic+SC:wght@400;700&family=Anton&family=Archivo:wght@400;500;600;700&family=Archivo+Black&family=Bebas+Neue&family=Bitter:wght@400;700&family=Bodoni+Moda:wght@400;700&family=Bree+Serif&family=Cabin:wght@400;500;600;700&family=Caveat:wght@400;700&family=Cinzel:wght@400;700&family=Comfortaa:wght@400;700&family=Cormorant:wght@400;600;700&family=Crimson+Text:wght@400;600;700&family=Dancing+Script:wght@400;700&family=DM+Sans:wght@400;500;700&family=Domine:wght@400;700&family=Dosis:wght@400;600;700&family=EB+Garamond:wght@400;600;700&family=Exo+2:wght@400;600;700&family=Fira+Sans:wght@400;500;600;700&family=Fjalla+One&family=Francois+One&family=Fredoka:wght@400;600&family=Gloria+Hallelujah&family=Great+Vibes&family=Heebo:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600;700&family=Inconsolata:wght@400;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Josefin+Sans:wght@400;600;700&family=Josefin+Slab:wght@400;600;700&family=Jost:wght@400;500;600;700&family=Kanit:wght@400;600;700&family=Karla:wght@400;600;700&family=Kaushan+Script&family=Kreon:wght@400;600;700&family=Lato:wght@400;700&family=League+Spartan:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=Libre+Franklin:wght@400;600;700&family=Lobster&family=Lora:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Mukta:wght@400;600;700&family=Nunito:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600;700&family=Outfit:wght@400;500;600;700&family=Overpass:wght@400;600;700&family=Pacifico&family=Passion+One&family=Patua+One&family=Permanent+Marker&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=PT+Sans:wght@400;700&family=PT+Serif:wght@400;700&family=Quicksand:wght@400;600;700&family=Raleway:wght@400;500;600;700&family=Red+Hat+Display:wght@400;500;600;700&family=Righteous&family=Roboto:wght@400;500;700&family=Roboto+Condensed:wght@400;700&family=Roboto+Mono:wght@400;700&family=Roboto+Slab:wght@400;700&family=Rock+Salt&family=Rubik:wght@400;500;600;700&family=Rufina:wght@400;700&family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Spectral:wght@400;600;700&family=Spectral+SC:wght@400;700&family=Syne:wght@400;500;600;700&family=Tajawal:wght@400;700&family=Taviraj:wght@400;600;700&family=Tinos:wght@400;700&family=Titillium+Web:wght@400;600;700&family=Ubuntu:wght@400;500;700&family=Unbounded:wght@400;700&family=Urbanist:wght@400;600;700&family=Work+Sans:wght@400;500;600;700&family=Yanone+Kaffeesatz:wght@400;700&family=Yeseva+One&family=Zilla+Slab:wght@400;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.css">
-    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/plugins/markers.css">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.css?v=20260924-subpixel">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/plugins/markers.css?v=20260924-subpixel">
     <script src="/static/vendor/uevent/browser.js" onload="window.UEVENT_LOADED = true"></script>
     <script src="/static/vendor/three/three.min.js" onload="window.THREE_LOADED = true"></script>
-    <script src="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.js" onload="window.PSV_LOADED = true"></script>
-    <script src="/static/vendor/photo-sphere-viewer/plugins/markers.js"
+    <script src="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.js?v=20260924-subpixel" onload="window.PSV_LOADED = true"></script>
+    <script src="/static/vendor/photo-sphere-viewer/plugins/markers.js?v=20260924-subpixel"
         onload="window.PSV_MARKERS_LOADED = true"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/static/css/theme.css">
@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="/static/css/components/modals.css">
     <link rel="stylesheet" href="/static/css/components/forms.css">
     <link rel="stylesheet" href="/static/css/components/layout.css">
-    <link rel="stylesheet" href="/static/css/customer_3d.css">
+    <link rel="stylesheet" href="/static/css/customer_3d.css?v=20260924-plots">
     <link rel="stylesheet" href="/static/css/fv_sidebar.css">
     <script src="/static/js/supabase.min.js"></script>
 </head>
@@ -286,17 +286,6 @@
                         <div class="cart-field">
                             <label for="checkout-description">Description (Optional)</label>
                             <textarea id="checkout-description" placeholder="Requirement, notes, or preference" rows="3"></textarea>
-                        </div>
-                        <div class="cart-field">
-                            <label for="checkout-category">Category</label>
-                            <select id="checkout-category">
-                                <option value="">Select</option>
-                                <option value="Residential">Residential</option>
-                                <option value="Commercial">Commercial</option>
-                                <option value="Investment">Investment</option>
-                                <option value="NRI">NRI</option>
-                                <option value="Other">Other</option>
-                            </select>
                         </div>
                         <div class="cart-field">
                             <label for="checkout-reference">Reference</label>
@@ -1168,7 +1157,6 @@
         const checkoutCountryEl = document.getElementById('checkout-country');
         const checkoutZipCodeEl = document.getElementById('checkout-zip-code');
         const checkoutDescriptionEl = document.getElementById('checkout-description');
-        const checkoutCategoryEl = document.getElementById('checkout-category');
         const checkoutReferenceEl = document.getElementById('checkout-reference');
         const cartMessageEl = document.getElementById('cart-message');
         const plotSearchInput = document.getElementById('plot-search-input');
@@ -1454,13 +1442,16 @@
                 const merged = startOpts ? Object.assign({}, opts, startOpts) : opts;
                 return viewer.setPanorama(url, merged);
             }).then(function () {
-                stopLoadingStatusCycle();
-                if (loading) loading.classList.add('hidden');
+                const jobs = [];
                 if (markerManager) {
                     markerManager.plotId = id;
-                    markerManager.loadMarkers().catch(() => { });
+                    jobs.push(markerManager.loadMarkers().catch(() => { }));
                 }
-                loadPlots(id);
+                jobs.push(Promise.resolve(loadPlots(id)).catch(() => { }));
+                return raceWithCap(Promise.all(jobs).then(function () { return waitForMarkerAssets(document, 8000); }), 10000);
+            }).then(function () {
+                stopLoadingStatusCycle();
+                if (loading) loading.classList.add('hidden');
                 setTimeout(() => {
                     refreshPanoramaMenu();
                     markerManager && markerManager.updateViewportFocus();
@@ -1802,6 +1793,35 @@
             return true;
         }
 
+        // Resolves once every marker image (360 markers and 2D overlay markers) has
+        // loaded or errored and every iconify icon has rendered, or after timeoutMs.
+        function waitForMarkerAssets(root, timeoutMs) {
+            const scope = root || document;
+            const deadline = Date.now() + (timeoutMs || 8000);
+            const imageJobs = Array.from(scope.querySelectorAll('.psv-marker img, .marker-photo-image, .marker-overlay-item img'))
+                .filter((img) => img.getAttribute('src'))
+                .map((img) => new Promise((resolve) => {
+                    if (img.complete) { resolve(); return; }
+                    const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
+                    img.addEventListener('load', done);
+                    img.addEventListener('error', done);
+                }));
+            const iconJob = new Promise((resolve) => {
+                const tick = () => {
+                    const pending = Array.from(scope.querySelectorAll('.psv-marker iconify-icon, .marker-overlay-item iconify-icon'))
+                        .filter((el) => !(el.shadowRoot && el.shadowRoot.querySelector('svg')));
+                    if (!pending.length || Date.now() > deadline) { resolve(); return; }
+                    setTimeout(tick, 80);
+                };
+                tick();
+            });
+            const all = Promise.all(imageJobs.concat([iconJob]));
+            return Promise.race([all, new Promise((resolve) => setTimeout(resolve, Math.max(0, deadline - Date.now())))]);
+        }
+        function raceWithCap(promise, capMs) {
+            return Promise.race([Promise.resolve(promise).catch(() => { }), new Promise((resolve) => setTimeout(resolve, capMs))]);
+        }
+
         function prefetchImageUrl(url) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -1906,27 +1926,29 @@
         }
 
         const statusLabels = { available: 'Available', reserved: 'On Hold', on_hold: 'On Hold', sold: 'Sold' };
+        // Vivid yellow / green / red so plot status reads instantly against the
+        // panorama. Strokes are a deeper shade of the fill for a crisp edge.
         const statusColorMap = {
             available: {
-                start: '#d0d480',
-                end: '#bac868',
-                fillHex: '#c6d97f',
-                fillOpacity: 0.62,
-                stroke: '#edf3de'
+                start: '#e3e64a',
+                end: '#c9cf2c',
+                fillHex: '#dde34c',
+                fillOpacity: 0.78,
+                stroke: '#9ea51c'
             },
             on_hold: {
-                start: '#9acba7',
-                end: '#7fb58d',
-                fillHex: '#9ecdad',
-                fillOpacity: 0.6,
-                stroke: '#e3f1e6'
+                start: '#6fd08a',
+                end: '#3fb567',
+                fillHex: '#66cf86',
+                fillOpacity: 0.78,
+                stroke: '#2d8f4d'
             },
             sold: {
-                start: '#e1a3a0',
-                end: '#cb8683',
-                fillHex: '#e2aba9',
-                fillOpacity: 0.61,
-                stroke: '#f7e8e8'
+                start: '#ef7b74',
+                end: '#d9524a',
+                fillHex: '#ec7a72',
+                fillOpacity: 0.78,
+                stroke: '#b6382f'
             }
         };
         const DEFAULT_MARKER_STYLE = 'glass';
@@ -1983,7 +2005,9 @@
             const opacityShift = (((seed >> 3) % 5) - 2) * 0.02;
             return {
                 fill: tintHex(base.fillHex, fillVariance),
-                fillOpacity: Math.max(0.52, Math.min(0.74, base.fillOpacity + opacityShift)),
+                // Solid enough to read as Available / Hold / Sold at a glance, with a
+                // little per-plot variance so neighbouring plots stay distinguishable.
+                fillOpacity: Math.max(0.7, Math.min(0.88, base.fillOpacity + opacityShift)),
                 stroke: tintHex(base.stroke, strokeVariance)
             };
         }
@@ -2607,7 +2631,6 @@
             const address = [street, city, state, country, zipCode].filter(Boolean).join(', ');
             const description = String(checkoutDescriptionEl ? checkoutDescriptionEl.value : '').trim();
             const title = inferTitleFromName(name);
-            const category = String(checkoutCategoryEl ? checkoutCategoryEl.value : '').trim();
             const referenceUserId = String(checkoutReferenceEl ? checkoutReferenceEl.value : '').trim();
 
             if (!cart || cart.length === 0) return { ok: false, error: 'Your cart is empty.' };
@@ -2615,8 +2638,7 @@
             if (!email || !email.includes('@')) return { ok: false, error: 'Valid email is required.' };
             if (!phone) return { ok: false, error: 'Contact number is required.' };
             if (description.length > 500) return { ok: false, error: 'Description must be 500 characters or less.' };
-            if (!category) return { ok: false, error: 'Category is required.' };
-            return { ok: true, payload: { name, email, phone, birthday, address, street, city, state, country, zipCode, description, title, category, reference_user_id: referenceUserId } };
+            return { ok: true, payload: { name, email, phone, birthday, address, street, city, state, country, zipCode, description, title, reference_user_id: referenceUserId } };
         }
 
         async function sendBuyInterest() {
@@ -2646,7 +2668,6 @@
                     customer_zip_code: v.payload.zipCode || null,
                     title: v.payload.title || null,
                     description: v.payload.description || null,
-                    category: v.payload.category,
                     reference_user_id: v.payload.reference_user_id || null,
                     items: cart.map((x) => ({ plot_id: x.plot_id, panorama_id: x.panorama_id || PANORAMA_ID })),
                 };
@@ -2672,7 +2693,6 @@
                 if (checkoutCountryEl) checkoutCountryEl.value = '';
                 if (checkoutZipCodeEl) checkoutZipCodeEl.value = '';
                 if (checkoutDescriptionEl) checkoutDescriptionEl.value = '';
-                if (checkoutCategoryEl) checkoutCategoryEl.value = '';
                 window.setTimeout(() => closeCart(), 750);
             } catch (e) {
                 setCartMessage(e.message || 'Failed to send buy interest', 'error');
@@ -2814,6 +2834,18 @@
                 this.markersPlugin = markersPlugin;
             }
 
+            // Fetch every photo marker's thumbnail up front so the scene appears
+            // with its images already in place instead of popping in later.
+            async preloadPhotoMarkerImages() {
+                const jobs = [];
+                this.markerMap.forEach((marker) => {
+                    if (this.isPhotoMarkerStyle(marker.marker_style) && marker.image_filename) {
+                        jobs.push(this.ensureMarkerImage(marker.id, { thumb: true }).catch(() => ''));
+                    }
+                });
+                if (jobs.length) await Promise.all(jobs);
+            }
+
             async loadMarkers() {
                 try {
                     let rows;
@@ -2828,6 +2860,7 @@
                     rows.forEach((row) => {
                         this.markerMap.set(String(row.id), this.normalizeMarker(row));
                     });
+                    await this.preloadPhotoMarkerImages();
                     this.syncViewerMarkers();
                     refreshPanoramaMenu().catch(() => { });
                 } catch (error) {
@@ -2916,7 +2949,7 @@
                 const hasImage = Boolean(marker.image_filename);
                 const imageSrc = marker.image_object_url || '';
                 const imageContent = hasImage
-                    ? `<img class="marker-photo-image"${imageSrc ? ` src="${this.escapeAttr(imageSrc)}"` : ''} data-marker-id="${this.escapeAttr(marker.id)}" alt="${this.escapeAttr(marker.name || 'Marker')}">`
+                    ? `<img class="marker-photo-image"${imageSrc ? ` src="${this.escapeAttr(imageSrc)}"` : ''} data-marker-id="${this.escapeAttr(marker.id)}" alt="${this.escapeAttr(marker.name || 'Marker')}" loading="eager" decoding="async">`
                     : `<span class="marker-photo-placeholder">${this.escapeHtml((marker.name || 'POI').slice(0, 2).toUpperCase())}</span>`;
                 return `<button class="psv-glass-marker marker-photo ${statusClass}" style="${rotStyle}" type="button" data-marker-id="${this.escapeAttr(marker.id)}" aria-label="${this.escapeAttr(marker.name || 'Marker')}"><span class="marker-photo-name">${this.escapeHtml(marker.name || 'Marker')}</span><span class="marker-photo-disc">${imageContent}</span><span class="marker-photo-stem" aria-hidden="true"></span><span class="marker-photo-base" aria-hidden="true"></span></button>`;
             }
@@ -4217,13 +4250,17 @@
                         id: `plot-${plot.id}`,
                         polygonPx: plot.points.map(point => [point.x, point.y]),
                         svgStyle: {
+                            // Border and interior share colour and opacity; the stroke is painted
+                            // under the fill (paint-order) so the plot reads as one flat shape.
                             fill: surface.fill,
                             fillOpacity: surface.fillOpacity,
-                            stroke: surface.stroke,
-                            strokeOpacity: 0.94,
-                            strokeWidth: 2.05,
+                            stroke: surface.fill,
+                            strokeOpacity: surface.fillOpacity,
+                            strokeWidth: 3,
                             strokeLinecap: 'round',
-                            strokeLinejoin: 'round'
+                            strokeLinejoin: 'round',
+                            paintOrder: 'stroke',
+                            shapeRendering: 'geometricPrecision'
                         },
                         data: { plotId: plot.id }
                     });
@@ -4243,6 +4280,8 @@
                             latitude: labelLat,
                             html: `<div class="psv-plot-label ${labelClass}">${escapeHtml(plot.name)}</div>`,
                             anchor: 'center center',
+                            // Zoom 0..100 -> 0.85x..2.0x so the plot number keeps its size relative to the plot.
+                            scale: { zoom: [0.85, 2.0] },
                             style: { pointerEvents: 'none' },
                             data: { plotId: plot.id, label: true }
                         });
@@ -4423,6 +4462,7 @@
                 syncAutoRotateToggleUi();
                 return (CURRENT_PANORAMA_IS_360 ? initPsv(displayMeta) : load2dPanorama(displayMeta))
                     .then(function () { return loadCurrentPanoramaData(CURRENT_RENDER_PANORAMA_ID); })
+                    .then(function () { return raceWithCap(waitForMarkerAssets(document, 8000), 10000); })
                     .then(function () {
                         stopLoadingStatusCycle();
                         if (loading) loading.classList.add('hidden');
@@ -4463,26 +4503,31 @@
             CURRENT_PANORAMA_FILENAME = meta.filename || CURRENT_PANORAMA_FILENAME;
             CURRENT_PANORAMA_IS_360 = Boolean(meta.is_360);
             const renderPromise = CURRENT_PANORAMA_IS_360 ? initPsv(meta) : load2dPanorama(meta);
+            // The loading screen stays up until the panorama, its plots and its
+            // markers (with photos / icons) are all in place; a hard cap keeps a
+            // slow image from ever blocking the view.
             renderPromise.then(function () {
+                if (loadingStatusEl) loadingStatusEl.textContent = 'Aligning markers...';
+                const dataReady = ensureCustomerViewConfigLoaded()
+                    .then(function () { return loadCurrentPanoramaData(CURRENT_RENDER_PANORAMA_ID); })
+                    .then(function () { return waitForMarkerAssets(document, 8000); });
+                return raceWithCap(dataReady, 12000);
+            }).then(function () {
                 stopLoadingStatusCycle();
                 if (loading) loading.classList.add('hidden');
-                ensureCustomerViewConfigLoaded().then(function () {
-                    loadCurrentPanoramaData(CURRENT_RENDER_PANORAMA_ID).then(function () {
-                        if (IN_WORKSPACE && INITIAL_PANORAMA_ID && INITIAL_PANORAMA_ID !== PANORAMA_ID && !isPanoramaHidden(INITIAL_PANORAMA_ID) && getProjectPanoramaById(INITIAL_PANORAMA_ID)) {
-                            switchToPanoramaInView(INITIAL_PANORAMA_ID);
-                            return;
+                if (IN_WORKSPACE && INITIAL_PANORAMA_ID && INITIAL_PANORAMA_ID !== PANORAMA_ID && !isPanoramaHidden(INITIAL_PANORAMA_ID) && getProjectPanoramaById(INITIAL_PANORAMA_ID)) {
+                    switchToPanoramaInView(INITIAL_PANORAMA_ID);
+                } else {
+                    const runPrefetch = () => {
+                        prefetchLinkedPanoramas().catch(() => { });
+                        if (IN_WORKSPACE) {
+                            preloadProjectPanoramas().catch(() => { });
+                            preloadProjectPlotsAndMarkers().catch(() => { });
                         }
-                        const runPrefetch = () => {
-                            prefetchLinkedPanoramas().catch(() => { });
-                            if (IN_WORKSPACE) {
-                                preloadProjectPanoramas().catch(() => { });
-                                preloadProjectPlotsAndMarkers().catch(() => { });
-                            }
-                        };
-                        if (typeof requestIdleCallback === 'function') requestIdleCallback(runPrefetch, { timeout: 2500 });
-                        else setTimeout(runPrefetch, 1200);
-                    }).catch(() => { });
-                });
+                    };
+                    if (typeof requestIdleCallback === 'function') requestIdleCallback(runPrefetch, { timeout: 2500 });
+                    else setTimeout(runPrefetch, 1200);
+                }
                 if (CURRENT_PANORAMA_IS_360) {
                     scheduleAutoRotateResume(AUTO_ROTATE_BOOT_DELAY_MS);
                     setTimeout(() => markerManager.updateViewportFocus(), 250);

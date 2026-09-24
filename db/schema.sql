@@ -407,6 +407,77 @@ create unique index if not exists uq_crm_deals_interest_active
   on public.crm_deals(interest_id)
   where interest_id is not null and is_active = true;
 
+-- 8d-2) CRM leads: SINGLE SOURCE OF TRUTH for interests, deals and contacts.
+--   record_status = 'interest' | 'deal'. The Contacts tab lists every deal.
+--   buy_interests / crm_contacts / crm_deals above are LEGACY (kept for history;
+--   see db/migration_crm_unified_leads.sql for the data migration).
+create table if not exists public.crm_leads (
+  id uuid primary key default gen_random_uuid(),
+  record_status text not null default 'interest'
+    check (record_status in ('interest', 'deal')),
+  org_id uuid references public.organizations(id) on delete set null,
+  client_id uuid references public.clients(id) on delete set null,
+  panorama_id bigint not null references public.panoramas(id) on delete cascade,
+  submitted_by uuid references auth.users(id) on delete set null,
+  reference_user_id uuid references auth.users(id) on delete set null,
+  reference_user_role text
+    check (reference_user_role is null or reference_user_role in ('broker', 'client_admin', 'client_user')),
+  contact_revealed_at timestamptz,
+  assigned_to uuid references auth.users(id) on delete set null,
+  assigned_at timestamptz,
+  customer_name text not null default '',
+  customer_email text not null default '',
+  customer_phone text not null default '',
+  customer_birthday date,
+  customer_address text,
+  customer_street text,
+  customer_city text,
+  customer_state text,
+  customer_country text,
+  customer_zip_code text,
+  email_norm text generated always as (lower(btrim(customer_email))) stored,
+  phone_norm text generated always as (regexp_replace(customer_phone, '[^0-9]+', '', 'g')) stored,
+  title text,
+  description text,
+  category text not null default '',
+  lead_source text,
+  lead_category text,
+  lead_status text,
+  campaign_type text,
+  campaign_status text,
+  plots jsonb not null default '[]'::jsonb,
+  notes text not null default '',
+  custom_fields jsonb not null default '{}'::jsonb,
+  deal_title text not null default '',
+  deal_stage text not null default 'new'
+    check (deal_stage in ('new', 'contacted', 'site_visit', 'negotiation', 'won', 'lost')),
+  deal_amount text not null default '',
+  deal_currency text not null default 'INR',
+  deal_is_active boolean not null default true,
+  deal_project_name text not null default '',
+  converted_at timestamptz,
+  converted_by uuid references auth.users(id) on delete set null,
+  legacy_interest_id uuid,
+  legacy_deal_id uuid,
+  legacy_contact_id uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_crm_leads_panorama_created on public.crm_leads(panorama_id, created_at desc);
+create index if not exists idx_crm_leads_status_panorama_created on public.crm_leads(record_status, panorama_id, created_at desc);
+create index if not exists idx_crm_leads_client_created on public.crm_leads(client_id, created_at desc);
+create index if not exists idx_crm_leads_reference_user on public.crm_leads(reference_user_id);
+create index if not exists idx_crm_leads_submitted_by on public.crm_leads(submitted_by);
+create index if not exists idx_crm_leads_assigned_to on public.crm_leads(assigned_to);
+create index if not exists idx_crm_leads_email_norm on public.crm_leads(email_norm) where email_norm <> '';
+create index if not exists idx_crm_leads_phone_norm on public.crm_leads(phone_norm) where phone_norm <> '';
+create index if not exists idx_crm_leads_deal_stage on public.crm_leads(deal_stage) where record_status = 'deal';
+create index if not exists idx_crm_leads_updated on public.crm_leads(updated_at desc);
+create index if not exists idx_crm_leads_legacy_deal on public.crm_leads(legacy_deal_id) where legacy_deal_id is not null;
+create index if not exists idx_crm_leads_legacy_contact on public.crm_leads(legacy_contact_id) where legacy_contact_id is not null;
+create index if not exists idx_crm_leads_plots_gin on public.crm_leads using gin (plots jsonb_path_ops);
+
 -- 8e) CRM quote templates (master)
 create table if not exists public.crm_quote_templates (
   id uuid primary key default gen_random_uuid(),
@@ -426,8 +497,8 @@ create index if not exists idx_crm_quote_templates_panorama on public.crm_quote_
 -- 8e) CRM deal quotes
 create table if not exists public.crm_deal_quotes (
   id uuid primary key default gen_random_uuid(),
-  deal_id uuid not null references public.crm_deals(id) on delete cascade,
-  contact_id uuid references public.crm_contacts(id) on delete set null,
+  deal_id uuid not null references public.crm_leads(id) on delete cascade,
+  contact_id uuid references public.crm_leads(id) on delete set null,
   template_id uuid references public.crm_quote_templates(id) on delete set null,
   quote_payload jsonb not null default '{}',
   share_token text not null unique,

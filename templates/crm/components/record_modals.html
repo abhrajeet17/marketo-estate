@@ -1,0 +1,204 @@
+<!-- ══════════ CONVERT TO DEAL ══════════ -->
+<div class="crm-modal-backdrop rec-modal-backdrop" id="convert-deal-modal" aria-hidden="true">
+    <div class="crm-modal rec-modal" role="dialog" aria-modal="true" aria-labelledby="convert-deal-title">
+        <div class="rec-modal__head">
+            <div class="rec-modal__head-text">
+                <div class="rec-modal__icon rec-modal__icon--convert" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </div>
+                <div>
+                    <h3 class="rec-modal__title" id="convert-deal-title">Convert to Deal</h3>
+                    <p class="rec-modal__subtitle" id="convert-deal-subtitle"></p>
+                </div>
+            </div>
+            <button class="crm-modal-close rec-modal__close" id="convert-deal-close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="rec-modal__body">
+            <div class="rec-grid">
+                <label class="rec-field rec-field--wide" data-field="deal_title">
+                    <span class="rec-field__label">Deal name<i class="rec-req" aria-hidden="true">*</i></span>
+                    <input class="rec-field__input" id="cd-title" maxlength="200" placeholder="e.g. Sharma family · Plot 31">
+                    <span class="rec-field__hint" aria-live="polite"></span>
+                </label>
+                <label class="rec-field" data-field="deal_stage">
+                    <span class="rec-field__label">Stage</span>
+                    <select class="rec-field__input" id="cd-stage"></select>
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="deal_amount">
+                    <span class="rec-field__label">Amount</span>
+                    <input class="rec-field__input" id="cd-amount" maxlength="60" placeholder="e.g. 25,00,000">
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="deal_currency">
+                    <span class="rec-field__label">Currency</span>
+                    <input class="rec-field__input" id="cd-currency" maxlength="8" value="INR">
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="deal_project_name">
+                    <span class="rec-field__label">Project name</span>
+                    <input class="rec-field__input" id="cd-project" maxlength="200">
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field rec-field--wide" data-field="notes">
+                    <span class="rec-field__label">Deal notes</span>
+                    <textarea class="rec-field__input" id="cd-notes" rows="3" placeholder="Anything the team should know about this deal"></textarea>
+                    <span class="rec-field__hint"></span>
+                </label>
+            </div>
+            <div class="rec-subhead">
+                <span>Plots in this deal</span>
+                <span class="rec-subhead__meta" id="cd-plots-meta"></span>
+            </div>
+            <div class="rec-plot-picker" id="cd-plots"></div>
+            <div class="rec-modal__error msg error" id="cd-error" style="display:none;" role="alert"></div>
+        </div>
+        <div class="rec-modal__foot">
+            <button class="btn btn-secondary rec-btn" id="cd-cancel" type="button">Cancel</button>
+            <button class="btn btn-primary crm-add-action rec-btn rec-btn--primary" id="cd-save" type="button">
+                <span>Create Deal</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ ADD PLOTS ══════════ -->
+<div class="crm-modal-backdrop rec-modal-backdrop" id="add-plots-modal" aria-hidden="true">
+    <div class="crm-modal rec-modal rec-modal--plots" role="dialog" aria-modal="true" aria-labelledby="add-plots-title">
+        <div class="rec-modal__head">
+            <div class="rec-modal__head-text">
+                <div class="rec-modal__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div>
+                    <h3 class="rec-modal__title" id="add-plots-title">Add Plots</h3>
+                    <p class="rec-modal__subtitle" id="add-plots-subtitle"></p>
+                </div>
+            </div>
+            <button class="crm-modal-close rec-modal__close" id="ap-close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="rec-modal__body">
+            <div class="rec-plot-search">
+                <input class="rec-field__input" id="ap-search" type="search" placeholder="Search plots by number, area or status…" autocomplete="off">
+                <span class="rec-plot-search__count" id="ap-count">0 selected</span>
+            </div>
+            <div class="rec-plot-list" id="ap-list" role="listbox" aria-multiselectable="true"></div>
+            <div class="rec-modal__error msg error" id="ap-error" style="display:none;" role="alert"></div>
+        </div>
+        <div class="rec-modal__foot">
+            <button class="btn btn-secondary rec-btn" id="ap-cancel" type="button">Cancel</button>
+            <button class="btn btn-primary crm-add-action rec-btn rec-btn--primary" id="ap-save" type="button" disabled>
+                <span>Add selected plots</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ ADD INTEREST ══════════ -->
+<div class="crm-modal-backdrop rec-modal-backdrop" id="add-interest-modal" aria-hidden="true">
+    <div class="crm-modal rec-modal rec-modal--interest" role="dialog" aria-modal="true" aria-labelledby="add-interest-title">
+        <div class="rec-modal__head">
+            <div class="rec-modal__head-text">
+                <div class="rec-modal__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                </div>
+                <div>
+                    <h3 class="rec-modal__title" id="add-interest-title">New Interest</h3>
+                    <p class="rec-modal__subtitle">Capture a customer's interest in one or more plots.</p>
+                </div>
+            </div>
+            <button class="crm-modal-close rec-modal__close" id="add-interest-close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="rec-modal__body">
+            <div class="rec-subhead"><span>Project &amp; plots</span></div>
+            <div class="rec-grid">
+                <label class="rec-field" data-field="workspace">
+                    <span class="rec-field__label">Project<i class="rec-req" aria-hidden="true">*</i></span>
+                    <select class="rec-field__input" id="ai-workspace"><option value="">Select project</option></select>
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="panorama_id" id="ai-panorama-wrap">
+                    <span class="rec-field__label">Sector<i class="rec-req" aria-hidden="true">*</i></span>
+                    <select class="rec-field__input" id="ai-panorama-id"><option value="">Select sector</option></select>
+                    <span class="rec-field__hint"></span>
+                </label>
+                <div class="rec-field rec-field--wide" data-field="plots">
+                    <span class="rec-field__label">Plots<i class="rec-req" aria-hidden="true">*</i> <span class="rec-field__label-meta" id="ai-plots-count"></span></span>
+                    <input class="rec-field__input rec-field__input--search" id="ai-plot-search" type="search" placeholder="Filter plots…" autocomplete="off">
+                    <div class="rec-plot-list rec-plot-list--compact" id="ai-plots-wrap"></div>
+                    <span class="rec-field__hint"></span>
+                </div>
+            </div>
+            <div class="rec-subhead"><span>Customer</span></div>
+            <div class="rec-grid">
+                <label class="rec-field" data-field="customer_name">
+                    <span class="rec-field__label">Customer name<i class="rec-req" aria-hidden="true">*</i></span>
+                    <input class="rec-field__input" id="ai-customer-name" maxlength="100">
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="category">
+                    <span class="rec-field__label">Category</span>
+                    <input class="rec-field__input" id="ai-category" maxlength="100" placeholder="e.g. Residential">
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="customer_email">
+                    <span class="rec-field__label">Email<i class="rec-req" aria-hidden="true">*</i></span>
+                    <input class="rec-field__input" id="ai-customer-email" type="email" maxlength="254">
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="customer_phone">
+                    <span class="rec-field__label">Phone<i class="rec-req" aria-hidden="true">*</i></span>
+                    <input class="rec-field__input" id="ai-customer-phone" type="tel" maxlength="40">
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="reference_user_id">
+                    <span class="rec-field__label">Reference</span>
+                    <select class="rec-field__input" id="ai-reference"><option value="">No reference</option></select>
+                    <span class="rec-field__hint"></span>
+                </label>
+                <label class="rec-field" data-field="customer_city">
+                    <span class="rec-field__label">City</span>
+                    <input class="rec-field__input" id="ai-customer-city" maxlength="100">
+                    <span class="rec-field__hint"></span>
+                </label>
+            </div>
+            <div class="rec-grid" id="add-interest-master-fields"></div>
+            <div class="rec-grid">
+                <label class="rec-field rec-field--wide" data-field="description">
+                    <span class="rec-field__label">Description</span>
+                    <textarea class="rec-field__input" id="ai-description" rows="2" maxlength="500"></textarea>
+                    <span class="rec-field__hint"></span>
+                </label>
+            </div>
+            <div class="rec-modal__error msg error" id="add-interest-error" style="display:none;" role="alert"></div>
+        </div>
+        <div class="rec-modal__foot">
+            <button class="btn btn-secondary rec-btn" id="add-interest-cancel" type="button">Cancel</button>
+            <button class="btn btn-primary crm-add-action rec-btn rec-btn--primary" id="add-interest-save" type="button">
+                <span>Create Interest</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ DELETE CONFIRMATION ══════════ -->
+<div class="crm-modal-backdrop rec-modal-backdrop" id="record-delete-modal" aria-hidden="true">
+    <div class="crm-modal rec-modal rec-modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="rd-title" aria-describedby="rd-text">
+        <div class="rec-modal__head">
+            <div class="rec-modal__head-text">
+                <div class="rec-modal__icon rec-modal__icon--danger" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </div>
+                <div>
+                    <h3 class="rec-modal__title" id="rd-title">Delete record</h3>
+                    <p class="rec-modal__subtitle" id="rd-text"></p>
+                </div>
+            </div>
+            <button class="crm-modal-close rec-modal__close" id="rd-close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="rec-modal__foot">
+            <button class="btn btn-secondary rec-btn" id="rd-cancel" type="button">Cancel</button>
+            <button class="btn rec-btn rec-btn--danger rec-btn--danger-solid" id="rd-confirm" type="button"><span>Delete</span></button>
+        </div>
+    </div>
+</div>

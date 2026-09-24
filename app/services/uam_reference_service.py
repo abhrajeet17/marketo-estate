@@ -310,7 +310,14 @@ def _is_platform_admin_role(role):
 
 
 def _interest_has_broker_reference(row):
-    return bool(str((row or {}).get('reference_user_id') or '').strip())
+    """True when the record was referred by a broker and is therefore subject
+    to the reveal gate. A missing reference_user_role (legacy rows) is treated
+    as broker so masking stays conservative."""
+    row = row or {}
+    if not str(row.get('reference_user_id') or '').strip():
+        return False
+    role = _normalize_client_member_role(row.get('reference_user_role'))
+    return (not role) or role == CLIENT_MEMBER_ROLE_BROKER
 
 
 def _interest_contact_is_revealed(row):
@@ -362,8 +369,8 @@ def load_broker_refer_interest_reveal_map(sb, interest_ids):
         chunk = ids[index:index + chunk_size]
         try:
             rows = (
-                sb.table('buy_interests')
-                .select('id, reference_user_id, contact_revealed_at')
+                sb.table('crm_leads')
+                .select('id, reference_user_id, reference_user_role, contact_revealed_at')
                 .in_('id', chunk)
                 .execute()
                 .data or []
@@ -388,9 +395,13 @@ def apply_broker_referred_contact_mask(row, *, user_id, role, reference_scope_us
     ref_uid = str(item.get('reference_user_id') or '').strip()
     revealed = _interest_contact_is_revealed(item)
     can_reveal = can_user_reveal_broker_referred_contact(user_id, item)
+    # The user who holds the reference always sees the contact, even before a
+    # reveal; the gate exists to protect *their* lead from everyone else.
+    is_self_reference = bool(ref_uid) and ref_uid == str(user_id or '').strip()
     should_mask = (
-        ref_uid
+        _interest_has_broker_reference(item)
         and not revealed
+        and not is_self_reference
         and sb is not None
         and viewer_should_mask_broker_referred_contact(sb, user_id, role, reference_scope_user_id)
     )
@@ -420,8 +431,9 @@ def apply_broker_referred_contact_mask_to_contact(
     ref_uid = str(interest.get('reference_user_id') or '').strip()
     revealed = _interest_contact_is_revealed(interest)
     should_mask = (
-        ref_uid
+        _interest_has_broker_reference(interest)
         and not revealed
+        and ref_uid != str(user_id or '').strip()
         and sb is not None
         and viewer_should_mask_broker_referred_contact(sb, user_id, role, reference_scope_user_id)
     )

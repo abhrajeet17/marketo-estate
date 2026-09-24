@@ -1,0 +1,52 @@
+    <!-- ══════════ RECORD DRAWER (shared by Interests, Deals and Contacts) ══════════ -->
+    <div class="drawer-backdrop" id="record-drawer-backdrop" aria-hidden="true"></div>
+    <div class="offcanvas offcanvas-end crm-interest-offcanvas crm-record-drawer" tabindex="-1" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title">
+        <div class="crm-drawer-resizer" id="drawer-resizer" role="separator" aria-orientation="vertical"
+             aria-label="Resize panel" title="Drag to resize" tabindex="0"></div>
+        <div class="offcanvas-header border-bottom drawer-head rec-head">
+            <div class="rec-head__main">
+                <div class="rec-head__avatar" id="d-avatar" aria-hidden="true">?</div>
+                <div class="rec-head__text">
+                    <h5 class="offcanvas-title mb-0 rec-head__title" id="d-title">Record</h5>
+                    <div class="rec-head__meta" id="d-subtitle"></div>
+                </div>
+            </div>
+            <div class="rec-head__tools">
+                <button type="button" class="drawer-expand" id="drawer-expand" aria-label="Expand panel" title="Expand panel" aria-pressed="false">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                </button>
+                <button type="button" class="btn-close text-reset drawer-close" id="drawer-close" aria-label="Close"></button>
+            </div>
+        </div>
+        <div class="offcanvas-body drawer-body rec-body" id="d-body">
+            <div class="rec-loading" id="d-loading" hidden role="status" aria-live="polite">
+                <span class="rec-spinner" aria-hidden="true"></span>
+                <span id="d-loading-text">Loading record…</span>
+            </div>
+            <div class="rec-sections" id="d-sections"></div>
+            <div class="rec-msg" id="d-msg" style="display:none;" role="alert"></div>
+        </div>
+        <div class="border-top drawer-foot rec-foot">
+            <div class="rec-foot__actions">
+                <button class="btn rec-btn rec-btn--reveal" id="btn-reveal-contact" type="button" hidden title="Share this contact's details with the client team">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>Reveal Contact</span>
+                </button>
+                <button class="btn rec-btn rec-btn--convert" id="btn-convert-lead" type="button" hidden title="Convert this interest into a deal">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    <span>Convert to Deal</span>
+                </button>
+                <button class="btn rec-btn rec-btn--danger" id="btn-delete-record" type="button" hidden title="Delete this record permanently">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <span>Delete</span>
+                </button>
+            </div>
+            <div class="rec-foot__edit">
+                <button class="btn rec-btn" id="btn-edit-cancel" type="button" hidden>Cancel</button>
+                <button class="btn btn-primary rec-btn rec-btn--primary" id="btn-edit-toggle" type="button" data-state="view">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+                    <span>Edit</span>
+                </button>
+            </div>
+        </div>
+    </div>
