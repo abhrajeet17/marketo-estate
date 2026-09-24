@@ -2,7 +2,7 @@
 {% set active_nav = 'dashboard' %}
 {% set use_marketostate_brand_theme = true %}
 {% set portal_show_plot_search = true %}
-{% set portal_extra_css = '/static/css/customer_dashboard_portal.css?v=20260623-11' %}
+{% set portal_extra_css = '/static/css/customer_dashboard_portal.css?v=20260924-1' %}
 {% include 'components/portal_shell_start.html' %}
 
 <div class="dashboard-page-shell dashboard-page-shell--loading" id="dashboard-page-shell">
@@ -14,7 +14,7 @@
 {% set label_id = 'dash-loader-label' %}
 {% set initial_caption = 'Loading dashboard' %}
 {% set initial_label = 'Preparing workspace' %}
-{% set steps = ['profile', 'metrics', 'clients'] %}
+{% set steps = ['profile', 'metrics', 'charts'] %}
 {% include 'components/portal_tab_loader.html' %}
 
 <div class="dashboard-page max-w-7xl mx-auto space-y-6 portal-page-shell__content" id="dashboard-page">
@@ -51,30 +51,67 @@
     </div>
   </div>
 
-  <div class="dash-card overflow-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">
-      <div>
-        <h3 class="font-semibold text-gray-800" id="clients-title">Your Clients</h3>
-        <p class="text-sm text-gray-500" id="clients-subtitle">All client groups allotted to you</p>
+  <div class="dash-charts-grid" id="dash-charts">
+    <section class="dash-card dash-chart-card" data-dash-chart="stages" data-state="loading" aria-labelledby="dash-stages-title">
+      <header class="dash-chart-card__head">
+        <div class="dash-chart-card__heading">
+          <h3 class="dash-chart-card__title" id="dash-stages-title">Deal pipeline</h3>
+          <p class="dash-chart-card__subtitle" id="dash-stages-subtitle">Deals by stage across your CRM scope</p>
+        </div>
+      </header>
+      <div class="dash-chart-card__body">
+        <div class="dash-chart-skeleton dash-chart-skeleton--donut" data-chart-loading role="status" aria-live="polite" aria-label="Loading deal pipeline">
+          <span class="dash-chart-skeleton__ring" aria-hidden="true"></span>
+          <span class="dash-chart-skeleton__lines" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+        <div class="dash-chart-figure" data-chart-ready hidden>
+          <div class="dash-chart-plot dash-chart-plot--donut" id="dash-deal-stage-chart" role="img" aria-label="Deal pipeline donut chart"></div>
+          <ul class="dash-stage-legend" id="dash-stage-legend" aria-label="Deals per stage"></ul>
+        </div>
+        <p class="dash-chart-empty" data-chart-empty hidden>No deals yet</p>
+        <div class="dash-chart-error" data-chart-error hidden role="alert">
+          <p class="dash-chart-error__text">We couldn't load the deal pipeline.</p>
+          <button type="button" class="dash-chart-retry" data-chart-retry>Retry</button>
+        </div>
+        <table class="sr-only" id="dash-stage-table" data-chart-table hidden>
+          <caption>Deals per stage</caption>
+          <thead><tr><th scope="col">Stage</th><th scope="col">Deals</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <a href="/crm" class="dashboard-open-crm-btn dashboard-open-crm-btn--solid py-2 px-3 inline-flex items-center text-sm font-semibold rounded-lg">Open CRM</a>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="dash-table w-full">
-        <thead id="clients-thead">
-          <tr>
-            <th class="text-left">Client</th>
-            <th class="text-left">Role</th>
-            <th class="text-right">Projects</th>
-            <th class="text-right">Leads</th>
-            <th class="text-right">Contacts</th>
-          </tr>
-        </thead>
-        <tbody id="clients-tbody">
-          <tr><td colspan="5" class="text-center text-gray-400 py-8">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
+    </section>
+
+    <section class="dash-card dash-chart-card" data-dash-chart="interests" data-state="loading" aria-labelledby="dash-interests-title">
+      <header class="dash-chart-card__head">
+        <div class="dash-chart-card__heading">
+          <h3 class="dash-chart-card__title" id="dash-interests-title">Interests per day</h3>
+          <p class="dash-chart-card__subtitle" id="dash-interests-subtitle">New interests created each day</p>
+        </div>
+        <div class="dash-segmented" role="group" aria-label="Interests time window" id="dash-interests-window">
+          <button type="button" class="dash-segmented__btn" data-days="7" aria-pressed="false" aria-label="Last 7 days">7d</button>
+          <button type="button" class="dash-segmented__btn" data-days="14" aria-pressed="true" aria-label="Last 14 days">14d</button>
+          <button type="button" class="dash-segmented__btn" data-days="30" aria-pressed="false" aria-label="Last 30 days">30d</button>
+        </div>
+      </header>
+      <div class="dash-chart-card__body">
+        <div class="dash-chart-skeleton dash-chart-skeleton--bars" data-chart-loading role="status" aria-live="polite" aria-label="Loading interests per day">
+          <span class="dash-chart-skeleton__bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="dash-chart-figure" data-chart-ready hidden>
+          <div class="dash-chart-plot dash-chart-plot--bars" id="dash-interests-chart" role="img" aria-label="Interests per day bar chart"></div>
+        </div>
+        <p class="dash-chart-empty" data-chart-empty hidden>No interests in this period</p>
+        <div class="dash-chart-error" data-chart-error hidden role="alert">
+          <p class="dash-chart-error__text">We couldn't load interests for this period.</p>
+          <button type="button" class="dash-chart-retry" data-chart-retry>Retry</button>
+        </div>
+        <table class="sr-only" id="dash-interests-table" data-chart-table hidden>
+          <caption>Interests created per day</caption>
+          <thead><tr><th scope="col">Date</th><th scope="col">Interests</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </div>
 </div>
@@ -86,6 +123,7 @@
 </script>
 <script src="/static/js/sidebar.js?v=20260623-1"></script>
 <script src="/static/js/portal_tab_loader.js?v=20260623-3"></script>
+<script src="/static/sneat/vendor/libs/apex-charts/apexcharts.js?v=4.2.0-20260924"></script>
 <script>
 (function () {
   var url = window.__SUPABASE_URL__;
@@ -125,17 +163,6 @@
     });
   }
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  function initials(name) {
-    var text = String(name || '').trim();
-    if (!text) return '--';
-    var parts = text.split(/\s+/).filter(Boolean);
-    return (((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || (parts[0] || '')[1] || '')).toUpperCase();
-  }
-
   function setText(id, value) {
     var el = document.getElementById(id);
     if (el) el.textContent = value;
@@ -145,8 +172,8 @@
     shellId: 'dashboard-page-shell',
     loaderId: 'dash-tab-loader',
     shellLoadingClass: 'dashboard-page-shell--loading',
-    stepOrder: ['profile', 'metrics', 'clients'],
-    finalStep: 'clients',
+    stepOrder: ['profile', 'metrics', 'charts'],
+    finalStep: 'charts',
     ids: {
       percent: 'dash-loader-percent',
       steps: 'dash-loader-steps',
@@ -203,14 +230,9 @@
       setText('kpi-tertiary-subtitle', 'Across your client groups');
       setText('kpi-quaternary-label', 'Contacts');
       setText('kpi-quaternary-subtitle', 'Unique interested contacts');
-      setText('clients-title', 'Client Portfolio');
       if (search) {
         search.placeholder = 'Search plots...';
         search.setAttribute('aria-label', 'Search plots...');
-      }
-      var adminHead = document.getElementById('clients-thead');
-      if (adminHead) {
-        adminHead.innerHTML = '<tr><th class="text-left">Client</th><th class="text-left">Role</th><th class="text-right">Projects</th><th class="text-right">Sold</th><th class="text-right">Pending</th><th class="text-right">Interests</th></tr>';
       }
     }
   }
@@ -226,53 +248,401 @@
     }
   }
 
-  function renderClients(rows, isClientAdmin) {
-    var tbody = document.getElementById('clients-tbody');
-    if (!tbody) return;
-    if (!rows || !rows.length) {
-      var colspan = isClientAdmin ? 6 : 5;
-      tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="text-center text-gray-400 py-8">No client groups available yet.</td></tr>';
-      setText('clients-subtitle', 'No client groups available yet');
-      setText('kpi-clients', '0');
-      setText('kpi-projects', '0');
-      setText('kpi-leads', '0');
-      setText('kpi-contacts', '0');
-      return;
-    }
+  function renderKpis(rows, isClientAdmin) {
     var totals = { projects: 0, interests: 0, contacts: 0, sold: 0, pending: 0 };
-    tbody.innerHTML = rows.map(function (row) {
-      var name = row.client_name || row.client_id || '-';
-      var role = row.member_role || 'broker';
-      var p = Number(row.project_count || 0);
-      var l = Number(row.interest_count || row.lead_count || 0);
-      var c = Number(row.contact_count || 0);
-      var sold = Number(row.sold_plot_count || 0);
-      var pending = Number(row.pending_plot_count || 0);
-      totals.projects += p;
-      totals.interests += l;
-      totals.contacts += c;
-      totals.sold += sold;
-      totals.pending += pending;
-      var metricCells = isClientAdmin
-        ? '<td class="text-right">' + p + '</td><td class="text-right">' + sold + '</td><td class="text-right">' + pending + '</td><td class="text-right">' + l + '</td>'
-        : '<td class="text-right">' + p + '</td><td class="text-right">' + l + '</td><td class="text-right">' + c + '</td>';
-      return '<tr><td><div class="flex items-center gap-3"><span class="dash-avatar">' + esc(initials(name)) + '</span><span class="font-medium">' + esc(name) + '</span></div></td><td><span class="dash-badge">' + esc(roleName(role)) + '</span></td>' + metricCells + '</tr>';
-    }).join('');
-    setText('kpi-clients', String(isClientAdmin ? totals.sold : rows.length));
+    (rows || []).forEach(function (row) {
+      totals.projects += Number(row.project_count || 0);
+      totals.interests += Number(row.interest_count || row.lead_count || 0);
+      totals.contacts += Number(row.contact_count || 0);
+      totals.sold += Number(row.sold_plot_count || 0);
+      totals.pending += Number(row.pending_plot_count || 0);
+    });
+    var count = (rows || []).length;
+    setText('kpi-clients', String(isClientAdmin ? totals.sold : count));
     setText('kpi-projects', String(isClientAdmin ? totals.pending : totals.projects));
     setText('kpi-leads', String(totals.interests));
     setText('kpi-contacts', String(totals.contacts));
-    setText('clients-subtitle', rows.length + ' client group' + (rows.length === 1 ? '' : 's') + (isClientAdmin ? ' under your administration' : ' allotted to you'));
   }
 
-  function loadClients(isClientAdmin) {
+  function loadKpis(isClientAdmin) {
     return api('/api/crm/allotted-clients').then(function (response) {
       return response.json().catch(function () { return []; }).then(function (data) {
         if (!response.ok) throw new Error((data && data.error) || 'Failed to load clients');
-        renderClients(Array.isArray(data) ? data : [], isClientAdmin);
+        renderKpis(Array.isArray(data) ? data : [], isClientAdmin);
       });
-    }).catch(function () { renderClients([], isClientAdmin); });
+    }).catch(function () { renderKpis([], isClientAdmin); });
   }
+
+  /* ── Dashboard charts (ApexCharts, vendored) ─────────────────────────── */
+  var DashCharts = (function () {
+    var WINDOW_OPTIONS = [7, 14, 30];
+    var DEFAULT_DAYS = 14;
+    var state = { days: DEFAULT_DAYS, requestId: 0, stageChart: null, interestChart: null, lastStats: null, interestTickBucket: 0 };
+    var reduceMotion = false;
+    try { reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+
+    function card(kind) { return document.querySelector('[data-dash-chart="' + kind + '"]'); }
+    function part(kind, attr) { var c = card(kind); return c ? c.querySelector('[' + attr + ']') : null; }
+
+    function setCardState(kind, next) {
+      var c = card(kind);
+      if (!c) return;
+      c.setAttribute('data-state', next);
+      var loading = part(kind, 'data-chart-loading');
+      var ready = part(kind, 'data-chart-ready');
+      var empty = part(kind, 'data-chart-empty');
+      var error = part(kind, 'data-chart-error');
+      var table = part(kind, 'data-chart-table');
+      if (loading) loading.hidden = next !== 'loading';
+      if (ready) ready.hidden = next !== 'ready';
+      if (empty) empty.hidden = next !== 'empty';
+      if (error) error.hidden = next !== 'error';
+      if (table) table.hidden = next !== 'ready';
+      c.setAttribute('aria-busy', next === 'loading' ? 'true' : 'false');
+    }
+
+    function cssToken(el, name, fallback) {
+      try {
+        var value = window.getComputedStyle(el).getPropertyValue(name);
+        return (value && value.trim()) || fallback;
+      } catch (e) { return fallback; }
+    }
+
+    function chartTheme(kind) {
+      var c = card(kind) || document.body;
+      return {
+        ink: cssToken(c, '--dash-chart-ink', '#333333'),
+        muted: cssToken(c, '--dash-chart-muted', '#6b7280'),
+        grid: cssToken(c, '--dash-chart-grid', '#e5e7eb'),
+        surface: cssToken(c, '--dash-chart-surface', '#ffffff'),
+        series: cssToken(c, '--dash-chart-series', '#4f5ec8')
+      };
+    }
+
+    function stageColor(kind, key) {
+      var c = card(kind) || document.body;
+      return cssToken(c, '--dash-stage-' + String(key || '').replace(/[^a-z_]/g, ''), '#6b7280');
+    }
+
+    function fillTable(kind, rows) {
+      var table = part(kind, 'data-chart-table');
+      var body = table ? table.querySelector('tbody') : null;
+      if (!body) return;
+      body.textContent = '';
+      rows.forEach(function (row) {
+        var tr = document.createElement('tr');
+        var th = document.createElement('th');
+        th.scope = 'row';
+        th.textContent = row[0];
+        var td = document.createElement('td');
+        td.textContent = String(row[1]);
+        tr.appendChild(th);
+        tr.appendChild(td);
+        body.appendChild(tr);
+      });
+    }
+
+    function parseDay(isoDate) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoDate || ''));
+      if (!m) return null;
+      return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    }
+
+    function shortDay(isoDate) {
+      var d = parseDay(isoDate);
+      if (!d) return String(isoDate || '');
+      try { return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' }); } catch (e) { return isoDate; }
+    }
+
+    function longDay(isoDate) {
+      var d = parseDay(isoDate);
+      if (!d) return String(isoDate || '');
+      try { return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); } catch (e) { return isoDate; }
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function destroy(which) {
+      var chart = state[which];
+      if (chart) { try { chart.destroy(); } catch (e) {} }
+      state[which] = null;
+      var plot = document.getElementById(which === 'stageChart' ? 'dash-deal-stage-chart' : 'dash-interests-chart');
+      if (plot) plot.textContent = '';
+    }
+
+    function baseChart(theme, extra) {
+      return Object.assign({
+        fontFamily: 'inherit',
+        foreColor: theme.muted,
+        background: 'transparent',
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        redrawOnParentResize: true,
+        redrawOnWindowResize: true,
+        animations: { enabled: !reduceMotion, speed: 420, animateGradually: { enabled: false } }
+      }, extra || {});
+    }
+
+    function renderStages(stats) {
+      var kind = 'stages';
+      var rows = Array.isArray(stats.deals_by_stage) ? stats.deals_by_stage : [];
+      var total = rows.reduce(function (sum, r) { return sum + Number(r.count || 0); }, 0);
+      fillTable(kind, rows.map(function (r) { return [r.label || r.key, Number(r.count || 0)]; }));
+      var plot = document.getElementById('dash-deal-stage-chart');
+      var legend = document.getElementById('dash-stage-legend');
+      if (legend) {
+        legend.textContent = '';
+        rows.forEach(function (r) {
+          var li = document.createElement('li');
+          li.className = 'dash-stage-legend__item';
+          var swatch = document.createElement('span');
+          swatch.className = 'dash-stage-legend__swatch dash-stage-legend__swatch--' + String(r.key || '').replace(/[^a-z_]/g, '');
+          swatch.setAttribute('aria-hidden', 'true');
+          var label = document.createElement('span');
+          label.className = 'dash-stage-legend__label';
+          label.textContent = String(r.label || r.key || '');
+          var count = document.createElement('span');
+          count.className = 'dash-stage-legend__count';
+          count.textContent = String(Number(r.count || 0));
+          li.appendChild(swatch);
+          li.appendChild(label);
+          li.appendChild(count);
+          legend.appendChild(li);
+        });
+      }
+      destroy('stageChart');
+      if (!plot) return;
+      if (!total) {
+        setCardState(kind, 'empty');
+        plot.setAttribute('aria-label', 'Deal pipeline donut chart: no deals yet');
+        return;
+      }
+      plot.setAttribute('aria-label', 'Deal pipeline donut chart: ' + total + ' deal' + (total === 1 ? '' : 's') + ' across ' + rows.length + ' stages');
+      setCardState(kind, 'ready');
+      if (!window.ApexCharts) throw new Error('Charts unavailable');
+      var theme = chartTheme(kind);
+      var options = {
+        chart: baseChart(theme, { type: 'donut', height: 240, parentHeightOffset: 0 }),
+        series: rows.map(function (r) { return Number(r.count || 0); }),
+        labels: rows.map(function (r) { return String(r.label || r.key || ''); }),
+        colors: rows.map(function (r) { return stageColor(kind, r.key); }),
+        stroke: { width: 2, colors: [theme.surface] },
+        dataLabels: { enabled: false },
+        legend: { show: false },
+        states: { hover: { filter: { type: 'lighten', value: 0.08 } }, active: { filter: { type: 'none' } } },
+        plotOptions: {
+          pie: {
+            expandOnClick: false,
+            donut: {
+              size: '74%',
+              labels: {
+                show: true,
+                name: { show: true, fontSize: '12px', fontWeight: 500, color: theme.muted, offsetY: 18 },
+                value: { show: true, fontSize: '26px', fontWeight: 700, color: theme.ink, offsetY: -14, formatter: function (v) { return String(v); } },
+                total: { show: true, showAlways: true, label: 'Deals', fontSize: '12px', fontWeight: 500, color: theme.muted, formatter: function () { return String(total); } }
+              }
+            }
+          }
+        },
+        tooltip: {
+          enabled: true,
+          fillSeriesColor: false,
+          custom: function (ctx) {
+            var idx = ctx.seriesIndex;
+            var row = rows[idx] || {};
+            var value = Number(row.count || 0);
+            var pct = total ? Math.round((value / total) * 100) : 0;
+            return '<div class="dash-chart-tip"><span class="dash-chart-tip__key" style="--tip-color:' + escapeHtml(stageColor(kind, row.key)) + '"></span><strong class="dash-chart-tip__value">' + value + '</strong><span class="dash-chart-tip__label">' + escapeHtml(row.label || row.key) + ' · ' + pct + '%</span></div>';
+          }
+        }
+      };
+      state.stageChart = new window.ApexCharts(plot, options);
+      state.stageChart.render();
+    }
+
+    function renderInterests(stats) {
+      var kind = 'interests';
+      var rows = Array.isArray(stats.interests_per_day) ? stats.interests_per_day : [];
+      var counts = rows.map(function (r) { return Number(r.count || 0); });
+      var total = counts.reduce(function (a, b) { return a + b; }, 0);
+      var days = (stats.window && Number(stats.window.days)) || rows.length || state.days;
+      fillTable(kind, rows.map(function (r) { return [longDay(r.date), Number(r.count || 0)]; }));
+      setText('dash-interests-subtitle', 'New interests created each day · last ' + days + ' days');
+      var plot = document.getElementById('dash-interests-chart');
+      destroy('interestChart');
+      if (!plot) return;
+      if (!total) {
+        setCardState(kind, 'empty');
+        plot.setAttribute('aria-label', 'Interests per day bar chart: no interests in the last ' + days + ' days');
+        return;
+      }
+      var peak = Math.max.apply(null, counts);
+      var peakIdx = counts.indexOf(peak);
+      plot.setAttribute('aria-label', 'Interests per day bar chart: ' + total + ' interest' + (total === 1 ? '' : 's') + ' in the last ' + days + ' days, peak of ' + peak + ' on ' + longDay((rows[peakIdx] || {}).date));
+      setCardState(kind, 'ready');
+      if (!window.ApexCharts) throw new Error('Charts unavailable');
+      var theme = chartTheme(kind);
+      var yTicks = 4;
+      var yMax = Math.max(yTicks, Math.ceil(peak / yTicks) * yTicks);
+      var columnWidth = days <= 7 ? '28%' : (days <= 14 ? '46%' : '62%');
+      var plotWidth = plot.getBoundingClientRect().width || 600;
+      var xTicks = Math.max(2, Math.min(days, Math.floor(plotWidth / 72)));
+      state.interestTickBucket = xTicks;
+      var options = {
+        chart: baseChart(theme, { type: 'bar', height: 240, parentHeightOffset: 0, sparkline: { enabled: false } }),
+        series: [{ name: 'Interests', data: counts }],
+        colors: [theme.series],
+        plotOptions: { bar: { columnWidth: columnWidth, borderRadius: 3, borderRadiusApplication: 'end', dataLabels: { position: 'top' } } },
+        dataLabels: { enabled: false },
+        legend: { show: false },
+        states: { hover: { filter: { type: 'lighten', value: 0.1 } }, active: { filter: { type: 'none' } } },
+        stroke: { show: false },
+        grid: {
+          borderColor: theme.grid,
+          strokeDashArray: 0,
+          xaxis: { lines: { show: false } },
+          yaxis: { lines: { show: true } },
+          padding: { left: 4, right: 8, top: 0, bottom: 0 }
+        },
+        xaxis: {
+          categories: rows.map(function (r) { return r.date; }),
+          tickAmount: xTicks,
+          tickPlacement: 'between',
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          tooltip: { enabled: false },
+          crosshairs: { show: false },
+          labels: {
+            rotate: 0,
+            hideOverlappingLabels: true,
+            trim: false,
+            style: { colors: theme.muted, fontSize: '11px' },
+            formatter: function (value) { return shortDay(value); }
+          }
+        },
+        yaxis: {
+          min: 0,
+          max: yMax,
+          tickAmount: yTicks,
+          labels: { style: { colors: theme.muted, fontSize: '11px' }, formatter: function (v) { return String(Math.round(v)); } }
+        },
+        tooltip: {
+          enabled: true,
+          shared: false,
+          intersect: true,
+          fillSeriesColor: false,
+          custom: function (ctx) {
+            var idx = ctx.dataPointIndex;
+            var value = counts[idx] || 0;
+            return '<div class="dash-chart-tip"><span class="dash-chart-tip__key" style="--tip-color:' + escapeHtml(theme.series) + '"></span><strong class="dash-chart-tip__value">' + value + '</strong><span class="dash-chart-tip__label">' + (value === 1 ? 'interest' : 'interests') + ' · ' + escapeHtml(longDay((rows[idx] || {}).date)) + '</span></div>';
+          }
+        }
+      };
+      state.interestChart = new window.ApexCharts(plot, options);
+      state.interestChart.render();
+    }
+
+    function showError(kinds) {
+      kinds.forEach(function (kind) {
+        destroy(kind === 'stages' ? 'stageChart' : 'interestChart');
+        setCardState(kind, 'error');
+      });
+    }
+
+    function render(stats, kinds) {
+      kinds.forEach(function (kind) {
+        try {
+          if (kind === 'stages') renderStages(stats || {});
+          else renderInterests(stats || {});
+        } catch (e) {
+          showError([kind]);
+        }
+      });
+    }
+
+    function load(kinds) {
+      var targets = kinds || ['stages', 'interests'];
+      var requestId = ++state.requestId;
+      var days = state.days;
+      targets.forEach(function (kind) {
+        destroy(kind === 'stages' ? 'stageChart' : 'interestChart');
+        setCardState(kind, 'loading');
+      });
+      return api('/api/crm/dashboard-stats?days=' + encodeURIComponent(days)).then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (data) {
+          if (requestId !== state.requestId) return;
+          if (!response.ok) throw new Error((data && data.error) || 'Failed to load dashboard stats');
+          state.lastStats = data || {};
+          render(state.lastStats, targets);
+        });
+      }).catch(function () {
+        if (requestId !== state.requestId) return;
+        showError(targets);
+      });
+    }
+
+    function setWindow(days) {
+      var next = WINDOW_OPTIONS.indexOf(Number(days)) >= 0 ? Number(days) : DEFAULT_DAYS;
+      var group = document.getElementById('dash-interests-window');
+      if (group) {
+        group.querySelectorAll('[data-days]').forEach(function (btn) {
+          btn.setAttribute('aria-pressed', Number(btn.getAttribute('data-days')) === next ? 'true' : 'false');
+        });
+      }
+      if (next === state.days && state.lastStats && card('interests') && card('interests').getAttribute('data-state') !== 'error') return Promise.resolve();
+      state.days = next;
+      return load(['interests']);
+    }
+
+    function watchResize() {
+      var c = card('interests');
+      if (!c || !window.ResizeObserver) return;
+      var timer = null;
+      var observer = new window.ResizeObserver(function () {
+        if (timer) window.clearTimeout(timer);
+        timer = window.setTimeout(function () {
+          timer = null;
+          if (!state.lastStats || !state.interestChart || c.getAttribute('data-state') !== 'ready') return;
+          var plot = document.getElementById('dash-interests-chart');
+          var width = plot ? plot.getBoundingClientRect().width : 0;
+          if (!width) return;
+          var days = (state.lastStats.window && Number(state.lastStats.window.days)) || state.days;
+          var nextTicks = Math.max(2, Math.min(days, Math.floor(width / 72)));
+          if (nextTicks === state.interestTickBucket) return;
+          render(state.lastStats, ['interests']);
+        }, 180);
+      });
+      observer.observe(c);
+    }
+
+    function bind() {
+      watchResize();
+      var group = document.getElementById('dash-interests-window');
+      if (group) {
+        group.addEventListener('click', function (event) {
+          var btn = event.target && event.target.closest ? event.target.closest('[data-days]') : null;
+          if (!btn || !group.contains(btn)) return;
+          setWindow(btn.getAttribute('data-days'));
+        });
+      }
+      document.querySelectorAll('[data-dash-chart] [data-chart-retry]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var c = btn.closest('[data-dash-chart]');
+          var kind = c ? c.getAttribute('data-dash-chart') : null;
+          var stale = ['stages', 'interests'].filter(function (k) {
+            var el = card(k);
+            return el && (k === kind || el.getAttribute('data-state') === 'error');
+          });
+          load(stale.length ? stale : ['stages', 'interests']);
+        });
+      });
+    }
+
+    return { bind: bind, load: load, setWindow: setWindow };
+  })();
+  DashCharts.bind();
 
   function bindPlotSearch() {
     var input = document.getElementById('navbar-client-search');
@@ -367,9 +737,12 @@
       configureDashboard(isClientAdmin);
       renderProfile(data || {}, isClientAdmin);
       if (isClientAdmin) bindPlotSearch();
-      setDashboardLoaderStep('clients', 'Loading clients', 72, 'Loading clients');
-      return loadClients(isClientAdmin).then(function () {
-        setDashboardLoaderStep('clients', 'Finalizing', 94, 'Almost ready');
+      var statsReady = DashCharts.load();
+      return loadKpis(isClientAdmin).then(function () {
+        setDashboardLoaderStep('charts', 'Loading charts', 72, 'Loading charts');
+        return statsReady;
+      }).catch(function () {}).then(function () {
+        setDashboardLoaderStep('charts', 'Finalizing', 94, 'Almost ready');
         window.setTimeout(function () { setDashboardLoading(false); }, 320);
       });
     });

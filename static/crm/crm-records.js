@@ -396,7 +396,7 @@
         const op = (d && d.op) || DEFAULT_OP[def.type] || 'is';
         const id = fieldDomId(def.key);
         return '<div class="zf-field' + (active ? ' is-active' : '') + '" data-field="' + esc(def.key) + '" data-type="' + esc(def.type) + '"' + (hidden ? ' hidden' : '') + '>' +
-            '<label class="zf-field__head" for="' + id + '"><input type="checkbox" id="' + id + '" class="zf-check"' + (active ? ' checked' : '') + '><span class="zf-field__label">' + esc(def.label) + '</span></label>' +
+            '<button type="button" class="zf-field__head zf-tab" id="' + id + '" aria-pressed="' + (active ? 'true' : 'false') + '"><span class="zf-field__label">' + esc(def.label) + '</span></button>' +
             '<div class="zf-field__body"' + (active ? '' : ' hidden') + '>' +
                 '<div class="zf-op-wrap"><select class="zf-op" aria-label="Condition for ' + esc(def.label) + '">' + (OPS[def.type] || OPS.text).map(([k, l]) => '<option value="' + k + '"' + (k === op ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select></div>' +
                 '<div class="zf-value-wrap">' + renderFilterValue(def, op, d) + '</div>' +
@@ -441,14 +441,16 @@
         root.querySelectorAll('.zf-field').forEach(el => {
             const def = byKey.get(el.getAttribute('data-field'));
             if (!def) return;
-            const check = el.querySelector('.zf-check');
+            const head = el.querySelector('.zf-field__head');
             const body = el.querySelector('.zf-field__body');
             const opSel = el.querySelector('.zf-op');
             const valueWrap = el.querySelector('.zf-value-wrap');
-            check.addEventListener('change', () => {
-                el.classList.toggle('is-active', check.checked);
-                body.hidden = !check.checked;
-                if (check.checked) {
+            if (head) head.addEventListener('click', () => {
+                const on = !el.classList.contains('is-active');
+                el.classList.toggle('is-active', on);
+                head.setAttribute('aria-pressed', on ? 'true' : 'false');
+                body.hidden = !on;
+                if (on) {
                     const first = valueWrap.querySelector('[data-zf-value]');
                     if (first) setTimeout(() => first.focus(), 20);
                 }
@@ -713,10 +715,16 @@
             if (items.length) any = true;
             zone.innerHTML = items.map(r => {
                 const plots = Array.isArray(r.plots) ? r.plots.length : 0;
+                // No inline separators: the flex gap spaces these, and a separator
+                // is left dangling whenever the trailing part wraps to its own line.
+                const nameParts = [esc(r.customer_name || '\u2014')];
+                if (r.contact_hidden) nameParts.push('<span class="rec-hidden">' + ICON.lock + 'hidden</span>');
+                const projLine = esc(r.deal_project_name || r.workspace_name || r.panorama_name || '\u2014');
+                const amountLine = r.deal_amount ? '<div class="kb-card-line kb-card-amount">' + esc(r.deal_amount) + '</div>' : '';
                 return '<div class="kb-card' + (canMove && r.can_move_stage ? '' : ' is-static') + '" draggable="' + (canMove && r.can_move_stage ? 'true' : 'false') + '" data-record-id="' + esc(r.id) + '">' +
                     '<div class="kb-card-title" title="' + esc(r.deal_title || '') + '">' + esc(r.deal_title || r.customer_name || 'Deal') + '</div>' +
-                    '<div class="kb-card-line">' + esc(r.customer_name || '—') + (r.contact_hidden ? ' · <span class="rec-hidden">' + ICON.lock + 'hidden</span>' : '') + '</div>' +
-                    '<div class="kb-card-line">' + esc(r.deal_project_name || r.workspace_name || r.panorama_name || '—') + (r.deal_amount ? ' · <span class="kb-card-amount">' + esc(r.deal_amount) + '</span>' : '') + '</div>' +
+                    '<div class="kb-card-line">' + nameParts.join('') + '</div>' +
+                    '<div class="kb-card-line">' + projLine + '</div>' + amountLine +
                     '<div class="kb-card-foot"><span class="rec-plots-chip">' + ICON.pin + esc(plots + (plots === 1 ? ' plot' : ' plots')) + '</span>' + (r.reference_user_id ? rolePill(r) : '') + '</div>' +
                     '</div>';
             }).join('');
@@ -732,16 +740,34 @@
         if (emptyEl) emptyEl.style.display = any ? 'none' : '';
         bindKanbanDropTargets();
     }
+    function bindKanbanAutoScroll() {
+        const board = $('deals-kanban-board');
+        if (!board || board._crmScrollBound) return;
+        board._crmScrollBound = true;
+        const EDGE = 60;
+        const STEP = 18;
+        board.addEventListener('dragover', (ev) => {
+            if (board.scrollWidth <= board.clientWidth + 1) return;
+            const r = board.getBoundingClientRect();
+            if (ev.clientX < r.left + EDGE) board.scrollLeft -= STEP;
+            else if (ev.clientX > r.right - EDGE) board.scrollLeft += STEP;
+        });
+    }
     function bindKanbanDropTargets() {
+        bindKanbanAutoScroll();
         STAGES.forEach(stage => {
             const zone = $('dk-' + stage);
-            if (!zone || zone._crmDropBound) return;
-            zone._crmDropBound = true;
-            zone.addEventListener('dragover', (ev) => { if (!state.caps.canManageDeals) return; ev.preventDefault(); zone.classList.add('kb-drop-active'); });
-            zone.addEventListener('dragleave', () => zone.classList.remove('kb-drop-active'));
-            zone.addEventListener('drop', (ev) => {
+            if (!zone) return;
+            // Bind on the whole column so the header and the empty space below
+            // the cards accept a drop, not just the card list itself.
+            const col = zone.closest('.kanban-col') || zone;
+            if (col._crmDropBound) return;
+            col._crmDropBound = true;
+            col.addEventListener('dragover', (ev) => { if (!state.caps.canManageDeals) return; ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; col.classList.add('kb-drop-active'); });
+            col.addEventListener('dragleave', (ev) => { if (!col.contains(ev.relatedTarget)) col.classList.remove('kb-drop-active'); });
+            col.addEventListener('drop', (ev) => {
                 ev.preventDefault();
-                zone.classList.remove('kb-drop-active');
+                col.classList.remove('kb-drop-active');
                 const id = String(ev.dataTransfer.getData('text/plain') || '').trim();
                 if (id) moveStage(id, stage);
             });
@@ -754,6 +780,7 @@
         const prev = rec.deal_stage;
         rec.deal_stage = stage;
         renderKanban();
+        document.querySelectorAll('#deals-kanban-board .kb-drop-active').forEach(el => el.classList.remove('kb-drop-active'));
         const card = document.querySelector('#dk-' + stage + ' .kb-card[data-record-id="' + id + '"]');
         if (card) card.classList.add('is-moving');
         try {

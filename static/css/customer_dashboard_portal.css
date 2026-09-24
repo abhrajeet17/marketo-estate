@@ -96,6 +96,340 @@
   font-weight: 600;
 }
 
+/* ── Dashboard charts ── */
+.dashboard-page .dash-charts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-page .dash-charts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dashboard-page .dash-chart-card {
+  /* chart tokens: text/border/surface from the portal theme, stage hues from the CRM stage pills */
+  --dash-chart-ink: var(--ms-brand-ink, var(--color-text, #333333));
+  --dash-chart-muted: var(--color-muted, #6b7280);
+  --dash-chart-grid: #e5e7eb; /* same hairline as .dash-card borders: recessive, not the warm brand border */
+  --dash-chart-surface: #ffffff; /* same surface as .dash-card */
+  --dash-chart-series: #4f5ec8; /* CRM .rec-pill--interest */
+  --dash-stage-new: #4f46e5; /* CRM .rec-pill--new */
+  --dash-stage-contacted: #c2620b; /* CRM .rec-pill--contacted */
+  --dash-stage-site_visit: #1d5fd1; /* CRM .rec-pill--site_visit */
+  --dash-stage-negotiation: #5aa6e6; /* CRM blue family, lighter step so it stays distinct from Site Visit */
+  --dash-stage-won: #1f9d61; /* CRM .rec-pill--won */
+  --dash-stage-lost: #e5484d; /* CRM .rec-pill--lost */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-page .dash-chart-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.dashboard-page .dash-chart-card__heading {
+  min-width: 0;
+}
+
+.dashboard-page .dash-chart-card__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--dash-chart-ink);
+  margin: 0;
+}
+
+.dashboard-page .dash-chart-card__subtitle {
+  font-size: 0.8rem;
+  color: var(--dash-chart-muted);
+  margin: 0.15rem 0 0;
+}
+
+.dashboard-page .dash-chart-card__body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 300px;
+  padding: 0.25rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-page .dash-chart-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.dashboard-page .dash-chart-plot {
+  min-width: 0;
+  min-height: 240px;
+}
+
+.dashboard-page .dash-chart-plot .apexcharts-canvas,
+.dashboard-page .dash-chart-plot .apexcharts-svg {
+  max-width: 100%;
+}
+
+.dashboard-page .dash-chart-plot .apexcharts-text,
+.dashboard-page .dash-chart-plot .apexcharts-datalabel-label,
+.dashboard-page .dash-chart-plot .apexcharts-datalabel-value {
+  font-family: inherit;
+}
+
+/* Segmented window control */
+.dashboard-page .dash-segmented {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--dash-chart-grid);
+  border-radius: 8px;
+  background: rgba(var(--ms-brand-dark-rgb, 51, 51, 51), 0.04);
+}
+
+.dashboard-page .dash-segmented__btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--dash-chart-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.42rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dashboard-page .dash-segmented__btn:hover {
+  color: var(--dash-chart-ink);
+}
+
+.dashboard-page .dash-segmented__btn[aria-pressed="true"] {
+  background: var(--dash-chart-surface);
+  color: var(--dash-chart-ink);
+  box-shadow: 0 1px 2px rgba(var(--ms-brand-dark-rgb, 51, 51, 51), 0.12);
+}
+
+.dashboard-page .dash-segmented__btn:focus-visible,
+.dashboard-page .dash-chart-retry:focus-visible {
+  outline: 2px solid var(--ms-brand-primary, #ffa300);
+  outline-offset: 2px;
+}
+
+/* Stage legend (identity never relies on colour alone: label + count per stage) */
+.dashboard-page .dash-stage-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+}
+
+@media (max-width: 420px) {
+  .dashboard-page .dash-stage-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dashboard-page .dash-stage-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--dash-chart-muted);
+}
+
+.dashboard-page .dash-stage-legend__swatch {
+  flex: 0 0 auto;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 3px;
+  background: var(--dash-chart-muted);
+}
+
+.dashboard-page .dash-stage-legend__swatch--new { background: var(--dash-stage-new); }
+.dashboard-page .dash-stage-legend__swatch--contacted { background: var(--dash-stage-contacted); }
+.dashboard-page .dash-stage-legend__swatch--site_visit { background: var(--dash-stage-site_visit); }
+.dashboard-page .dash-stage-legend__swatch--negotiation { background: var(--dash-stage-negotiation); }
+.dashboard-page .dash-stage-legend__swatch--won { background: var(--dash-stage-won); }
+.dashboard-page .dash-stage-legend__swatch--lost { background: var(--dash-stage-lost); }
+
+.dashboard-page .dash-stage-legend__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-page .dash-stage-legend__count {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-chart-ink);
+}
+
+/* Tooltip (custom markup; values lead, label follows, colour key is a short stroke) */
+.dashboard-page .apexcharts-tooltip.apexcharts-theme-light {
+  border: 1px solid var(--dash-chart-grid, #e5e7eb);
+  background: var(--dash-chart-surface, #fff);
+  box-shadow: 0 6px 20px rgba(var(--ms-brand-dark-rgb, 51, 51, 51), 0.12);
+  border-radius: 8px;
+}
+
+.dashboard-page .dash-chart-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--dash-chart-muted, #6b7280);
+  white-space: nowrap;
+}
+
+.dashboard-page .dash-chart-tip__key {
+  width: 0.85rem;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--tip-color, currentColor);
+}
+
+.dashboard-page .dash-chart-tip__value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--dash-chart-ink, #333);
+}
+
+/* Loading skeleton */
+.dashboard-page .dash-chart-skeleton {
+  flex: 1 1 auto;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.dashboard-page .dash-chart-skeleton__ring {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 18px solid rgba(var(--ms-brand-dark-rgb, 51, 51, 51), 0.07);
+  animation: dash-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.dashboard-page .dash-chart-skeleton__lines {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.dashboard-page .dash-chart-skeleton__lines i,
+.dashboard-page .dash-chart-skeleton__bars i {
+  display: block;
+  border-radius: 4px;
+  background: rgba(var(--ms-brand-dark-rgb, 51, 51, 51), 0.07);
+  animation: dash-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.dashboard-page .dash-chart-skeleton__lines i {
+  width: 22%;
+  height: 0.7rem;
+}
+
+.dashboard-page .dash-chart-skeleton__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4%;
+  width: 100%;
+  height: 180px;
+  padding: 0 0.5rem;
+}
+
+.dashboard-page .dash-chart-skeleton__bars i {
+  flex: 1 1 0;
+  height: 40%;
+  border-radius: 4px 4px 0 0;
+}
+
+.dashboard-page .dash-chart-skeleton__bars i:nth-child(2n) { height: 65%; }
+.dashboard-page .dash-chart-skeleton__bars i:nth-child(3n) { height: 30%; }
+.dashboard-page .dash-chart-skeleton__bars i:nth-child(5n) { height: 85%; }
+
+@keyframes dash-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page .dash-chart-skeleton__ring,
+  .dashboard-page .dash-chart-skeleton__lines i,
+  .dashboard-page .dash-chart-skeleton__bars i {
+    animation: none;
+  }
+}
+
+/* Empty + error states keep the card height so the grid does not jump */
+.dashboard-page .dash-chart-empty,
+.dashboard-page .dash-chart-error {
+  flex: 1 1 auto;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--dash-chart-muted);
+  border: 1px dashed var(--dash-chart-grid);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.dashboard-page .dash-chart-error__text {
+  margin: 0;
+  color: var(--dash-chart-ink);
+}
+
+.dashboard-page .dash-chart-retry {
+  appearance: none;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--ms-brand-primary, #ffa300);
+  background: transparent;
+  color: var(--ms-brand-primary-strong, var(--ms-brand-primary, #ffa300));
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dashboard-page .dash-chart-retry:hover {
+  background: rgba(var(--ms-brand-primary-rgb, 255, 163, 0), 0.1);
+}
+
+.dashboard-page .dash-chart-card [hidden] {
+  display: none !important;
+}
+
 .dashboard-plot-search-item {
   display: flex;
   flex-direction: column;

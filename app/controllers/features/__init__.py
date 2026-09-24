@@ -1,5 +1,6 @@
 from .assets import register_asset_routes
 from .crm import register_crm_broker_routes, register_crm_lock_routes, register_crm_master_routes, register_crm_plot_routes
+from .crm_dashboard import register_crm_dashboard_routes
 from .crm_leads import register_crm_lead_routes
 from .crm_normal import register_crm_normal_routes
 from .crm_quotes import register_crm_quote_routes
@@ -18,6 +19,7 @@ __all__ = [
     'register_crm_record_list_routes',
     'register_crm_normal_routes',
     'register_crm_broker_routes',
+    'register_crm_dashboard_routes',
     'register_crm_lead_routes',
     'register_crm_lock_routes',
     'register_crm_master_routes',

@@ -29,6 +29,7 @@ from app.controllers.features.crm_pagination import crm_page_payload, crm_parse_
 from app.controllers.features import (
     register_asset_routes,
     register_crm_broker_routes,
+    register_crm_dashboard_routes,
     register_crm_lead_routes,
     register_crm_lock_routes,
     register_crm_master_routes,
@@ -3862,6 +3863,15 @@ def register_routes(app):
         crm_cache_bump=_crm_cache_bump,
     )
     register_crm_record_list_routes(
+        app,
+        crm_panorama_ids=_crm_panorama_ids,
+        crm_client_scope_ids=_crm_client_scope_ids,
+        crm_interest_reference_scope_user_id=_crm_interest_reference_scope_user_id,
+        crm_cache_get=_crm_cache_get,
+        crm_cache_set=_crm_cache_set,
+        crm_cache_version=_crm_cache_version,
+    )
+    register_crm_dashboard_routes(
         app,
         crm_panorama_ids=_crm_panorama_ids,
         crm_client_scope_ids=_crm_client_scope_ids,

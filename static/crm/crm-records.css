@@ -23,15 +23,25 @@
 /* --------------------------------------------------------------------------
    Toolbar / table shell
    -------------------------------------------------------------------------- */
+.crm-records-toolbar {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
 .crm-records-toolbar .interest-toolbar-left,
 .crm-records-toolbar .interest-toolbar-right {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.55rem;
     min-width: 0;
+    min-height: 34px;
 }
-.crm-records-toolbar .interest-toolbar-right { margin-left: auto; }
+.crm-records-toolbar .interest-toolbar-left { flex: 1 1 auto; }
+.crm-records-toolbar .interest-toolbar-right { margin-left: auto; flex: 0 0 auto; }
 .crm-records-meta {
+    flex: 1 0 100%;
     font-size: 0.76rem;
     color: var(--rec-soft);
     white-space: nowrap;
@@ -196,10 +206,10 @@
 .crm-records-kanban .kb-card { position: relative; }
 .crm-records-kanban .kb-card.is-static { cursor: pointer; }
 .crm-records-kanban .kb-card--dragging { opacity: 0.55; }
-.crm-records-kanban .kanban-cards.kb-drop-active {
+.crm-records-kanban .kanban-col.kb-drop-active {
     outline: 2px dashed var(--rec-brand);
-    outline-offset: -4px;
-    background: rgba(255, 163, 0, 0.05);
+    outline-offset: -2px;
+    background: rgba(255, 163, 0, 0.07);
 }
 .crm-records-kanban .kb-card-title {
     font-weight: 700;
@@ -215,17 +225,22 @@
     color: var(--rec-soft);
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
     flex-wrap: wrap;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 .crm-records-kanban .kb-card-amount { font-weight: 700; color: var(--rec-ink); }
 .crm-records-kanban .kb-card-foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.4rem;
+    gap: 0.3rem;
     margin-top: 0.4rem;
+    flex-wrap: wrap;
+    min-width: 0;
 }
+.crm-records-kanban .kb-card-foot > * { min-width: 0; max-width: 100%; }
 .crm-records-kanban .kb-card.is-moving::after {
     content: '';
     position: absolute;
@@ -747,7 +762,11 @@
     color: var(--rec-soft);
     pointer-events: none;
 }
-.crm-records-search .crm-records-search__input {
+.crm-records-search .crm-records-search__input,
+#sec-interests .crm-records-search .crm-records-search__input,
+#sec-deals .crm-records-search .crm-records-search__input,
+#sec-contacts .crm-records-search .crm-records-search__input,
+#sec-plots .crm-records-search .crm-records-search__input {
     width: 100%;
     padding-left: 1.9rem;
 }
@@ -795,30 +814,35 @@
 .zf-field[hidden] { display: none; }
 .zf-field__head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.6rem;
-    padding: 0.45rem 0.4rem;
+    width: 100%;
+    padding: 0.45rem 0.7rem;
     margin: 0;
+    border: 1px solid transparent;
     border-radius: 8px;
+    background: transparent;
     cursor: pointer;
+    font-family: inherit;
     font-size: 0.88rem;
+    text-align: left;
     color: var(--rec-ink);
     line-height: 1.3;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .zf-field__head:hover { background: rgba(24, 34, 53, 0.04); }
-.zf-check {
-    width: 17px;
-    height: 17px;
-    margin: 0.05rem 0 0;
-    flex-shrink: 0;
-    accent-color: var(--rec-indigo);
-    cursor: pointer;
+.zf-field__head:focus-visible { outline: none; border-color: var(--rec-brand); box-shadow: 0 0 0 3px rgba(255, 163, 0, 0.16); }
+.zf-field.is-active .zf-field__head {
+    background: rgba(255, 163, 0, 0.14);
+    border-color: rgba(255, 163, 0, 0.45);
+    color: #8a5a00;
 }
+.zf-field.is-active .zf-field__head:hover { background: rgba(255, 163, 0, 0.2); }
 .zf-field.is-active .zf-field__label { font-weight: 600; }
 .zf-field__body {
     display: grid;
     gap: 0.45rem;
-    padding: 0.1rem 0.4rem 0.7rem 2.2rem;
+    padding: 0.35rem 0.7rem 0.7rem 0.7rem;
 }
 .zf-field__body[hidden] { display: none; }
 .zf-op {

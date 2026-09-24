@@ -6,7 +6,7 @@
 {% set portal_merge_nav_into_crm = true %}
 {% include 'components/portal_shell_start.html' %}
 <link rel="stylesheet" href="/static/css/share-workspace-modal.css?v=20260822-2">
-<link rel="stylesheet" href="/static/crm/crm-records.css?v=20260924-1">
+<link rel="stylesheet" href="/static/crm/crm-records.css?v=20260924-9">
 <style>
 .crm-tab-load-error {
     margin: 0 0 0.85rem;
@@ -209,30 +209,33 @@
 }
 #deals-kanban-board {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(138px, 1fr));
     gap: 0.7rem;
-    align-items: start;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 0.35rem;
 }
 #deals-kanban-board .kanban-col {
     min-width: 0;
     min-height: 420px;
+    display: flex;
+    flex-direction: column;
 }
+/* The card list fills the rest of the column so the whole column is droppable. */
 #deals-kanban-board .kanban-cards {
-    min-height: 330px;
+    min-height: 120px;
+    flex: 1 1 auto;
 }
-#deals-kanban-board .kanban-card {
+#deals-kanban-board .kb-card {
     border: 1px solid var(--crm-line);
     border-radius: 8px;
     background: #fff;
     padding: 0.58rem 0.62rem;
     box-shadow: 0 2px 8px rgba(20, 28, 45, 0.06);
+    min-width: 0;
 }
-#deals-kanban-board .kanban-cards.dk-drop-active {
-    outline: 2px dashed var(--ms-brand-primary, var(--crm-blue, #696cff));
-    outline-offset: -3px;
-    background: rgba(var(--ms-brand-primary-rgb, 105, 108, 255), 0.06);
-}
-#deals-kanban-board .kanban-card.dk-dragging {
+#deals-kanban-board .kb-card--dragging {
     opacity: 0.55;
 }
 /* Keep Interests filter rail above table layers on mobile overlay */
@@ -296,6 +299,7 @@
 @media (max-width: 768px) {
     #deals-kanban-board {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow-x: visible;
     }
     .entity-filter-modal {
         width: min(96vw, 360px) !important;
@@ -1016,7 +1020,7 @@
 </script>
 <script src="/static/crm/crm-pager.js?v=20260822-pagination-2"></script>
     <script src="/static/crm/crm-sort.js?v=20260826-1"></script>
-    <script src="/static/crm/crm-records.js?v=20260924-1"></script>
+    <script src="/static/crm/crm-records.js?v=20260924-9"></script>
 <script>
 (function() {
     'use strict';
