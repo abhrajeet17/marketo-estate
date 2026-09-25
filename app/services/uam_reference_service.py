@@ -354,6 +354,10 @@ def can_user_reveal_broker_referred_contact(user_id, interest_row):
     ref_uid = str((interest_row or {}).get('reference_user_id') or '').strip()
     if not ref_uid:
         return False
+    # Only broker-referred records sit behind the reveal gate; interests the
+    # client team brings in are never shown to brokers, so there is nothing to reveal.
+    if not _interest_has_broker_reference(interest_row):
+        return False
     if _interest_contact_is_revealed(interest_row):
         return False
     return ref_uid == str(user_id or '').strip()

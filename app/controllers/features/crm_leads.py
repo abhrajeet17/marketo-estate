@@ -103,6 +103,15 @@ def register_crm_lead_routes(
         upd['reference_user_role'] = role or None
         return reference_row
 
+    def _is_client_admin_of(sb, uid, client_id):
+        if not client_id:
+            return False
+        for m in leads.get_client_memberships(sb, uid):
+            if str(m.get('client_id') or '') == str(client_id) and \
+                    _normalize_client_member_role(m.get('member_role')) == CLIENT_MEMBER_ROLE_CLIENT_ADMIN:
+                return True
+        return False
+
     # --------------------------------------------------------------------- me
     @app.route('/api/crm/me', methods=['GET'])
     @require_auth
@@ -210,6 +219,13 @@ def register_crm_lead_routes(
             project_client_ids = list((reference_catalog or {}).get('client_ids') or [])
             if len(project_client_ids) == 1:
                 client_id = str(project_client_ids[0])
+        reference_role = (
+            _normalize_client_member_role((reference_row or {}).get('member_role'))
+            or (leads.resolve_reference_user_role(sb, reference_user_id, client_id) if reference_user_id else None)
+        )
+        if not reference_user_id:
+            # No referring link: the interest belongs to the client team via its admin.
+            reference_user_id, reference_role = leads.default_reference_for_client(sb, client_id)
         request_origin = str(data.get('origin') or '').strip().lower()
         lead_source = 'SalesTool' if request_origin == 'plot' else (fields.get('lead_source') or 'SalesTool')
         now = leads.now_iso()
@@ -220,10 +236,7 @@ def register_crm_lead_routes(
             'client_id': client_id,
             'submitted_by': None,
             'reference_user_id': reference_user_id,
-            'reference_user_role': (
-                _normalize_client_member_role((reference_row or {}).get('member_role'))
-                or (leads.resolve_reference_user_role(sb, reference_user_id, client_id) if reference_user_id else None)
-            ),
+            'reference_user_role': reference_role,
             'plots': snapshot,
             'notes': '',
             'custom_fields': leads.extract_custom_fields(data),
@@ -296,9 +309,18 @@ def register_crm_lead_routes(
             reference_scope_user_id = crm_interest_reference_scope_user_id(
                 sb, user_id, role, client_ids=[client_id] if client_id else None,
             )
+            # The reference is not user-selectable: a broker's own interests reference
+            # the broker; everything the client team brings in references the client admin.
             upd_ref = {}
-            requested_ref = str(data.get('reference_user_id') or '').strip() or reference_scope_user_id or ''
-            _apply_reference(sb, upd_ref, requested_ref, panorama_id=panorama_id, client_id=client_id)
+            if reference_scope_user_id:
+                _apply_reference(sb, upd_ref, reference_scope_user_id, panorama_id=panorama_id, client_id=client_id)
+                upd_ref['reference_user_role'] = CLIENT_MEMBER_ROLE_BROKER
+            else:
+                if _is_client_admin_of(sb, user_id, client_id):
+                    upd_ref = {'reference_user_id': str(user_id), 'reference_user_role': CLIENT_MEMBER_ROLE_CLIENT_ADMIN}
+                else:
+                    admin_uid, admin_role = leads.default_reference_for_client(sb, client_id)
+                    upd_ref = {'reference_user_id': admin_uid, 'reference_user_role': admin_role}
         except ValidationError as exc:
             return jsonify(exc.payload()), exc.status
         lead_source = 'SalesTool' if request_origin == 'plot' else (fields.get('lead_source') or 'SalesTool')
@@ -402,11 +424,7 @@ def register_crm_lead_routes(
                         raise ValidationError('Invalid deal stage', 'deal_stage')
                     upd['deal_stage'] = stage
                     upd['deal_is_active'] = leads.deal_is_active_for_stage(stage)
-            if 'reference_user_id' in data:
-                _apply_reference(
-                    sb, upd, data.get('reference_user_id'),
-                    panorama_id=int(row.get('panorama_id')), client_id=row.get('client_id'),
-                )
+            # The reference is fixed at creation time and is not editable.
             if 'assigned_to' in data:
                 raw_at = str(data.get('assigned_to') or '').strip()
                 upd['assigned_to'] = raw_at or None
@@ -510,6 +528,8 @@ def register_crm_lead_routes(
         if not row:
             return jsonify({'error': 'Not found or access denied'}), 404
         if not can_user_reveal_broker_referred_contact(user_id, row):
+            if not leads.contact_requires_reveal(row) and not str(row.get('contact_revealed_at') or '').strip():
+                return jsonify({'error': 'Only broker-referred contacts need to be revealed'}), 403
             if str(row.get('contact_revealed_at') or '').strip():
                 return jsonify({'error': 'Contact is already revealed'}), 409
             return jsonify({'error': 'Only the referring broker can reveal this contact'}), 403

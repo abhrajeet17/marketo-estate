@@ -510,21 +510,6 @@
 .rec-mini-btn:hover:not(:disabled) { border-color: var(--rec-brand); background: #fff9ef; }
 .rec-mini-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* quotes block */
-.rec-quotes { display: grid; gap: 0.35rem; margin-bottom: 0.55rem; }
-.rec-quote-line {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.4rem 0.6rem;
-    border-radius: 7px;
-    background: #f5f7fa;
-    font-size: 0.76rem;
-    color: var(--rec-ink);
-}
-.rec-quotes__actions { display: flex; gap: 0.45rem; flex-wrap: wrap; }
-
 /* footer */
 .rec-foot {
     display: flex;

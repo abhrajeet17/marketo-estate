@@ -660,6 +660,55 @@ def resolve_reference_user_role(sb, reference_user_id, client_id=None):
     return best
 
 
+def client_admin_reference_map(sb, client_ids):
+    """{client_id: user_id} of each client's first (oldest) client admin.
+
+    Records the client team brings in are referenced to their client admin, and
+    legacy rows without a reference display that admin as the reference."""
+    ids = sorted({str(c).strip() for c in (client_ids or []) if str(c or '').strip()})
+    out = {}
+    missing = []
+    for cid in ids:
+        cached = _cache_get(('client_admin_ref', cid), 30)
+        if cached is None:
+            missing.append(cid)
+        elif cached:
+            out[cid] = cached
+    for chunk in _chunks(missing, 100):
+        try:
+            rows = (
+                sb.table('client_members')
+                .select('client_id, user_id, created_at')
+                .in_('client_id', chunk)
+                .eq('member_role', CLIENT_MEMBER_ROLE_CLIENT_ADMIN)
+                .order('created_at')
+                .execute()
+                .data or []
+            )
+        except Exception:
+            continue
+        found = {}
+        for row in rows:
+            cid = str(row.get('client_id') or '')
+            uid = str(row.get('user_id') or '')
+            if cid and uid and cid not in found:
+                found[cid] = uid
+        for cid in chunk:
+            _cache_set(('client_admin_ref', cid), found.get(cid, ''))
+            if found.get(cid):
+                out[cid] = found[cid]
+    return out
+
+
+def default_reference_for_client(sb, client_id):
+    """(user_id, role) of the client admin used when a record has no reference."""
+    cid = str(client_id or '').strip()
+    if not cid:
+        return None, None
+    uid = client_admin_reference_map(sb, [cid]).get(cid)
+    return (uid, CLIENT_MEMBER_ROLE_CLIENT_ADMIN) if uid else (None, None)
+
+
 # ---------------------------------------------------------------------------
 # Capabilities
 # ---------------------------------------------------------------------------
@@ -772,7 +821,12 @@ def shape_lead_rows(sb, rows, *, user_id, role, reference_scope_user_id, caps, p
     pmap = panorama_map if panorama_map is not None else panorama_info_map(sb, pano_ids)
     cnames = client_name_map(sb, [r.get('client_id') for r in rows if r.get('client_id')])
     ref_ids = [r.get('reference_user_id') for r in rows if r.get('reference_user_id')]
-    pnames = profile_name_map(sb, ref_ids)
+    # Rows without a reference show the client admin as their reference (display only;
+    # reference_user_id stays null so visibility and reveal gating are unchanged).
+    admin_refs = client_admin_reference_map(
+        sb, [r.get('client_id') for r in rows if not r.get('reference_user_id') and r.get('client_id')],
+    )
+    pnames = profile_name_map(sb, ref_ids + list(admin_refs.values()))
     out = []
     for raw in rows:
         item = apply_broker_referred_contact_mask(
@@ -807,6 +861,13 @@ def shape_lead_rows(sb, rows, *, user_id, role, reference_scope_user_id, caps, p
         item['reference_user_name'] = pnames.get(ref_uid, '') if ref_uid else ''
         item['reference_user_role'] = ref_role or ''
         item['reference_user_role_label'] = role_label(ref_role) if ref_uid else ''
+        item['reference_is_default'] = False
+        fallback_uid = '' if ref_uid else admin_refs.get(str(item.get('client_id') or ''), '')
+        if fallback_uid:
+            item['reference_user_name'] = pnames.get(fallback_uid, '') or 'Client Admin'
+            item['reference_user_role'] = CLIENT_MEMBER_ROLE_CLIENT_ADMIN
+            item['reference_user_role_label'] = role_label(CLIENT_MEMBER_ROLE_CLIENT_ADMIN)
+            item['reference_is_default'] = True
         item['is_self_reference'] = bool(ref_uid and ref_uid == str(user_id or ''))
         item['deal_stage'] = str(item.get('deal_stage') or 'new')
         item['deal_stage_label'] = DEAL_STAGE_LABELS.get(item['deal_stage'], item['deal_stage'].replace('_', ' ').title())

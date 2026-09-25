@@ -161,8 +161,10 @@
         const sub = rec.workspace_name && rec.panorama_name && rec.workspace_name !== rec.panorama_name ? rec.panorama_name : '';
         return '<div class="rec-cell-primary rec-cell-truncate">' + esc(main) + '</div>' + (sub ? '<div class="rec-cell-sub">' + esc(sub) + '</div>' : '');
     }
+    // Records without an explicit reference fall back to the client admin (server-provided).
+    function hasReference(rec) { return !!(rec && (rec.reference_user_id || rec.reference_is_default)); }
     function referenceCell(rec) {
-        if (!rec.reference_user_id) return '<span class="rec-empty">—</span>';
+        if (!hasReference(rec)) return '<span class="rec-empty">—</span>';
         return '<div class="rec-cell-truncate">' + esc(rec.reference_user_name || 'Reference') + '</div>';
     }
     function actionButton(rec) {
@@ -170,14 +172,6 @@
         return '<button class="btn plot-row-action-btn" type="button" data-open-record="' + esc(rec.id) + '" title="' + (edit ? 'Open and edit' : 'View') + '" aria-label="' + (edit ? 'Open record' : 'View record') + '">' + (edit ? ICON.edit : ICON.view) + '<span>' + (edit ? 'Edit' : 'View') + '</span></button>';
     }
     function stageSlug(label) { return String(label || '').trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_'); }
-    function refUserLabel(u) {
-        if (!u) return 'Reference';
-        const name = String(u.display_name || u.email || 'Reference').trim();
-        const meta = [];
-        if (u.member_role_label) meta.push(u.member_role_label);
-        if (Array.isArray(u.client_group_names) && u.client_group_names.length) meta.push(u.client_group_names.join(', '));
-        return meta.length ? name + ' (' + meta.join(' · ') + ')' : name;
-    }
 
     // ------------------------------------------------------------------ state
     const TABS = {
@@ -205,16 +199,15 @@
         mastersInflight: new Map(),
         filterMasters: null,
         filterMastersPromise: null,
-        refUsers: new Map(),
         normalProjects: null,
         lastLoadedAt: 0,
         activeTab: 'interests',
         dealsView: 'list',
         kanban: { rows: [], loaded: false, promise: null, seq: 0, stale: false },
-        drawer: { record: null, tabKey: null, mode: 'view', masters: [], refUsers: [], pendingPlots: null, seq: 0, quotesSeq: 0 },
+        drawer: { record: null, tabKey: null, mode: 'view', masters: [], pendingPlots: null, seq: 0 },
         convert: { record: null, plots: [] },
         addPlots: { record: null, source: null, all: [], selected: new Set(), attached: new Set(), seq: 0 },
-        addInterest: { plots: [], selected: new Set(), refUsers: [], masters: [], seq: 0 },
+        addInterest: { plots: [], selected: new Set(), masters: [], seq: 0 },
         deleteTarget: null,
         tabs: {},
     };
@@ -294,50 +287,55 @@
             if (values.length) return { key, label: finalLabel, type: 'select', options: pairs(values) };
             return { key, label: finalLabel, type: 'text', suggest: suggestions || [] };
         };
-        const defs = [
-            { key: 'customer_name', label: 'Customer Name', type: 'text' },
-            { key: 'customer_email', label: 'Email', type: 'text' },
-            { key: 'customer_phone', label: 'Phone', type: 'text' },
-            masterOrText('title', 'Title', 'title'),
-            { key: 'category', label: 'Category', type: 'text', suggest: f.categories || [] },
-            masterOrText('lead_source', 'Lead Source', 'lead_source', f.lead_sources),
-            masterOrText('lead_category', 'Lead Category', 'lead_category', f.lead_categories),
-            masterOrText('lead_status', 'Lead Status', 'lead_status', f.lead_statuses),
-            masterOrText('campaign_type', 'Campaign Type', 'campaign_type', f.campaign_types),
-            masterOrText('campaign_status', 'Campaign Status', 'campaign_status', f.campaign_statuses),
-            { key: 'customer_city', label: 'City', type: 'text' },
-            masterOrText('customer_state', 'State', 'state'),
-            masterOrText('customer_country', 'Country', 'country'),
-            { key: 'customer_zip_code', label: 'Zip Code', type: 'text' },
-            { key: 'workspace_id', label: 'Project', type: 'select', options: (f.workspaces || []).map(w => [w.id, w.name]) },
-            { key: 'panorama_id', label: 'Sector', type: 'select', options: (f.panoramas || []).map(p => [String(p.id), p.name]) },
-            { key: 'plot_id', label: 'Plot', type: 'plot', options: (f.plots || []).map(p => [p.id, p.name]) },
-            { key: 'reference_user_id', label: 'Reference', type: 'select', options: (f.references || []).map(r => [r.id, r.name + (r.role_label ? ' · ' + r.role_label : '')]) },
-            { key: 'reference_user_role', label: 'Ref Role', type: 'select', options: (f.reference_roles || []).map(r => [r.key, r.label]) },
-            { key: 'description', label: 'Description', type: 'text' },
-            { key: 'notes', label: 'Notes', type: 'text' },
-            { key: 'created_at', label: 'Created Time', type: 'date' },
-            { key: 'customer_birthday', label: 'Birthday', type: 'date' },
-        ];
-        if ((f.clients || []).length > 1) defs.push({ key: 'client_id', label: 'Client', type: 'select', options: (f.clients || []).map(c => [c.id, c.name]) });
-        if (isDeal) {
-            defs.push(
-                { key: 'deal_title', label: 'Deal Name', type: 'text' },
-                { key: 'deal_stage', label: 'Stage', type: 'select', options: (f.stages || []).map(st => [st.key, st.label + (st.count ? ' (' + st.count + ')' : '')]) },
-                { key: 'deal_amount', label: 'Amount', type: 'text' },
-                { key: 'deal_project_name', label: 'Deal Project', type: 'text' },
-                { key: 'converted_at', label: 'Converted Time', type: 'date' }
-            );
-        }
+        const customDefs = [];
         masters.forEach(m => {
             const key = String(m.field_key || '').trim();
             if (!key || MASTER_SKIP_KEYS.has(key) || MASTER_COLUMN_KEYS[key]) return;
             const applies = Array.isArray(m.applies_to) ? m.applies_to.map(x => String(x || '').toLowerCase()) : ['interests'];
             if (!applies.includes('interests') && !(isDeal && applies.includes('deals'))) return;
             const values = masterValueList(m);
-            defs.push({ key: 'cf.' + key, label: m.label || key, type: values.length ? 'select' : 'text', options: pairs(values), custom: true });
+            customDefs.push({ key: 'cf.' + key, label: m.label || key, type: values.length ? 'select' : 'text', options: pairs(values), custom: true });
         });
-        defs.sort((a, b) => String(a.label).localeCompare(String(b.label)));
+        // Same order as the record form (buildSchema): Contact → Lead details →
+        // Deal → Plots → Notes, then record metadata.
+        const defs = [
+            masterValueList(masterByKey('title')).length ? masterOrText('title', 'Title', 'title') : { key: 'title', label: 'Title', type: 'select', options: pairs(TITLE_OPTIONS) },
+            { key: 'customer_name', label: 'Customer Name', type: 'text' },
+            { key: 'customer_email', label: 'Email', type: 'text' },
+            { key: 'customer_phone', label: 'Phone', type: 'text' },
+            { key: 'customer_birthday', label: 'Birthday', type: 'date' },
+            { key: 'customer_city', label: 'City', type: 'text' },
+            masterOrText('customer_state', 'State', 'state'),
+            masterOrText('customer_country', 'Country', 'country'),
+            { key: 'customer_zip_code', label: 'Zip Code', type: 'text' },
+            { key: 'category', label: 'Category', type: 'text', suggest: f.categories || [] },
+            masterOrText('lead_source', 'Lead Source', 'lead_source', f.lead_sources),
+            masterOrText('lead_category', 'Lead Category', 'lead_category', f.lead_categories),
+            masterOrText('lead_status', 'Lead Status', 'lead_status', f.lead_statuses),
+            masterOrText('campaign_type', 'Campaign Type', 'campaign_type', f.campaign_types),
+            masterOrText('campaign_status', 'Campaign Status', 'campaign_status', f.campaign_statuses),
+            ...customDefs,
+            { key: 'reference_user_id', label: 'Reference', type: 'select', options: (f.references || []).map(r => [r.id, r.name + (r.role_label ? ' · ' + r.role_label : '')]) },
+            { key: 'reference_user_role', label: 'Ref Role', type: 'select', options: (f.reference_roles || []).map(r => [r.key, r.label]) },
+            { key: 'description', label: 'Description', type: 'text' },
+        ];
+        if (isDeal) {
+            defs.push(
+                { key: 'deal_title', label: 'Deal Name', type: 'text' },
+                { key: 'deal_stage', label: 'Stage', type: 'select', options: (f.stages || []).map(st => [st.key, st.label + (st.count ? ' (' + st.count + ')' : '')]) },
+                { key: 'deal_amount', label: 'Amount', type: 'text' },
+                { key: 'deal_project_name', label: 'Deal Project', type: 'text' }
+            );
+        }
+        defs.push(
+            { key: 'workspace_id', label: 'Project', type: 'select', options: (f.workspaces || []).map(w => [w.id, w.name]) },
+            { key: 'panorama_id', label: 'Sector', type: 'select', options: (f.panoramas || []).map(p => [String(p.id), p.name]) },
+            { key: 'plot_id', label: 'Plot', type: 'plot', options: (f.plots || []).map(p => [p.id, p.name]) },
+            { key: 'notes', label: 'Notes', type: 'text' },
+            { key: 'created_at', label: 'Created Time', type: 'date' }
+        );
+        if (isDeal) defs.push({ key: 'converted_at', label: 'Converted Time', type: 'date' });
+        if ((f.clients || []).length > 1) defs.push({ key: 'client_id', label: 'Client', type: 'select', options: (f.clients || []).map(c => [c.id, c.name]) });
         return defs;
     }
     function fieldDomId(key) { return 'zf-' + key.replace(/[^a-z0-9_]/gi, '-'); }
@@ -725,7 +723,7 @@
                     '<div class="kb-card-title" title="' + esc(r.deal_title || '') + '">' + esc(r.deal_title || r.customer_name || 'Deal') + '</div>' +
                     '<div class="kb-card-line">' + nameParts.join('') + '</div>' +
                     '<div class="kb-card-line">' + projLine + '</div>' + amountLine +
-                    '<div class="kb-card-foot"><span class="rec-plots-chip">' + ICON.pin + esc(plots + (plots === 1 ? ' plot' : ' plots')) + '</span>' + (r.reference_user_id ? rolePill(r) : '') + '</div>' +
+                    '<div class="kb-card-foot"><span class="rec-plots-chip">' + ICON.pin + esc(plots + (plots === 1 ? ' plot' : ' plots')) + '</span>' + (hasReference(r) ? rolePill(r) : '') + '</div>' +
                     '</div>';
             }).join('');
             zone.querySelectorAll('.kb-card').forEach(card => {
@@ -861,8 +859,6 @@
         state.drawer.record = null;
         state.drawer.mode = 'view';
         state.drawer.pendingPlots = null;
-        global.__crmQuoteDealId = null;
-        global.__crmQuoteContext = null;
         hideDrawer();
     }
     function drawerIsDirty() {
@@ -926,19 +922,6 @@
         state.mastersInflight.set(key, job);
         return job;
     }
-    async function loadReferenceUsers(panoramaId, clientId) {
-        const pid = String(panoramaId || '').trim();
-        if (!pid) return [];
-        const key = pid + ':' + String(clientId || '');
-        if (state.refUsers.has(key)) return state.refUsers.get(key);
-        try {
-            const data = await apiJson('/api/public/panoramas/' + encodeURIComponent(pid) + '/reference-users');
-            let users = Array.isArray(data.reference_users) ? data.reference_users : [];
-            if (clientId) users = users.filter(u => Array.isArray(u.client_ids) && u.client_ids.map(String).includes(String(clientId)));
-            state.refUsers.set(key, users);
-            return users;
-        } catch (e) { return []; }
-    }
     function openRecordById(id, tabKey) {
         const rec = findRecord(id);
         if (rec) return openRecord(rec, { tabKey });
@@ -952,17 +935,6 @@
         state.drawer.tabKey = opts.tabKey || state.activeTab;
         state.drawer.mode = 'view';
         state.drawer.pendingPlots = null;
-        if (rec.is_deal) {
-            global.__crmQuoteDealId = String(rec.id);
-            global.__crmQuoteContext = {
-                clientName: rec.customer_name || rec.deal_title || '',
-                email: rec.contact_hidden ? '' : (rec.customer_email || ''),
-                phone: rec.contact_hidden ? '' : (rec.customer_phone || ''),
-                address: rec.contact_hidden ? '' : (rec.customer_address || ''),
-                projectName: rec.deal_project_name || rec.workspace_name || rec.panorama_name || '',
-                plots: (rec.plots || []).map(p => ({ name: plotLabel(p), area: p.area || '', price: p.price || '' })),
-            };
-        } else { global.__crmQuoteDealId = null; global.__crmQuoteContext = null; }
         renderDrawerHead(rec);
         showDrawerMsg('');
         showDrawer();
@@ -970,15 +942,13 @@
         if (sections) sections.innerHTML = '';
         setDrawerLoading(true, 'Loading record…');
         updateDrawerFooter();
-        const [masters, refUsers] = await Promise.all([loadMastersFor(rec), loadReferenceUsers(rec.panorama_id, rec.client_id)]);
+        const masters = await loadMastersFor(rec);
         if (token !== state.drawer.seq) return;
         state.drawer.masters = masters;
-        state.drawer.refUsers = refUsers;
         setDrawerLoading(false);
         renderSections();
         updateDrawerFooter();
         if (opts.edit && rec.can_edit) setDrawerMode('edit');
-        if (rec.is_deal) loadDealQuotationsList(rec.id);
         const closeBtn = $('drawer-close');
         if (closeBtn && !opts.edit) setTimeout(() => closeBtn.focus({ preventScroll: true }), 40);
     }
@@ -1012,24 +982,26 @@
         const v = rec[f.key];
         return v == null ? '' : String(v);
     }
+    const TITLE_OPTIONS = ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Sir', 'Madam'];
     function buildSchema(rec) {
         const m = masterHelpers(rec);
         const locked = !!rec.contact_hidden;
         const withCurrent = (options, current) => { const list = options.slice(); const cur = String(current || '').trim(); if (cur && !list.includes(cur)) list.unshift(cur); return list; };
-        const selectOrText = (key, label, masterKey, extra) => {
+        const selectOrText = (key, label, masterKey, extra, fallback) => {
             const f = m.byKey(masterKey || key);
-            const options = f ? m.opts(f) : [];
+            const masterOpts = f ? m.opts(f) : [];
+            const options = masterOpts.length ? masterOpts : (fallback || []);
             const cur = valueOf(rec, { key, custom: !!(extra && extra.custom) });
             return fieldDef(key, (f && f.label) || label, Object.assign({}, extra || {}, options.length ? { type: 'select', options: withCurrent(options, cur) } : {}, f ? { required: !!(extra && extra.required) || !!f.is_required } : {}));
         };
         const KNOWN = new Set(['lead_source', 'lead_category', 'lead_status', 'campaign_type', 'campaign_status', 'state', 'country', 'title', 'deal_stage', 'plot_status', 'builder_name', 'project_type']);
         const contact = [
+            selectOrText('title', 'Title', 'title', null, TITLE_OPTIONS),
             fieldDef('customer_name', 'Full name', { required: true }),
-            selectOrText('title', 'Title', 'title'),
             fieldDef('customer_email', 'Email', { required: true, type: 'email', locked, href: 'mailto:' }),
             fieldDef('customer_phone', 'Phone', { required: true, type: 'tel', locked, href: 'tel:' }),
             fieldDef('customer_birthday', 'Birthday', { type: 'date', locked }),
-            fieldDef('customer_street', 'Street', { locked }),
+            fieldDef('customer_street', 'Address', { locked }),
             fieldDef('customer_city', 'City', { locked }),
             selectOrText('customer_state', 'State', 'state', { locked }),
             selectOrText('customer_country', 'Country', 'country', { locked }),
@@ -1045,7 +1017,7 @@
             const options = m.opts(f);
             lead.push(fieldDef(key, f.label || key, { custom: true, type: options.length ? 'select' : 'text', options: withCurrent(options, valueOf(rec, { key, custom: true })), required: !!f.is_required }));
         });
-        lead.push(fieldDef('reference_user_id', 'Reference', { type: 'reference' }));
+        lead.push(fieldDef('reference_user_id', 'Reference', { type: 'reference', readonly: true }));
         lead.push(fieldDef('reference_user_role_label', 'Reference role', { readonly: true }));
         lead.push(fieldDef('description', 'Description', { type: 'textarea', wide: true, rows: 3 }));
         const sections = [
@@ -1063,7 +1035,6 @@
         }
         sections.push({ key: 'plots', title: 'Plots', custom: 'plots' });
         sections.push({ key: 'notes', title: 'Notes', fields: [fieldDef('notes', 'Notes', { type: 'textarea', wide: true, rows: 4, placeholder: 'Call summary, next steps, objections…' })] });
-        if (rec.is_deal) sections.push({ key: 'quotes', title: 'Quotations', custom: 'quotes' });
         return sections;
     }
     function renderField(rec, f, editing) {
@@ -1075,8 +1046,8 @@
         if (!editable) {
             let display;
             if (lockedNow) display = '<span class="rec-hidden">' + ICON.lock + esc(rec.contact_hidden_label || HIDDEN_LABEL) + '</span>';
-            else if (f.type === 'reference') display = rec.reference_user_id ? esc(rec.reference_user_name || 'Reference') : '<span class="rec-empty">No reference</span>';
-            else if (f.key === 'reference_user_role_label') display = rec.reference_user_id ? rolePill(rec) : '<span class="rec-empty">—</span>';
+            else if (f.type === 'reference') display = hasReference(rec) ? esc(rec.reference_user_name || 'Reference') : '<span class="rec-empty">No reference</span>';
+            else if (f.key === 'reference_user_role_label') display = hasReference(rec) ? rolePill(rec) : '<span class="rec-empty">—</span>';
             else if (f.type === 'stage') display = stagePill(rec.deal_stage);
             else if (f.type === 'date') display = raw ? esc(fmtBirthday(raw)) : '<span class="rec-empty">—</span>';
             else if (!raw) display = '<span class="rec-empty">—</span>';
@@ -1092,13 +1063,6 @@
             control = '<select' + attrs + '><option value="">Select ' + esc(f.label) + '</option>' + f.options.map(o => '<option value="' + esc(o) + '"' + (o === raw ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
         } else if (f.type === 'stage') {
             control = '<select' + attrs + '>' + stageOptions(rec).map(([slug, label]) => '<option value="' + esc(slug) + '"' + (slug === String(rec.deal_stage || 'new') ? ' selected' : '') + '>' + esc(label) + '</option>').join('') + '</select>';
-        } else if (f.type === 'reference') {
-            const users = state.drawer.refUsers || [];
-            const cur = String(rec.reference_user_id || '');
-            const hasCur = users.some(u => String(u.user_id) === cur);
-            control = '<select' + attrs + '><option value="">' + (users.length ? 'No reference' : 'No reference available') + '</option>' +
-                users.map(u => '<option value="' + esc(u.user_id) + '"' + (String(u.user_id) === cur ? ' selected' : '') + '>' + esc(refUserLabel(u)) + '</option>').join('') +
-                (cur && !hasCur ? '<option value="' + esc(cur) + '" selected>' + esc(rec.reference_user_name || 'Current reference') + '</option>' : '') + '</select>';
         } else {
             const type = f.type === 'date' ? 'date' : (f.type === 'email' ? 'email' : (f.type === 'tel' ? 'tel' : 'text'));
             control = '<input' + attrs + ' type="' + type + '" value="' + esc(f.type === 'date' ? raw.slice(0, 10) : raw) + '" placeholder="' + esc(f.placeholder) + '">';
@@ -1118,13 +1082,6 @@
                 (editing && plots.length > 1 ? '<button type="button" class="rec-plot__remove" data-remove-plot="' + esc(k) + '" aria-label="Remove plot" title="Remove from this record">&times;</button>' : '') + '</div>';
         }).join('') + '</div>';
     }
-    function renderQuotesBlock() {
-        return '<div class="rec-quotes" id="deal-quotes-list">Loading quotations…</div>' +
-            '<div class="rec-quotes__actions">' +
-            '<button type="button" class="rec-mini-btn" id="deal-btn-quotation">' + ICON.plus + '<span>New quotation</span></button>' +
-            '<button type="button" class="rec-mini-btn" id="deal-btn-send-quote">Send last quote by email</button>' +
-            '</div>';
-    }
     function renderSections() {
         const rec = state.drawer.record;
         const root = $('d-sections');
@@ -1133,7 +1090,6 @@
         root.innerHTML = buildSchema(rec).map(sec => {
             let body;
             if (sec.custom === 'plots') body = renderPlotsBlock(rec, editing);
-            else if (sec.custom === 'quotes') body = renderQuotesBlock(rec);
             else body = '<div class="rec-grid">' + sec.fields.map(f => renderField(rec, f, editing)).join('') + '</div>';
             const note = sec.note ? '<span class="rec-section__note">' + ICON.lock + esc(sec.note) + '</span>' : '';
             const tools = sec.custom === 'plots' && rec.can_edit ? '<button type="button" class="rec-mini-btn" id="d-add-plots">' + ICON.plus + '<span>Add plots</span></button>' : '';
@@ -1157,44 +1113,7 @@
         });
         root.querySelectorAll('.rec-field.is-invalid [data-key]').forEach(inp => inp.addEventListener('input', () => clearInvalid(inp.closest('.rec-field'))));
         root.querySelectorAll('[data-key]').forEach(inp => inp.addEventListener('input', () => clearInvalid(inp.closest('.rec-field')), { once: false }));
-        const qBtn = root.querySelector('#deal-btn-quotation');
-        if (qBtn) qBtn.addEventListener('click', () => {
-            if (!global.__crmQuoteDealId) { toast('Open a deal first', 'error'); return; }
-            if (state.drawer.record && state.drawer.record.contact_hidden) { toast('Contact must be revealed before a quotation can be generated', 'error'); return; }
-            if (typeof global.openDealQuotationModal === 'function') global.openDealQuotationModal();
-        });
-        const sendBtn = root.querySelector('#deal-btn-send-quote');
-        if (sendBtn) sendBtn.addEventListener('click', async () => {
-            const did = global.__crmQuoteDealId;
-            const qid = global.__crmLastQuoteId;
-            if (!did || !qid) { toast('Create a quotation first', 'error'); return; }
-            setBusy(sendBtn, true);
-            try {
-                await apiJson('/api/crm/deals/' + encodeURIComponent(did) + '/quotation/share', { method: 'POST', body: JSON.stringify({ quote_id: qid }) });
-                toast('Quote email sent');
-                loadDealQuotationsList(did);
-            } catch (e) { toast(e.message || 'Send failed', 'error'); }
-            finally { setBusy(sendBtn, false); }
-        });
     }
-    async function loadDealQuotationsList(dealId) {
-        const el = $('deal-quotes-list');
-        if (!el || !dealId) return;
-        const seq = ++state.drawer.quotesSeq;
-        el.textContent = 'Loading quotations…';
-        try {
-            const rows = await apiJson('/api/crm/deals/' + encodeURIComponent(String(dealId)) + '/quotations');
-            if (seq !== state.drawer.quotesSeq) return;
-            const list = Array.isArray(rows) ? rows : [];
-            if (!list.length) { el.innerHTML = '<div class="rec-empty-block">No quotations yet.</div>'; global.__crmLastQuoteId = null; return; }
-            el.innerHTML = list.map(q => '<div class="rec-quote-line"><span>' + esc(fmtDate(q.created_at)) + ' · ' + esc(String(q.status || 'draft')) + (q.sent_to_email ? ' → ' + esc(q.sent_to_email) : '') + '</span>' + (q.sent_at ? '<span class="rec-pill rec-pill--won">sent</span>' : '<span class="rec-pill">draft</span>') + '</div>').join('');
-            global.__crmLastQuoteId = list[0].id;
-        } catch (e) {
-            if (seq !== state.drawer.quotesSeq) return;
-            el.innerHTML = '<div class="rec-empty-block">' + esc(e.message || 'Could not load quotations') + '</div>';
-        }
-    }
-    global.loadDealQuotationsList = loadDealQuotationsList;
 
     function markInvalid(wrap, message) {
         if (!wrap) return;
@@ -1582,7 +1501,6 @@
         ['ai-customer-name', 'ai-customer-email', 'ai-customer-phone', 'ai-category', 'ai-customer-city', 'ai-description', 'ai-plot-search'].forEach(id => { const el = $(id); if (el) el.value = ''; });
         $('ai-plots-wrap').innerHTML = '<div class="rec-plot-list__empty">Select a project first.</div>';
         $('ai-plots-count').textContent = '';
-        $('ai-reference').innerHTML = '<option value="">No reference</option>';
         $('add-interest-master-fields').innerHTML = '';
         openModal(modal);
         const btn = $('add-interest-save');
@@ -1647,7 +1565,7 @@
         const pid = String($('ai-panorama-id').value || '').trim();
         clearInvalid($('ai-panorama-id').closest('.rec-field'));
         if (!pid) { $('ai-plots-wrap').innerHTML = '<div class="rec-plot-list__empty">Select a sector to list its plots.</div>'; return; }
-        await Promise.all([loadAiPlots({ panoramaId: pid }), loadAiReferenceUsers(pid)]);
+        await loadAiPlots({ panoramaId: pid });
     }
     async function loadAiPlots(src) {
         const ai = state.addInterest;
@@ -1688,14 +1606,6 @@
             clearInvalid(wrap.closest('.rec-field'));
         }));
     }
-    async function loadAiReferenceUsers(panoramaId) {
-        const users = await loadReferenceUsers(panoramaId, '');
-        state.addInterest.refUsers = users;
-        const sel = $('ai-reference');
-        const cur = sel.value;
-        sel.innerHTML = '<option value="">' + (users.length ? 'No reference' : 'No reference available') + '</option>' + users.map(u => '<option value="' + esc(u.user_id) + '">' + esc(refUserLabel(u)) + '</option>').join('');
-        if (cur && users.some(u => String(u.user_id) === cur)) sel.value = cur;
-    }
     function renderAiMasters() {
         const root = $('add-interest-master-fields');
         const skip = new Set(['deal_stage', 'state', 'country', 'title', 'plot_status', 'builder_name', 'project_type']);
@@ -1734,7 +1644,6 @@
             customer_city: $('ai-customer-city').value.trim(),
             category: $('ai-category').value.trim(),
             description: $('ai-description').value.trim(),
-            reference_user_id: $('ai-reference').value || null,
             plots: Array.from(ai.selected).map(Number),
         };
         if (isNormal) { body.normal_project_id = Number(wsValue.slice(3)); body.normal_plot_ids = body.plots; }
