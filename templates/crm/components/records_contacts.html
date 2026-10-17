@@ -1,3 +1,4 @@
+{% from 'components/ui.html' import skeleton_rows %}
             <!-- ══════════ CONTACTS SECTION (every deal, from the unified crm_leads table) ══════════ -->
             <section class="crm-section" id="sec-contacts">
                 <div class="crm-records-shell" data-records-tab="contacts">
@@ -47,12 +48,9 @@
                                             <th data-sort-key="customer_phone">Phone</th>
                                             <th data-sort-key="customer_birthday">Birthday</th>
                                             <th>Address</th>
-                                            <th data-sort-key="deal_project_name">Project</th>
-                                            <th data-sort-key="deal_stage">Deal Stage</th>
-                                            <th>Reference</th>
                                             <th aria-label="Actions"></th>
                                         </tr></thead>
-                                        <tbody id="contacts-tbody"></tbody>
+                                        <tbody id="contacts-tbody">{{ skeleton_rows(6) }}</tbody>
                                     </table>
                                     <div class="empty" id="contacts-empty" style="display:none;">
                                         <strong>No contacts yet</strong>

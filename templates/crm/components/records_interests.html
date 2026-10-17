@@ -1,3 +1,4 @@
+{% from 'components/ui.html' import skeleton_rows %}
             <!-- ══════════ INTERESTS SECTION (unified crm_leads, record_status = interest) ══════════ -->
             <section class="crm-section active" id="sec-interests">
                 <div class="interest-list-shell crm-records-shell" data-records-tab="interests">
@@ -56,7 +57,7 @@
                                             <th style="width:8%">Ref Role</th>
                                             <th style="width:4%" aria-label="Actions"></th>
                                         </tr></thead>
-                                        <tbody id="tbody"></tbody>
+                                        <tbody id="tbody">{{ skeleton_rows(9) }}</tbody>
                                     </table>
                                     <div class="empty" id="table-empty" style="display:none;">
                                         <strong>No interests yet</strong>

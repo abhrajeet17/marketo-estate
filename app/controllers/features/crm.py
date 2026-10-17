@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import re
 import time
@@ -102,6 +103,159 @@ def _fetch_pages(fetch_page, page_size=1000):
         start += page_size
 
 
+def _run_parallel(*fns):
+    """Run independent Supabase reads concurrently; each result in call order.
+
+    A failing read returns None instead of raising, matching the previous
+    best-effort behaviour where every lookup was wrapped in try/except.
+    """
+    def safe(fn):
+        try:
+            return fn()
+        except Exception:
+            return None
+    if len(fns) == 1:
+        return [safe(fns[0])]
+    with ThreadPoolExecutor(max_workers=min(6, len(fns))) as pool:
+        return list(pool.map(safe, fns))
+
+
+def _select_in(sb, table, columns, column, values):
+    """SELECT columns FROM table WHERE column IN values, chunked."""
+    rows = []
+    for chunk in _chunks(values):
+        rows.extend(sb.table(table).select(columns).in_(column, chunk).execute().data or [])
+    return rows
+
+
+def _allotted_client_stats(sb, client_ids, memberships, *, is_client_admin, user_id):
+    """
+    Names, projects, plot status and lead counts per client, in four
+    dependency stages; reads within a stage run in parallel:
+
+      1. client names | member ids (client admins) | lead counts
+      2. workspace_access | panorama_access          (needs member ids)
+      3. panoramas by workspace | panoramas by id     (needs access rows)
+      4. plot statuses                                (needs panorama ids)
+    """
+    client_set = set(client_ids)
+
+    def lead_rows():
+        out = []
+        for chunk in _chunks(client_ids):
+            def fetch_page(start, end, chunk=chunk):
+                query = sb.table(LEAD_TABLE).select('client_id, record_status').in_('client_id', chunk)
+                if not is_client_admin:
+                    query = apply_broker_visibility(query, user_id)
+                return query.range(start, end).execute().data or []
+            out.extend(_fetch_pages(fetch_page))
+        return out
+
+    def member_rows():
+        if is_client_admin:
+            return _select_in(sb, 'client_members', 'id, client_id', 'client_id', client_ids)
+        return [{'id': m.get('id'), 'client_id': m.get('client_id')} for m in memberships]
+
+    names_rows, members, leads = _run_parallel(
+        lambda: _select_in(sb, 'clients', 'id, name', 'id', client_ids),
+        member_rows,
+        lead_rows,
+    )
+
+    names = {str(r.get('id')): (str(r.get('name') or '').strip() or str(r.get('id'))) for r in (names_rows or []) if r.get('id')}
+
+    client_of_member = {}
+    for row in members or []:
+        cid = str(row.get('client_id') or '')
+        if cid in client_set and row.get('id'):
+            client_of_member[row['id']] = cid
+
+    # Stage 2: one batched query per access table (was one per client).
+    member_ids = list(client_of_member)
+    ws_access, pano_access = _run_parallel(
+        lambda: _select_in(sb, 'workspace_access', 'workspace_id, client_member_id', 'client_member_id', member_ids) if member_ids else [],
+        lambda: _select_in(sb, 'panorama_access', 'panorama_id, client_member_id', 'client_member_id', member_ids) if member_ids else [],
+    )
+    projects = {cid: set() for cid in client_ids}
+    panoramas = {cid: set() for cid in client_ids}
+    for row in ws_access or []:
+        cid = client_of_member.get(row.get('client_member_id'))
+        if cid and row.get('workspace_id'):
+            projects[cid].add(str(row['workspace_id']))
+    for row in pano_access or []:
+        cid = client_of_member.get(row.get('client_member_id'))
+        try:
+            if cid and row.get('panorama_id') is not None:
+                panoramas[cid].add(int(row['panorama_id']))
+        except (TypeError, ValueError):
+            continue
+
+    # Stage 3: panoramas inside granted projects, and projects of granted panoramas.
+    def invert(mapping):
+        out = {}
+        for cid, keys in mapping.items():
+            for key in keys:
+                out.setdefault(key, set()).add(cid)
+        return out
+    clients_by_ws = invert(projects)
+    clients_by_pano = invert(panoramas)
+    by_ws, by_id = _run_parallel(
+        lambda: _select_in(sb, 'panoramas', 'id, workspace_id', 'workspace_id', list(clients_by_ws)) if clients_by_ws else [],
+        lambda: _select_in(sb, 'panoramas', 'id, workspace_id', 'id', list(clients_by_pano)) if clients_by_pano else [],
+    )
+    for row in by_ws or []:
+        try:
+            pid = int(row.get('id'))
+        except (TypeError, ValueError):
+            continue
+        for cid in clients_by_ws.get(str(row.get('workspace_id') or ''), ()):
+            panoramas[cid].add(pid)
+    for row in by_id or []:
+        try:
+            pid = int(row.get('id'))
+        except (TypeError, ValueError):
+            continue
+        if row.get('workspace_id'):
+            for cid in clients_by_pano.get(pid, ()):
+                projects[cid].add(str(row['workspace_id']))
+
+    # Stage 4: plot status counts.
+    plots = {cid: {'total': 0, 'sold': 0, 'pending': 0, 'available': 0} for cid in client_ids}
+    clients_by_pano = invert(panoramas)
+    plot_rows = _run_parallel(
+        lambda: _select_in(sb, 'plots', 'panorama_id, status', 'panorama_id', list(clients_by_pano)) if clients_by_pano else []
+    )[0]
+    for row in plot_rows or []:
+        try:
+            pid = int(row.get('panorama_id'))
+        except (TypeError, ValueError):
+            continue
+        key = _crm_plot_status_key(row.get('status'))
+        bucket = 'sold' if key == 'sold' else ('pending' if key in ('reserved', 'onhold', 'pending') else ('available' if key == 'available' else None))
+        for cid in clients_by_pano.get(pid, ()):
+            plots[cid]['total'] += 1
+            if bucket:
+                plots[cid][bucket] += 1
+
+    lead_counts = {cid: 0 for cid in client_ids}
+    interest_counts = {cid: 0 for cid in client_ids}
+    deal_counts = {cid: 0 for cid in client_ids}
+    for row in leads or []:
+        cid = str(row.get('client_id') or '')
+        if cid not in lead_counts:
+            continue
+        lead_counts[cid] += 1
+        if str(row.get('record_status') or STATUS_INTEREST) == STATUS_DEAL:
+            deal_counts[cid] += 1
+        else:
+            interest_counts[cid] += 1
+
+    return {
+        'names': names, 'projects': projects, 'plots': plots,
+        'leads': lead_counts, 'interests': interest_counts, 'deals': deal_counts,
+    }
+
+
 def register_crm_broker_routes(app, *, crm_panorama_ids, crm_client_scope_ids):
     @app.route('/api/crm/allotted-clients', methods=['GET'])
     @require_auth
@@ -136,162 +290,16 @@ def register_crm_broker_routes(app, *, crm_panorama_ids, crm_client_scope_ids):
         if not client_ids:
             return jsonify([])
 
-        member_ids_by_client = {cid: [] for cid in client_ids}
-        if is_client_admin:
-            try:
-                for chunk in _chunks(client_ids):
-                    rows = (
-                        sb.table('client_members')
-                        .select('id, client_id')
-                        .in_('client_id', chunk)
-                        .execute()
-                        .data or []
-                    )
-                    for row in rows:
-                        cid = str(row.get('client_id') or '')
-                        mid = row.get('id')
-                        if cid in member_ids_by_client and mid:
-                            member_ids_by_client[cid].append(mid)
-            except Exception:
-                pass
-        else:
-            for member in memberships:
-                cid = member.get('client_id')
-                mid = member.get('id')
-                if cid in member_ids_by_client and mid:
-                    member_ids_by_client[cid].append(mid)
-
-        client_names = {}
-        try:
-            for chunk in _chunks(client_ids):
-                rows = sb.table('clients').select('id, name').in_('id', chunk).execute().data or []
-                for row in rows:
-                    cid = str(row.get('id') or '')
-                    if cid:
-                        client_names[cid] = str(row.get('name') or '').strip() or cid
-        except Exception:
-            client_names = {}
-
-        project_sets = {cid: set() for cid in client_ids}
-        panorama_sets = {cid: set() for cid in client_ids}
-        for cid, member_ids in member_ids_by_client.items():
-            for chunk in _chunks(member_ids):
-                try:
-                    rows = sb.table('workspace_access').select('workspace_id').in_('client_member_id', chunk).execute().data or []
-                    for row in rows:
-                        wsid = row.get('workspace_id')
-                        if wsid:
-                            project_sets[cid].add(str(wsid))
-                except Exception:
-                    pass
-                try:
-                    rows = sb.table('panorama_access').select('panorama_id').in_('client_member_id', chunk).execute().data or []
-                    for row in rows:
-                        pid = row.get('panorama_id')
-                        try:
-                            if pid is not None:
-                                panorama_sets[cid].add(int(pid))
-                        except Exception:
-                            continue
-                except Exception:
-                    pass
-
-        workspace_to_clients = {}
-        for cid, workspace_ids in project_sets.items():
-            for workspace_id in workspace_ids:
-                workspace_to_clients.setdefault(workspace_id, set()).add(cid)
-        if workspace_to_clients:
-            try:
-                for chunk in _chunks(workspace_to_clients.keys()):
-                    rows = sb.table('panoramas').select('id, workspace_id').in_('workspace_id', chunk).execute().data or []
-                    for row in rows:
-                        try:
-                            pid = int(row.get('id'))
-                        except Exception:
-                            continue
-                        wsid = str(row.get('workspace_id') or '')
-                        for cid in workspace_to_clients.get(wsid, set()):
-                            panorama_sets.setdefault(cid, set()).add(pid)
-            except Exception:
-                pass
-
-        direct_panorama_to_clients = {}
-        for cid, panorama_ids in panorama_sets.items():
-            for panorama_id in panorama_ids:
-                direct_panorama_to_clients.setdefault(panorama_id, set()).add(cid)
-        if direct_panorama_to_clients:
-            try:
-                for chunk in _chunks(direct_panorama_to_clients.keys()):
-                    rows = sb.table('panoramas').select('id, workspace_id').in_('id', chunk).execute().data or []
-                    for row in rows:
-                        try:
-                            pid = int(row.get('id'))
-                        except Exception:
-                            continue
-                        wsid = row.get('workspace_id')
-                        if wsid:
-                            for cid in direct_panorama_to_clients.get(pid, set()):
-                                project_sets.setdefault(cid, set()).add(str(wsid))
-            except Exception:
-                pass
-
-        plot_counts = {
-            cid: {'total': 0, 'sold': 0, 'pending': 0, 'available': 0}
-            for cid in client_ids
-        }
-        panorama_to_clients = {}
-        for cid, panorama_ids in panorama_sets.items():
-            for panorama_id in panorama_ids:
-                panorama_to_clients.setdefault(panorama_id, set()).add(cid)
-        if panorama_to_clients:
-            try:
-                for chunk in _chunks(panorama_to_clients.keys()):
-                    rows = sb.table('plots').select('panorama_id, status').in_('panorama_id', chunk).execute().data or []
-                    for row in rows:
-                        try:
-                            pid = int(row.get('panorama_id'))
-                        except Exception:
-                            continue
-                        status_key = _crm_plot_status_key(row.get('status'))
-                        for cid in panorama_to_clients.get(pid, set()):
-                            counts = plot_counts[cid]
-                            counts['total'] += 1
-                            if status_key == 'sold':
-                                counts['sold'] += 1
-                            elif status_key in ('reserved', 'onhold', 'pending'):
-                                counts['pending'] += 1
-                            elif status_key == 'available':
-                                counts['available'] += 1
-            except Exception:
-                pass
-
-        lead_counts = {cid: 0 for cid in client_ids}
-        interest_counts = {cid: 0 for cid in client_ids}
-        deal_counts = {cid: 0 for cid in client_ids}
-        try:
-            for chunk in _chunks(client_ids):
-                def fetch_lead_page(start, end):
-                    query = (
-                        sb.table(LEAD_TABLE)
-                        .select('client_id, record_status')
-                        .in_('client_id', chunk)
-                    )
-                    if not is_client_admin:
-                        query = apply_broker_visibility(query, str(user_id))
-                    return query.range(start, end).execute().data or []
-
-                rows = _fetch_pages(fetch_lead_page)
-                for row in rows:
-                    cid = str(row.get('client_id') or '')
-                    if cid not in lead_counts:
-                        continue
-                    lead_counts[cid] += 1
-                    if str(row.get('record_status') or STATUS_INTEREST) == STATUS_DEAL:
-                        deal_counts[cid] += 1
-                    else:
-                        interest_counts[cid] += 1
-        except Exception:
-            pass
+        stats = _allotted_client_stats(
+            sb, client_ids, memberships,
+            is_client_admin=is_client_admin, user_id=str(user_id),
+        )
+        client_names = stats['names']
+        project_sets = stats['projects']
+        plot_counts = stats['plots']
+        lead_counts = stats['leads']
+        interest_counts = stats['interests']
+        deal_counts = stats['deals']
 
         out = []
         for cid in client_ids:

@@ -1,0 +1,82 @@
+{# Charm UI Jinja components — shared by every portal page. #}
+
+{% macro icon(name, size=18) -%}
+<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{%- if name == 'building' -%}<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>
+{%- elif name == 'map' -%}<path d="M14.1 4.6 9.9 3.4a2 2 0 0 0-1.3 0L3.6 5.2A1 1 0 0 0 3 6.1v13.3a1 1 0 0 0 1.4.9l4.2-1.7a2 2 0 0 1 1.3 0l4.2 1.2a2 2 0 0 0 1.3 0l5-1.8a1 1 0 0 0 .6-.9V3.8a1 1 0 0 0-1.4-.9l-4.2 1.7a2 2 0 0 1-1.3 0ZM9 3.2v15.4M15 5.4v15.4"/>
+{%- elif name == 'bolt' -%}<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>
+{%- elif name == 'user' -%}<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
+{%- elif name == 'users' -%}<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+{%- elif name == 'mail' -%}<rect x="2" y="4" width="20" height="16" rx="3"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+{%- elif name == 'chart' -%}<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>
+{%- elif name == 'inbox' -%}<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>
+{%- elif name == 'search' -%}<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+{%- elif name == 'plus' -%}<path d="M12 5v14M5 12h14"/>
+{%- elif name == 'x' -%}<path d="M18 6 6 18M6 6l12 12"/>
+{%- elif name == 'alert' -%}<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>
+{%- elif name == 'refresh' -%}<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/>
+{%- elif name == 'shield' -%}<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+{%- elif name == 'lock' -%}<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+{%- elif name == 'check' -%}<path d="M20 6 9 17l-5-5"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}
+
+{% macro kpi(id, label, meta, icon_name, tone='') -%}
+<article class="ui-kpi" aria-live="polite">
+  <div class="ui-kpi__top">
+    <span class="ui-kpi__label" id="{{ id }}-label">{{ label }}</span>
+    <span class="ui-kpi__icon{% if tone %} ui-kpi__icon--{{ tone }}{% endif %}">{{ icon(icon_name) }}</span>
+  </div>
+  <div class="ui-kpi__value" id="{{ id }}"><span class="ui-skel ui-skel--num"></span></div>
+  <span class="ui-kpi__meta" id="{{ id }}-meta">{{ meta }}</span>
+</article>
+{%- endmacro %}
+
+{% macro empty_state(title, text='', icon_name='inbox', action_label='', action_id='') -%}
+<div class="ui-empty">
+  <span class="ui-empty__icon">{{ icon(icon_name, 22) }}</span>
+  <div class="ui-empty__title">{{ title }}</div>
+  {% if text %}<p class="ui-empty__text">{{ text }}</p>{% endif %}
+  {% if action_label %}<button type="button" class="ui-btn ui-btn--primary" id="{{ action_id }}">{{ action_label }}</button>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro card_error(message) -%}
+<div class="ui-empty" role="alert">
+  <span class="ui-empty__icon" style="background:var(--ui-danger-soft);color:var(--ui-danger-strong)">{{ icon('alert', 22) }}</span>
+  <div class="ui-empty__title">Something went wrong</div>
+  <p class="ui-empty__text">{{ message }}</p>
+  <button type="button" class="ui-btn ui-btn--sm" data-retry>{{ icon('refresh', 14) }} Try again</button>
+</div>
+{%- endmacro %}
+
+{# Dialog shell: {% call modal('id', 'Title', 'Subtitle') %} body {% endcall %}
+   Footer buttons go in the caller via a `.ui-dialog__foot` element. #}
+{% macro modal(id, title, subtitle='', size='') -%}
+<div class="ui-modal" id="{{ id }}" aria-hidden="true">
+  <div class="ui-dialog{% if size %} ui-dialog--{{ size }}{% endif %}" role="dialog" aria-modal="true" aria-labelledby="{{ id }}-title">
+    <div class="ui-dialog__head">
+      <div>
+        <h2 class="ui-dialog__title" id="{{ id }}-title">{{ title }}</h2>
+        {% if subtitle %}<p class="ui-dialog__text" id="{{ id }}-subtitle">{{ subtitle }}</p>{% endif %}
+      </div>
+      <button type="button" class="ui-icon-btn" data-ui-close aria-label="Close">{{ icon('x', 16) }}</button>
+    </div>
+    {{ caller() }}
+  </div>
+</div>
+{%- endmacro %}
+
+{# Skeleton table rows rendered on the server, so a table is never blank
+   between first paint and its first data response. #}
+{% macro skeleton_rows(cols, count=6) -%}
+{%- set widths = ['72%', '54%', '86%', '40%', '64%', '48%', '78%', '58%'] -%}
+{%- for r in range(count) -%}
+<tr class="ui-skel-row" aria-hidden="true">
+{%- for c in range(cols) -%}
+<td>{% if c == 0 %}<div class="ui-row"><span class="ui-skel ui-skel--avatar"></span><span class="ui-skel ui-skel--line" style="width:{{ widths[(r + c) % 8] }}"></span></div>{% else %}<span class="ui-skel ui-skel--line" style="width:{{ widths[(r * 3 + c) % 8] }}"></span>{% endif %}</td>
+{%- endfor -%}
+</tr>
+{%- endfor -%}
+{%- endmacro %}

@@ -324,6 +324,7 @@
         // Role-based visibility
         show('nav-explore', state.isAdmin);
         show('nav-floorplans', state.isAdmin);
+        show('nav-building-plans', state.isAdmin);
         show('nav-fullview', state.isAdmin);
         show('nav-user-mgmt', state.isAdmin);
         show('nav-orgs', state.role === 'superadmin');

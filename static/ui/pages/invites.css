@@ -1,0 +1,12 @@
+/* Broker invites */
+.invite-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--ui-4); }
+.invite-card { display: flex; flex-direction: column; padding: var(--ui-5); animation: ui-fade-up var(--ui-slow) var(--ui-ease) both; transition: transform var(--ui-base) var(--ui-ease), box-shadow var(--ui-base), opacity var(--ui-base); }
+.invite-card:hover { transform: translateY(-2px); box-shadow: var(--ui-raise); }
+.invite-card:nth-child(2) { animation-delay: 50ms; }
+.invite-card:nth-child(3) { animation-delay: 100ms; }
+.invite-card:nth-child(n+4) { animation-delay: 150ms; }
+.invite-card__title { font-family: var(--ui-font-display); font-size: var(--ui-text-lg); font-weight: 700; color: var(--ui-heading); letter-spacing: -0.015em; }
+.invite-card__meta { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--ui-4) 0 var(--ui-5); }
+.invite-card__actions { display: flex; gap: var(--ui-2); margin-top: auto; }
+.invite-card__actions .ui-btn { flex: 1; }
+.invite-card.is-leaving { opacity: 0; transform: scale(0.97); }

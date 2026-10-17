@@ -74,12 +74,21 @@ def get_supabase():
         return None
     if _sb_client is None:
         try:
+            import httpx
             from supabase import create_client
-            options = None
-            if os.environ.get('SUPABASE_SSL_VERIFY', 'true').lower() in ('false', '0', 'no'):
-                import httpx
-                from supabase.lib.client_options import SyncClientOptions
-                options = SyncClientOptions(httpx_client=httpx.Client(verify=False))
+            from supabase.lib.client_options import SyncClientOptions
+            verify = os.environ.get('SUPABASE_SSL_VERIFY', 'true').lower() not in ('false', '0', 'no')
+            # HTTP/1.1 connection pool instead of the default single HTTP/2 connection: request
+            # threads share this client, and concurrent streams on one HTTP/2 connection were
+            # being terminated (ConnectionTerminated -> random 403/500s). A pool gives each
+            # in-flight query its own kept-alive connection.
+            http = httpx.Client(
+                http2=False,
+                verify=verify,
+                timeout=httpx.Timeout(30.0, connect=10.0),
+                limits=httpx.Limits(max_connections=64, max_keepalive_connections=32, keepalive_expiry=60),
+            )
+            options = SyncClientOptions(httpx_client=http)
             _sb_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, options=options)
         except Exception:
             return None

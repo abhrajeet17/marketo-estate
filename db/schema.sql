@@ -622,6 +622,7 @@ create table if not exists public.building_maps (
   image_width int default 0,
   image_height int default 0,
   share_token text unique,
+  view_config jsonb not null default '{}'::jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -655,6 +656,9 @@ create table if not exists public.building_zones (
   floor_number int not null default 0 check (floor_number >= 0 and floor_number <= 100),
   linked_panorama_id bigint references public.panoramas(id) on delete set null,
   linked_floor_plan_item_id uuid references public.floor_plan_items(id) on delete set null,
+  linked_building_map_id uuid references public.building_maps(id) on delete set null,
+  link_type text not null default '' check (link_type in ('', 'panorama', 'floor_plan', 'building_map')),
+  meta jsonb not null default '{}'::jsonb,
   color text default 'green',
   points jsonb not null default '[]',
   sort_order int not null default 0,
@@ -663,6 +667,7 @@ create table if not exists public.building_zones (
 );
 
 create index if not exists idx_building_zones_map on public.building_zones(building_map_id);
+create index if not exists idx_building_zones_linked_building_map on public.building_zones(linked_building_map_id);
 create index if not exists idx_building_zones_image on public.building_zones(image_id);
 create index if not exists idx_building_zones_floor on public.building_zones(building_map_id, floor_number);
 create index if not exists idx_building_zones_linked_panorama on public.building_zones(linked_panorama_id);

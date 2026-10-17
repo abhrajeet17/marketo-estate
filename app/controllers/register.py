@@ -30,6 +30,9 @@ from app.controllers.features import (
     register_asset_routes,
     register_crm_broker_routes,
     register_crm_dashboard_routes,
+    invalidate_building_plan_cache,
+    register_building_plan_routes,
+    sign_many as _sign_many,
     register_crm_lead_routes,
     register_crm_lock_routes,
     register_crm_master_routes,
@@ -134,6 +137,7 @@ from app.services.storage_service import (
     delete_floorplan_from_s3,
     MAX_FLOORPLAN_READ_BYTES,
     compress_building_map_image,
+    make_image_placeholder,
     upload_building_map_to_s3,
     get_building_map_s3_url,
     delete_building_map_from_s3,
@@ -193,6 +197,7 @@ from app.services.building_map_service import (
     get_next_image_sort_order as bm_next_image_sort,
     list_zones as bm_list_zones,
     list_zones_for_image as bm_list_zones_for_image,
+    list_zones_for_maps as bm_list_zones_for_maps,
     get_zone as bm_get_zone,
     create_zone as bm_create_zone,
     batch_create_zones as bm_batch_create_zones,
@@ -4204,6 +4209,8 @@ def register_routes(app):
 
     @app.route('/salestools')
     def sales_tools_page():
+        if request.args.get('tab') == 'building-maps':
+            return redirect('/building-plans')
         return render_template(
             'floorplans.html',
             max_gallery_read_bytes=MAX_GALLERY_READ_BYTES,
@@ -4331,8 +4338,9 @@ def register_routes(app):
         if str(cat.get('user_id')) != str(user_id) and role != 'superadmin':
             return jsonify({'error': 'Forbidden'}), 403
         items = fp_list_items(sb, catalogue_id)
+        urls = _sign_many(get_floorplan_s3_url, [it.get('image_filename') for it in items], verify=False)
         for item in items:
-            item['image_url'] = get_floorplan_s3_url(item.get('image_filename'))
+            item['image_url'] = urls.get(item.get('image_filename'))
         return jsonify(items)
 
     @app.route('/api/floorplans/catalogues/<catalogue_id>/items', methods=['POST'])
@@ -4471,17 +4479,20 @@ def register_routes(app):
             return jsonify({'error': 'Database not configured'}), 503
         maps = bm_list(sb, user_id)
         base = (request.url_root or '').rstrip('/')
+        zones_by_map = bm_list_zones_for_maps(sb, [m['id'] for m in maps])
+        cat_ids = sorted({str(m['catalogue_id']) for m in maps if m.get('catalogue_id')})
+        cat_names = {}
+        if cat_ids:
+            for c in (sb.table('floor_plan_catalogues').select('id, name').in_('id', cat_ids).execute().data or []):
+                cat_names[str(c['id'])] = c.get('name') or ''
+        urls = _sign_many(get_building_map_s3_url, [m.get('image_filename') for m in maps], verify=False)
         for m in maps:
-            m['image_url'] = get_building_map_s3_url(m.get('image_filename'))
-            m['share_url'] = f"{base}/building-map/view/{m.get('share_token', '')}"
-            zones = bm_list_zones(sb, m['id'])
+            m['image_url'] = urls.get(m.get('image_filename'))
+            m['share_url'] = f"{base}/building-plan/{m.get('share_token', '')}"
+            zones = zones_by_map.get(str(m['id']), [])
             m['zone_count'] = len(zones)
             m['floor_count'] = len(set(z.get('floor_number', 0) for z in zones))
-            if m.get('catalogue_id'):
-                cat = fp_get_catalogue(sb, m['catalogue_id'])
-                m['catalogue_name'] = cat.get('name', '') if cat else ''
-            else:
-                m['catalogue_name'] = ''
+            m['catalogue_name'] = cat_names.get(str(m.get('catalogue_id') or ''), '')
         return jsonify(maps)
 
     @app.route('/api/building-maps', methods=['POST'])
@@ -4520,9 +4531,23 @@ def register_routes(app):
         bm = bm_create(sb, user_id, org_id, name, filename, w, h, catalogue_id, workspace_id=workspace_id)
         if not bm:
             return jsonify({'error': 'Failed to create building map'}), 500
+        view_config = {}
+        level = str(request.form.get('level') or '').strip().lower()
+        if level in ('aerial', 'tower', 'floor'):
+            view_config['level'] = level
+        lqip = make_image_placeholder(jpeg_bytes)
+        if lqip:
+            view_config['lqip'] = lqip
+        if view_config:
+            try:
+                updated = bm_update(sb, bm['id'], view_config=view_config)
+                if updated:
+                    bm['view_config'] = updated.get('view_config')
+            except ValueError:
+                pass  # view_config column missing: type and preview are optional
         bm['image_url'] = get_building_map_s3_url(filename)
         base = (request.url_root or '').rstrip('/')
-        bm['share_url'] = f"{base}/building-map/view/{bm.get('share_token', '')}"
+        bm['share_url'] = f"{base}/building-plan/{bm.get('share_token', '')}"
         return jsonify(bm), 201
 
     @app.route('/api/building-maps/<map_id>', methods=['GET'])
@@ -4540,7 +4565,7 @@ def register_routes(app):
         zones = bm_list_zones(sb, map_id)
         bm['zones'] = zones
         base = (request.url_root or '').rstrip('/')
-        bm['share_url'] = f"{base}/building-map/view/{bm.get('share_token', '')}"
+        bm['share_url'] = f"{base}/building-plan/{bm.get('share_token', '')}"
         return jsonify(bm)
 
     @app.route('/api/building-maps/<map_id>', methods=['PATCH'])
@@ -4559,9 +4584,23 @@ def register_routes(app):
         if 'name' in data:
             updates['name'] = str(data['name']).strip()
         if 'catalogue_id' in data:
-            updates['catalogue_id'] = str(data['catalogue_id']).strip() or None
+            updates['catalogue_id'] = str(data['catalogue_id'] or '').strip() or None
+        if 'view_config' in data:
+            incoming = data['view_config'] if isinstance(data['view_config'], dict) else {}
+            # The blurred preview is server-generated: keep it across settings saves.
+            merged = dict(incoming)
+            existing_lqip = (bm.get('view_config') or {}).get('lqip')
+            if existing_lqip and 'lqip' not in merged:
+                merged['lqip'] = existing_lqip
+            updates['view_config'] = merged
+        if 'name' in updates and not updates['name']:
+            return jsonify({'error': 'Name is required'}), 400
         if updates:
-            bm_update(sb, map_id, **updates)
+            try:
+                bm_update(sb, map_id, **updates)
+            except ValueError as exc:
+                return jsonify({'error': str(exc)}), 409
+            invalidate_building_plan_cache()
         updated = bm_get(sb, map_id)
         if updated:
             updated['image_url'] = get_building_map_s3_url(updated.get('image_filename'))
@@ -4580,6 +4619,7 @@ def register_routes(app):
             return jsonify({'error': 'Forbidden'}), 403
         delete_building_map_from_s3(bm.get('image_filename'))
         bm_delete(sb, map_id)
+        invalidate_building_plan_cache()
         return jsonify({'success': True})
 
     # -- Building Map Images --
@@ -4676,6 +4716,37 @@ def register_routes(app):
 
     # -- Building Zones --
 
+    def _zone_link_fields(sb, bm, data, user_id, role, zone_id=None):
+        """One link per zone: building map, floor plan or panorama. Returns (fields, error_response)."""
+        link_type = str(data.get('link_type') or '').strip()
+        pano = data.get('linked_panorama_id') or None
+        fp_item = data.get('linked_floor_plan_item_id') or None
+        target = str(data.get('linked_building_map_id') or '').strip() or None
+        if not link_type:
+            link_type = 'building_map' if target else 'floor_plan' if fp_item else 'panorama' if pano else ''
+        if link_type not in ('', 'panorama', 'floor_plan', 'building_map'):
+            return None, (jsonify({'error': 'Invalid link type'}), 400)
+        fields = {'link_type': link_type, 'linked_panorama_id': None,
+                  'linked_floor_plan_item_id': None, 'linked_building_map_id': None}
+        if link_type == 'building_map':
+            if not target:
+                return None, (jsonify({'error': 'Pick the building map this zone opens', 'field': 'linked_building_map_id'}), 400)
+            if str(target) == str(bm['id']):
+                return None, (jsonify({'error': 'A zone cannot open its own building map'}), 400)
+            target_map = bm_get(sb, target)
+            if not target_map or (str(target_map.get('user_id')) != str(bm.get('user_id')) and role != 'superadmin'):
+                return None, (jsonify({'error': 'Building map not found'}), 404)
+            fields['linked_building_map_id'] = target
+        elif link_type == 'floor_plan':
+            if not fp_item:
+                return None, (jsonify({'error': 'Pick a floor plan', 'field': 'linked_floor_plan_item_id'}), 400)
+            fields['linked_floor_plan_item_id'] = str(fp_item)
+        elif link_type == 'panorama':
+            if not pano:
+                return None, (jsonify({'error': 'Pick a panorama', 'field': 'linked_panorama_id'}), 400)
+            fields['linked_panorama_id'] = int(pano)
+        return fields, None
+
     @app.route('/api/building-maps/<map_id>/zones', methods=['GET'])
     @require_admin
     def api_list_building_zones(user_id, role, map_id):
@@ -4710,15 +4781,24 @@ def register_routes(app):
             return jsonify({'error': 'At least 3 points required'}), 400
         floor_number = int(data.get('floor_number', 0))
         color = str(data.get('color', 'green')).strip()
-        linked_panorama_id = data.get('linked_panorama_id') or None
-        linked_floor_plan_item_id = data.get('linked_floor_plan_item_id') or None
+        link_fields, link_err = _zone_link_fields(sb, bm, data, user_id, role)
+        if link_err:
+            return link_err
         sort_order = int(data.get('sort_order', 0))
         image_id = data.get('image_id') or None
-        zone = bm_create_zone(sb, map_id, name, floor_number, points, color,
-                              linked_panorama_id, linked_floor_plan_item_id, sort_order,
-                              image_id=image_id)
+        try:
+            zone = bm_create_zone(sb, map_id, name, floor_number, points, color,
+                                  link_fields.get('linked_panorama_id'),
+                                  link_fields.get('linked_floor_plan_item_id'), sort_order,
+                                  image_id=image_id,
+                                  link_type=link_fields.get('link_type'),
+                                  linked_building_map_id=link_fields.get('linked_building_map_id'),
+                                  meta=data.get('meta') if 'meta' in data else None)
+        except ValueError as exc:
+            return jsonify({'error': str(exc)}), 409
         if not zone:
             return jsonify({'error': 'Failed to create zone'}), 500
+        invalidate_building_plan_cache()
         return jsonify(zone), 201
 
     @app.route('/api/building-maps/<map_id>/zones/batch', methods=['POST'])
@@ -4736,10 +4816,25 @@ def register_routes(app):
         zones_data = data.get('zones', [])
         if not isinstance(zones_data, list) or not zones_data:
             return jsonify({'error': 'zones must be a non-empty list'}), 400
+        if len(zones_data) > 120:
+            return jsonify({'error': 'At most 120 zones per batch'}), 400
+        checked_links = {}  # identical links (e.g. 41 floors -> one typical floor) are validated once
         for z in zones_data:
             if not isinstance(z.get('points', []), list) or len(z.get('points', [])) < 3:
                 return jsonify({'error': 'Each zone needs at least 3 points'}), 400
-        created = bm_batch_create_zones(sb, map_id, zones_data)
+            if any(k in z for k in ('link_type', 'linked_panorama_id', 'linked_floor_plan_item_id', 'linked_building_map_id')):
+                key = tuple(str(z.get(k) or '') for k in ('link_type', 'linked_panorama_id', 'linked_floor_plan_item_id', 'linked_building_map_id'))
+                if key not in checked_links:
+                    link_fields, link_err = _zone_link_fields(sb, bm, z, user_id, role)
+                    if link_err:
+                        return link_err
+                    checked_links[key] = link_fields
+                z.update(checked_links[key])
+        try:
+            created = bm_batch_create_zones(sb, map_id, zones_data)
+        except ValueError as exc:
+            return jsonify({'error': str(exc)}), 409
+        invalidate_building_plan_cache()
         return jsonify(created), 201
 
     @app.route('/api/building-zones/<int:zone_id>', methods=['PUT'])
@@ -4756,12 +4851,22 @@ def register_routes(app):
             return jsonify({'error': 'Forbidden'}), 403
         data = request.get_json(silent=True) or {}
         updates = {}
-        for k in ('name', 'floor_number', 'color', 'sort_order', 'points',
-                   'linked_panorama_id', 'linked_floor_plan_item_id', 'image_id'):
+        for k in ('name', 'floor_number', 'color', 'sort_order', 'points', 'image_id', 'meta'):
             if k in data:
                 updates[k] = data[k]
+        if any(k in data for k in ('link_type', 'linked_panorama_id', 'linked_floor_plan_item_id', 'linked_building_map_id')):
+            link_fields, link_err = _zone_link_fields(sb, bm, data, user_id, role, zone_id=zone_id)
+            if link_err:
+                return link_err
+            updates.update(link_fields)
+        if 'name' in updates and not str(updates['name'] or '').strip():
+            return jsonify({'error': 'Name is required'}), 400
         if updates:
-            bm_update_zone(sb, zone_id, **updates)
+            try:
+                bm_update_zone(sb, zone_id, **updates)
+            except ValueError as exc:
+                return jsonify({'error': str(exc)}), 409
+            invalidate_building_plan_cache()
         updated = bm_get_zone(sb, zone_id)
         return jsonify(updated)
 
@@ -4778,9 +4883,14 @@ def register_routes(app):
         if not bm or (str(bm.get('user_id')) != str(user_id) and role != 'superadmin'):
             return jsonify({'error': 'Forbidden'}), 403
         bm_delete_zone(sb, zone_id)
+        invalidate_building_plan_cache()
         return jsonify({'success': True})
 
     # -- Building Map pages --
+
+    @app.route('/building-plans')
+    def building_plans_page():
+        return render_template('building_plans.html', **auth_ctx())
 
     @app.route('/building-map/admin/<map_id>')
     def building_map_admin_page(map_id):
@@ -4788,49 +4898,7 @@ def register_routes(app):
 
     @app.route('/building-map/view/<share_token>')
     def building_map_public_view(share_token):
-        sb = get_supabase()
-        if not sb:
-            return "Database not configured", 503
-        bm = bm_get_by_token(sb, share_token)
-        if not bm:
-            return "Not found", 404
-        # Collect images for this building map
-        images = bm_list_images(sb, bm['id'])
-        for img in images:
-            img['image_url'] = get_building_map_s3_url(img.get('image_filename'))
-        # Fallback: if no images table entries, use the building map's own image
-        if not images:
-            images = [{
-                'id': None,
-                'name': bm.get('name', 'View'),
-                'image_url': get_building_map_s3_url(bm.get('image_filename')),
-                'image_width': bm.get('image_width', 0),
-                'image_height': bm.get('image_height', 0),
-            }]
-        zones = bm_list_zones(sb, bm['id'])
-        # Enrich zones with linked floor plan image URLs
-        for z in zones:
-            if z.get('linked_floor_plan_item_id'):
-                fp_item = fp_get_item(sb, z['linked_floor_plan_item_id'])
-                if fp_item:
-                    z['linked_floor_plan_image_url'] = get_floorplan_s3_url(fp_item.get('image_filename'))
-                    z['linked_floor_plan_name'] = fp_item.get('name', '')
-        # Get all building maps for this user to allow switching
-        all_maps = bm_list(sb, bm['user_id'])
-        siblings = []
-        for m in all_maps:
-            siblings.append({
-                'id': m['id'],
-                'name': m['name'],
-                'share_token': m.get('share_token', ''),
-                'active': m['id'] == bm['id'],
-            })
-        return render_template('building_map_view.html',
-                               bm=bm,
-                               images=images,
-                               image_url=images[0]['image_url'] if images else '',
-                               zones=zones,
-                               siblings=siblings)
+        return redirect(f'/building-plan/{share_token}')
 
     # -- Public API for building map data (used by customer view JS) --
 
@@ -4858,6 +4926,7 @@ def register_routes(app):
     # ==================================================================
 
     register_sales_route_map_routes(app)
+    register_building_plan_routes(app, crm_cache_bump=_crm_cache_bump)
 
     # ==================================================================
     # Sales Flat 360 Views

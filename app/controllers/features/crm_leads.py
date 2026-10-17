@@ -3,6 +3,7 @@ CRM leads: the single interest/deal record.
 
 Routes
   GET    /api/crm/me                          capabilities for the CRM shell
+  GET    /api/portal/me                       identity + capabilities for the portal shell
   POST   /api/public/buy-interests            public checkout form (no auth)
   POST   /api/crm/leads  (+ /api/buy-interests) manual interest from the CRM
   GET    /api/crm/leads/<id>
@@ -17,16 +18,15 @@ Listing lives in crm_records.py (one endpoint, filtered by record_status).
 """
 from flask import jsonify, request
 
-from app.core.auth import get_profile, require_auth
+from app.core.auth import require_auth
 from app.core.database import get_supabase
 from app.services import crm_lead_service as leads
 from app.services.crm_lead_service import ValidationError
+from app.services.portal_identity_service import resolve_portal_identity
 from app.services.panorama_service import get_panorama_by_id, get_panorama_with_access
 from app.services.uam_reference_service import (
     CLIENT_MEMBER_ROLE_BROKER,
     CLIENT_MEMBER_ROLE_CLIENT_ADMIN,
-    CLIENT_MEMBER_ROLE_CLIENT_USER,
-    _is_broker_member_role,
     _normalize_client_member_role,
     _validate_project_reference_user,
     can_user_reveal_broker_referred_contact,
@@ -113,73 +113,35 @@ def register_crm_lead_routes(
         return False
 
     # --------------------------------------------------------------------- me
+    _CRM_ME_FIELDS = (
+        'user_id', 'role', 'org_id', 'display_name', 'has_crm_access', 'is_broker',
+        'is_client_admin', 'is_client_user', 'can_manage_team', 'is_client_member',
+        'can_manage_deals', 'client_group_id', 'client_group_name', 'client_group_names',
+    )
+
+    def _identity(sb, user_id, role):
+        return resolve_portal_identity(sb, user_id, role, crm_panorama_ids=crm_panorama_ids)
+
     @app.route('/api/crm/me', methods=['GET'])
     @require_auth
     def crm_me(user_id, role):
         sb = get_supabase()
         if not sb:
             return _db_unavailable()
-        profile = get_profile(sb, user_id) or {}
-        has_crm = False
-        try:
-            has_crm = len(crm_panorama_ids(sb, user_id, role)) > 0
-        except Exception:
-            has_crm = leads.is_platform_admin_role(role)
-        is_broker = False
-        is_client_admin = False
-        is_client_user = False
-        is_client_member = False
-        client_group_id = ''
-        client_group_name = ''
-        client_group_names = []
-        try:
-            member_rows = sb.table('client_members').select('client_id, member_role').eq('user_id', user_id).execute()
-            client_ids = []
-            seen = set()
-            for row in (member_rows.data or []):
-                mr = _normalize_client_member_role(row.get('member_role', ''))
-                if _is_broker_member_role(mr):
-                    is_broker = True
-                if mr == CLIENT_MEMBER_ROLE_CLIENT_ADMIN:
-                    is_client_admin = True
-                if mr == CLIENT_MEMBER_ROLE_CLIENT_USER:
-                    is_client_user = True
-                if mr in (CLIENT_MEMBER_ROLE_CLIENT_ADMIN, CLIENT_MEMBER_ROLE_CLIENT_USER, CLIENT_MEMBER_ROLE_BROKER):
-                    cid = str(row.get('client_id') or '').strip()
-                    if cid and cid not in seen:
-                        seen.add(cid)
-                        client_ids.append(cid)
-            if client_ids:
-                is_client_member = True
-                clients_res = sb.table('clients').select('id, name').in_('id', client_ids).order('name').execute()
-                for c in (clients_res.data or []):
-                    name = str(c.get('name') or '').strip()
-                    if name:
-                        client_group_names.append(name)
-                if clients_res.data:
-                    first = clients_res.data[0] or {}
-                    client_group_id = str(first.get('id') or '').strip()
-                    client_group_name = str(first.get('name') or '').strip()
-        except Exception:
-            pass
-        caps = leads.get_user_caps(sb, user_id, role)
-        return jsonify({
-            'user_id': user_id,
-            'role': role,
-            'org_id': profile.get('org_id'),
-            'display_name': profile.get('display_name') or profile.get('email') or '',
-            'has_crm_access': has_crm,
-            'is_broker': is_broker or caps.get('is_broker', False),
-            'is_client_admin': is_client_admin,
-            'is_client_user': is_client_user,
-            'can_manage_team': bool(is_client_admin and not is_broker),
-            'is_client_member': is_client_member,
-            'can_manage_deals': bool(caps.get('can_manage_deals')),
-            'can_convert_leads': bool(caps.get('can_manage_deals')),
-            'client_group_id': client_group_id,
-            'client_group_name': client_group_name,
-            'client_group_names': client_group_names,
-        })
+        identity = _identity(sb, user_id, role)
+        payload = {key: identity[key] for key in _CRM_ME_FIELDS}
+        payload['role'] = role
+        payload['can_convert_leads'] = identity['can_manage_deals']
+        return jsonify(payload)
+
+    @app.route('/api/portal/me', methods=['GET'])
+    @require_auth
+    def portal_me(user_id, role):
+        """Everything the portal shell needs in one round trip."""
+        sb = get_supabase()
+        if not sb:
+            return _db_unavailable()
+        return jsonify(_identity(sb, user_id, role))
 
     # ------------------------------------------------------------- create (public)
     @app.route('/api/public/buy-interests', methods=['POST'])

@@ -97,11 +97,13 @@
             if (!btn.dataset.busyHtml) btn.dataset.busyHtml = btn.innerHTML;
             btn.disabled = true;
             btn.classList.add('is-busy');
+            btn.setAttribute('data-busy', '');
             if (label) btn.setAttribute('aria-label', label);
         } else {
             if (btn.dataset.busyHtml) { btn.innerHTML = btn.dataset.busyHtml; delete btn.dataset.busyHtml; }
             btn.disabled = false;
             btn.classList.remove('is-busy');
+            btn.removeAttribute('data-busy');
             btn.removeAttribute('aria-label');
         }
     }
@@ -184,7 +186,7 @@
             ids: { tbody: 'deals-tbody', pagination: 'deals-pagination', empty: 'deals-empty', meta: 'deals-results-meta', card: 'deals-table-card', search: 'deal-q', filterRoot: 'deals-filter-fields', filterBtn: 'btn-open-deals-filter-modal', badge: 'deals-filter-badge', apply: 'deals-filter-apply', clear: 'deals-filter-clear', exportBtn: 'btn-export-deals', rail: 'deals', tabBtn: 'tab-deals' },
         },
         contacts: {
-            status: 'deal', sortKey: 'contacts', exportName: 'CRM_Contacts', sheet: 'Contacts', cols: 9,
+            status: 'deal', sortKey: 'contacts', exportName: 'CRM_Contacts', sheet: 'Contacts', cols: 6,
             ids: { tbody: 'contacts-tbody', pagination: 'contacts-pagination', empty: 'contacts-empty', meta: 'contacts-results-meta', card: 'contacts-table-card', search: 'contact-q', filterRoot: 'contacts-filter-fields', filterBtn: 'btn-open-contacts-filter-modal', badge: 'contacts-filter-badge', apply: 'contacts-filter-apply', clear: 'contacts-filter-clear', exportBtn: 'btn-export-contacts', rail: 'contacts', tabBtn: 'tab-contacts' },
         },
     };
@@ -525,9 +527,20 @@
     }
     function renderSkeleton(tab) {
         const tbody = $(tab.cfg.ids.tbody);
-        if (!tbody || tbody.children.length) return;
-        const cells = Array.from({ length: tab.cfg.cols }, (_, i) => '<td><span class="rec-skel" style="width:' + (i === 0 ? 70 : 55 + ((i * 17) % 40)) + '%"></span></td>').join('');
-        tbody.innerHTML = Array.from({ length: 5 }, () => '<tr class="rec-row-skeleton" aria-hidden="true">' + cells + '</tr>').join('');
+        if (!tbody || tbody.querySelector('.ui-skel-row')) return;
+        const emptyEl = $(tab.cfg.ids.empty);
+        if (emptyEl) emptyEl.style.display = 'none';
+        tbody.innerHTML = global.Charm.skeleton.rows(tab.cfg.cols, 6);
+    }
+    function renderLoadError(tab, message) {
+        const tbody = $(tab.cfg.ids.tbody);
+        if (!tbody) return;
+        const emptyEl = $(tab.cfg.ids.empty);
+        if (emptyEl) emptyEl.style.display = 'none';
+        tbody.innerHTML = '<tr class="crm-table-error"><td colspan="' + tab.cfg.cols + '"><strong>Couldn\u2019t load ' + esc(tab.key) + '</strong><div>' + esc(message || 'Please try again.') + '</div>' +
+            '<button type="button" class="btn" data-retry-tab="' + esc(tab.key) + '">Try again</button></td></tr>';
+        const retry = tbody.querySelector('[data-retry-tab]');
+        if (retry) retry.addEventListener('click', (e) => { e.stopPropagation(); renderSkeleton(tab); loadTab(tab.key, true).catch(() => {}); });
     }
     async function loadTab(key, force) {
         const tab = state.tabs[key];
@@ -541,7 +554,7 @@
     async function fetchTab(tab) {
         const seq = ++tab.seq;
         setTableBusy(tab, true);
-        if (!tab.rows.length) renderSkeleton(tab);
+        if (!tab.loaded || !tab.rows.length) renderSkeleton(tab);
         try {
             const path = API_LEADS + global.CrmPager.buildQuery(tab.pager, buildParams(tab));
             const data = await apiJson(path);
@@ -559,10 +572,12 @@
             renderTab(tab.key);
         } catch (e) {
             if (seq !== tab.seq) return;
-            const tbody = $(tab.cfg.ids.tbody);
-            if (tbody) tbody.querySelectorAll('.rec-row-skeleton').forEach(r => r.remove());
-            if (!tab.rows.length) tab.loaded = false;
-            toast(e.message || 'Failed to load ' + tab.key, 'error');
+            if (!tab.rows.length) {
+                tab.loaded = false;
+                renderLoadError(tab, e.message);
+            } else {
+                toast(e.message || 'Failed to refresh ' + tab.key, 'error');
+            }
             throw e;
         } finally {
             if (seq === tab.seq) setTableBusy(tab, false);
@@ -648,9 +663,6 @@
             '<td class="mono">' + (rec.contact_hidden ? '<span class="rec-empty">—</span>' : esc(rec.customer_phone || '—')) + '</td>' +
             '<td>' + esc(fmtBirthday(rec.customer_birthday) || '—') + '</td>' +
             '<td class="rec-cell-truncate" title="' + esc(address) + '">' + (rec.contact_hidden ? '<span class="rec-empty">—</span>' : esc(address || '—')) + '</td>' +
-            '<td>' + projectCell(Object.assign({}, rec, { workspace_name: rec.deal_project_name || rec.workspace_name })) + '</td>' +
-            '<td>' + stagePill(rec.deal_stage) + '</td>' +
-            '<td>' + referenceCell(rec) + '</td>' +
             '<td>' + actionButton(rec) + '</td></tr>';
     }
 
@@ -678,6 +690,14 @@
         const seq = ++k.seq;
         const loader = $('deals-mode-loader');
         if (loader) loader.hidden = false;
+        if (!k.loaded) {
+            const emptyEl = $('deals-kanban-empty');
+            if (emptyEl) emptyEl.style.display = 'none';
+            STAGES.forEach((stage, i) => {
+                const zone = $('dk-' + stage);
+                if (zone) zone.innerHTML = Array.from({ length: 2 + (i % 2) }, () => '<span class="ui-skel kb-skel" aria-hidden="true"></span>').join('');
+            });
+        }
         k.promise = (async () => {
             try {
                 const tab = state.tabs.deals;
@@ -851,9 +871,10 @@
         if (drawer) drawer.classList.remove('show', 'is-editing');
         if (drawerBackdrop) { drawerBackdrop.classList.remove('visible'); drawerBackdrop.setAttribute('aria-hidden', 'true'); }
     }
-    function closeDrawer() {
+    async function closeDrawer() {
         if (state.drawer.mode === 'edit' && drawerIsDirty()) {
-            if (!global.confirm('Discard unsaved changes?')) return;
+            const ok = await global.Charm.confirm({ title: 'Discard changes?', text: 'Your unsaved edits to this record will be lost.', confirmLabel: 'Discard', tone: 'danger', icon: 'alert' });
+            if (!ok) return;
         }
         state.drawer.seq++;
         state.drawer.record = null;
@@ -1851,8 +1872,11 @@
     if ($('drawer-close')) $('drawer-close').addEventListener('click', closeDrawer);
     if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
     if ($('btn-edit-toggle')) $('btn-edit-toggle').addEventListener('click', () => { if (state.drawer.mode === 'edit') saveDrawer(); else setDrawerMode('edit'); });
-    if ($('btn-edit-cancel')) $('btn-edit-cancel').addEventListener('click', () => {
-        if (drawerIsDirty() && !global.confirm('Discard unsaved changes?')) return;
+    if ($('btn-edit-cancel')) $('btn-edit-cancel').addEventListener('click', async () => {
+        if (drawerIsDirty()) {
+            const ok = await global.Charm.confirm({ title: 'Discard changes?', text: 'Your unsaved edits to this record will be lost.', confirmLabel: 'Discard', tone: 'danger', icon: 'alert' });
+            if (!ok) return;
+        }
         setDrawerMode('view');
     });
     if ($('btn-reveal-contact')) $('btn-reveal-contact').addEventListener('click', revealContact);

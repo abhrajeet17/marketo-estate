@@ -1,3 +1,4 @@
+{% from 'components/ui.html' import skeleton_rows %}
             <!-- ══════════ DEALS SECTION (unified crm_leads, record_status = deal) ══════════ -->
             <section class="crm-section" id="sec-deals">
                 <div class="crm-records-shell" data-records-tab="deals">
@@ -63,7 +64,7 @@
                                                 <th>Ref Role</th>
                                                 <th aria-label="Actions"></th>
                                             </tr></thead>
-                                            <tbody id="deals-tbody"></tbody>
+                                            <tbody id="deals-tbody">{{ skeleton_rows(10) }}</tbody>
                                         </table>
                                         <div class="empty" id="deals-empty" style="display:none;">
                                             <strong>No deals yet</strong>

@@ -15,7 +15,6 @@ Draw plots on drone panoramas, share the whole project in one branded link, and 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-2.x-000000?style=flat-square&logo=flask&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_%2B_Auth-3FCF8E?style=flat-square&logo=supabase&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![Gunicorn](https://img.shields.io/badge/Gunicorn-WSGI-499848?style=flat-square&logo=gunicorn&logoColor=white)
 
 [Features](#-features) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [Project Structure](#-project-structure) · [Deployment](#-deployment)
@@ -61,7 +60,7 @@ Behind the buyer experience sits a full sales back-office: a CRM for leads, cont
 | **Backend** | Python 3.11, Flask, Flask-Compress, Gunicorn |
 | **Database & Auth** | Supabase (PostgreSQL, Auth, JWT) |
 | **Storage** | Supabase Storage / S3-compatible via `boto3` |
-| **Frontend** | Jinja2 templates, Tailwind CSS 4, Preline UI, vanilla JS |
+| **Frontend** | Jinja2 templates, Charm UI design system (`static/ui`), vanilla JS |
 | **Media** | Pillow for image processing, large video uploads for day/night scenes |
 | **Hosting** | Vercel, Hostinger, Render or any WSGI host |
 
@@ -70,7 +69,6 @@ Behind the buyer experience sits a full sales back-office: a CRM for leads, cont
 ### Prerequisites
 
 - Python **3.11+**
-- Node.js **18+** (for building the Tailwind CSS bundle)
 - A [Supabase](https://supabase.com) project
 
 ### 1. Clone and install
@@ -82,8 +80,6 @@ cd marketo-estate
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-
-npm install                      # also builds the CSS bundle via postinstall
 ```
 
 ### 2. Configure environment
@@ -123,8 +119,7 @@ The app starts on **http://localhost:5000**.
 │   ├── core/             # Auth, database client, serializers
 │   └── config.py
 ├── templates/            # Jinja2 pages and shared components
-├── static/               # CSS, JS, images, vendor libraries
-├── src/portal.css        # Tailwind source → static/css/portal.bundle.css
+├── static/               # CSS, JS, images, vendor libraries (static/ui = Charm UI design system)
 ├── db/                   # Schema and incremental SQL migrations
 ├── deploy/               # Hosting-specific deployment configs
 ├── scripts/              # Build and maintenance utilities

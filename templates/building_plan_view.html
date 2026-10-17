@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{{ tree.project.name or 'Building Plan' }}</title>
+    {% set root_view = tree.maps[tree.root].views[0] %}
+    {% if root_view.url %}<link rel="preload" as="image" href="{{ root_view.url }}" fetchpriority="high">{% endif %}
+    <link rel="stylesheet" href="/static/css/building_plan_view.css?v={{ asset_v }}">
+</head>
+<body>
+<div class="bp" id="bp" data-level="aerial">
+    <div class="bp-scene" id="bp-scene" aria-label="Interactive building plan"></div>
+
+    <div class="bp-loader" id="bp-loader" aria-live="polite"><span class="bp-spinner"></span><span id="bp-loader-text">Loading view…</span></div>
+
+    <!-- Breadcrumb bar -->
+    <nav class="bp-crumbbar bp-ui" id="bp-crumbbar" aria-label="Location">
+        <div class="bp-brand" id="bp-brand" title="Back to start"></div>
+        <button class="bp-up" id="bp-up" type="button" title="Go up one level" aria-label="Go up one level">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+            <span>UP</span>
+        </button>
+        <ol class="bp-crumbs" id="bp-crumbs"></ol>
+    </nav>
+
+    <!-- Top right -->
+    <div class="bp-topright bp-ui">
+        <a class="bp-pill" id="bp-vr" href="#" hidden>VR Tour</a>
+        <button class="bp-icon-btn" id="bp-eye" type="button" title="Hide overlays" aria-label="Hide overlays" hidden>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="m1 1 22 22"/></svg>
+        </button>
+    </div>
+
+    <!-- Legend -->
+    <section class="bp-panel bp-legend bp-ui" id="bp-legend" hidden>
+        <h3>Unit Status Legend</h3>
+        <ul>
+            <li><i class="dot available"></i>Available</li>
+            <li><i class="dot sold"></i>Sold</li>
+            <li><i class="dot hold"></i>Hold</li>
+        </ul>
+    </section>
+
+    <!-- Filters (tower) -->
+    <section class="bp-panel bp-filters bp-ui" id="bp-filters" hidden>
+        <div class="bp-filters-body" id="bp-filters-body">
+            <h4>Filters</h4>
+            <div class="bp-units-total" id="bp-units-total"></div>
+            <div class="bp-chips" id="bp-bhk"></div>
+            <div class="bp-size" id="bp-size-wrap">
+                <div class="bp-size-title">Size Sq. Ft</div>
+                <div class="bp-size-values"><span id="bp-size-lo"></span><span id="bp-size-hi"></span></div>
+                <div class="bp-range">
+                    <div class="bp-range-track"><div class="bp-range-fill" id="bp-range-fill"></div></div>
+                    <input type="range" id="bp-size-min" aria-label="Minimum size">
+                    <input type="range" id="bp-size-max" aria-label="Maximum size">
+                </div>
+            </div>
+            <button class="bp-btn-light" id="bp-hide-all" type="button">Hide All</button>
+        </div>
+        <button class="bp-panel-tab" id="bp-filters-toggle" type="button" aria-label="Collapse filters" aria-expanded="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+    </section>
+
+    <!-- Floor selector -->
+    <section class="bp-panel bp-floorsel bp-ui" id="bp-floorsel" hidden>
+        <h3 id="bp-floorsel-title"></h3>
+        <input class="bp-input" id="bp-floor-search" type="text" inputmode="numeric" placeholder="Enter or select a floor" autocomplete="off">
+        <div class="bp-floorsel-scroll">
+            <div id="bp-floorsel-towers-wrap">
+                <h5>Towers</h5>
+                <div class="bp-grid-btns" id="bp-floorsel-towers"></div>
+            </div>
+            <h5>Floors</h5>
+            <div id="bp-floorsel-floors"></div>
+        </div>
+        <button class="bp-btn-light" id="bp-floorsel-close" type="button">Close</button>
+    </section>
+    <button class="bp-floorsel-open bp-ui" id="bp-floorsel-open" type="button" hidden>Floors</button>
+
+    <!-- Unit / floor details -->
+    <section class="bp-panel bp-details bp-ui" id="bp-details" hidden>
+        <h3 id="bp-details-title">Apartment Details</h3>
+        <div class="bp-detail-rows" id="bp-detail-rows"></div>
+        <button class="bp-btn-primary" id="bp-interest-btn" type="button">Show Interest</button>
+    </section>
+
+    <!-- Explore towers -->
+    <section class="bp-panel bp-explore bp-ui" id="bp-explore" hidden>
+        <h3 id="bp-explore-title">Explore Towers</h3>
+        <div class="bp-grid-btns" id="bp-explore-list"></div>
+    </section>
+
+    <!-- Zoom -->
+    <div class="bp-zoom bp-ui" id="bp-zoom" hidden>
+        <button class="bp-icon-btn" id="bp-zoom-in" type="button" aria-label="Zoom in">+</button>
+        <button class="bp-icon-btn" id="bp-zoom-out" type="button" aria-label="Zoom out">&minus;</button>
+    </div>
+
+    <!-- Prev / next -->
+    <button class="bp-arrow bp-arrow-left bp-ui" id="bp-prev" type="button" aria-label="Previous" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <button class="bp-arrow bp-arrow-right bp-ui" id="bp-next" type="button" aria-label="Next" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+
+    <!-- Return -->
+    <button class="bp-return bp-ui" id="bp-return" type="button" hidden>
+        <span id="bp-return-text">Return</span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    </button>
+
+    <!-- Bottom right -->
+    <div class="bp-compass bp-ui" id="bp-compass" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="86" height="86"><circle cx="50" cy="50" r="46" fill="rgba(40,40,40,.55)"/><g transform="rotate(-35 50 50)"><path d="M50 16 57 50H43Z" fill="#e53935"/><path d="M50 84 43 50h14Z" fill="#fff"/></g><text x="31" y="31" font-size="11" fill="#fff" font-family="sans-serif" font-weight="700">N</text></svg>
+    </div>
+    <button class="bp-icon-btn bp-fullscreen bp-ui" id="bp-fullscreen" type="button" aria-label="Toggle full screen">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+    </button>
+
+    <div class="bp-rera" id="bp-rera" hidden></div>
+
+    <!-- Hover card -->
+    <div class="bp-hovercard" id="bp-hovercard" hidden></div>
+
+    <!-- Show interest -->
+    <div class="bp-modal-backdrop" id="bp-modal" hidden>
+        <form class="bp-modal" id="bp-interest-form" novalidate aria-labelledby="bp-modal-title">
+            <header>
+                <h3 id="bp-modal-title">Show Interest</h3>
+                <button type="button" class="bp-modal-close" id="bp-modal-close" aria-label="Close">&times;</button>
+            </header>
+            <div class="bp-modal-unit" id="bp-modal-unit"></div>
+            <div class="bp-modal-body" id="bp-modal-body">
+                <div class="bp-field bp-span2"><label for="bpf-name">Full name *</label><input id="bpf-name" name="name" type="text" maxlength="100" autocomplete="name" required></div>
+                <div class="bp-field"><label for="bpf-email">Email *</label><input id="bpf-email" name="email" type="email" maxlength="254" autocomplete="email" required></div>
+                <div class="bp-field"><label for="bpf-phone">Phone *</label><input id="bpf-phone" name="phone" type="tel" maxlength="40" autocomplete="tel" required></div>
+                <div class="bp-field"><label for="bpf-birthday">Birthday</label><input id="bpf-birthday" name="birthday" type="date" autocomplete="bday"></div>
+                <div class="bp-field"><label for="bpf-street">Street</label><input id="bpf-street" name="street" type="text" maxlength="100" autocomplete="street-address"></div>
+                <div class="bp-field"><label for="bpf-city">City</label><input id="bpf-city" name="city" type="text" maxlength="100" autocomplete="address-level2"></div>
+                <div class="bp-field"><label for="bpf-state">State</label><input id="bpf-state" name="state" type="text" maxlength="100" autocomplete="address-level1"></div>
+                <div class="bp-field"><label for="bpf-country">Country</label><input id="bpf-country" name="country" type="text" maxlength="100" autocomplete="country-name"></div>
+                <div class="bp-field"><label for="bpf-zip">Zip code</label><input id="bpf-zip" name="zip_code" type="text" maxlength="40" autocomplete="postal-code"></div>
+                <div class="bp-field bp-span2"><label for="bpf-reference">Reference</label><select id="bpf-reference" name="reference_user_id"><option value="">Loading…</option></select></div>
+                <div class="bp-field bp-span2"><label for="bpf-description">Requirement</label><textarea id="bpf-description" name="description" rows="3" maxlength="500" placeholder="Requirement, notes, or preference"></textarea></div>
+            </div>
+            <div class="bp-modal-msg" id="bp-modal-msg" role="alert" hidden></div>
+            <footer id="bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" id="bp-modal-cancel">Cancel</button>
+                <button type="submit" class="bp-btn-primary" id="bp-modal-submit"><span class="bp-btn-spin" hidden></span><span class="bp-btn-label">Send Interest</span></button>
+            </footer>
+        </form>
+    </div>
+</div>
+<script>window.__BP_TREE__ = {{ tree|tojson }};</script>
+<script src="/static/js/building_plan_view.js?v={{ asset_v }}" defer></script>
+</body>
+</html>

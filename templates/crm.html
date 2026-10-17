@@ -1,327 +1,11 @@
-{% set page_title = 'CRM - MarketoState' %}
+{% set page_title = 'CRM · MarketoState' %}
 {% set active_nav = 'crm' %}
-{% set use_marketostate_brand_theme = true %}
-{% set portal_extra_css = '/static/crm/crm.css?v=20260823-drawer-grip' %}
+{% set portal_extra_css = '/static/ui/pages/crm.css' %}
+{% set portal_header_include = 'crm/components/tab_nav.html' %}
 {% from 'crm/components/data_table.html' import crm_data_table %}
-{% set portal_merge_nav_into_crm = true %}
 {% include 'components/portal_shell_start.html' %}
-<link rel="stylesheet" href="/static/css/share-workspace-modal.css?v=20260822-2">
-<link rel="stylesheet" href="/static/crm/crm-records.css?v=20260924-9">
-<style>
-.crm-tab-load-error {
-    margin: 0 0 0.85rem;
-    padding: 0.75rem 0.9rem;
-    border: 1px solid #f5c2c7;
-    border-radius: 10px;
-    background: #fff5f5;
-    color: #842029;
-    font-size: 0.86rem;
-}
-.crm-tab-load-error__msg { margin: 0.35rem 0 0.55rem; }
-.crm-tab-load-error__retry { margin-top: 0.15rem; }
-#table-empty .btn { margin-top: 0.65rem; }
-/* Stabilize Add Project / Add Plot modals (centered) */
-#add-normal-project-modal.visible,
-#add-normal-plot-modal.visible,
-#edit-plot-modal.visible,
-#add-interest-modal.visible,
-#share-workspace-modal.visible {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 16px !important;
-    background: rgba(34, 48, 62, 0.45) !important;
-    backdrop-filter: blur(2px);
-}
-
-/* Edit Project modal - shifted a little down */
-#edit-project-modal.visible {
-    display: flex !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
-    padding-top: 70px !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-    padding-bottom: 16px !important;
-    background: rgba(34, 48, 62, 0.45) !important;
-    backdrop-filter: blur(2px);
-}
-
-#deal-modal-backdrop.visible,
-#contact-modal-backdrop.visible {
-    display: flex !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
-    padding-top: 70px !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-    padding-bottom: 16px !important;
-    background: rgba(34, 48, 62, 0.45) !important;
-    backdrop-filter: blur(2px);
-}
-#add-normal-project-modal .crm-modal,
-#add-normal-plot-modal .crm-modal,
-#edit-plot-modal .crm-modal,
-#add-interest-modal .crm-modal,
-#share-workspace-modal .crm-modal,
-#edit-project-modal .crm-modal {
-    width: min(720px, 94vw) !important;
-    height: auto !important;
-    max-height: 92vh !important;
-    overflow: auto !important;
-    border: 1px solid var(--bs-border-color, #d9dee3) !important;
-    border-radius: 12px !important;
-    background: var(--bs-body-bg, #fff);
-    box-shadow: 0 18px 48px rgba(20, 28, 45, 0.18);
-    padding: 0.85rem 0.95rem 0.75rem;
-}
-#edit-project-modal .crm-simple-modal-head {
-    margin-bottom: 0.85rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid #f1f5f9;
-}
-#deal-modal-backdrop .crm-modal,
-#contact-modal-backdrop .crm-modal {
-    width: min(1290px, 96vw) !important;
-    height: auto !important;
-    max-height: 92vh !important;
-    overflow: hidden !important;
-    border: 1px solid var(--bs-border-color, #d9dee3) !important;
-    border-radius: 14px !important;
-    background: var(--bs-body-bg, #fff);
-    box-shadow: 0 18px 48px rgba(20, 28, 45, 0.2);
-}
-#add-normal-project-modal .crm-simple-modal-head,
-#add-normal-plot-modal .crm-simple-modal-head,
-#edit-plot-modal .crm-simple-modal-head,
-#add-interest-modal .crm-simple-modal-head,
-#share-workspace-modal .crm-simple-modal-head,
-#edit-project-modal .crm-simple-modal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.6rem;
-    margin-bottom: 0.55rem;
-    padding-bottom: 0.35rem;
-    border-bottom: 1px solid #f1f5f9;
-}
-#add-normal-project-modal .crm-simple-modal-body,
-#add-normal-plot-modal .crm-simple-modal-body,
-#edit-plot-modal .crm-simple-modal-body,
-#add-interest-modal .crm-simple-modal-body,
-#edit-project-modal .crm-simple-modal-body {
-    display: grid;
-    gap: 0.55rem;
-}
-#add-normal-project-modal .crm-simple-modal-body .form-group,
-#add-normal-plot-modal .crm-simple-modal-body .form-group,
-#edit-plot-modal .crm-simple-modal-body .form-group,
-#add-interest-modal .crm-simple-modal-body .form-group,
-#edit-project-modal .crm-simple-modal-body .form-group {
-    display: grid;
-    grid-template-columns: 155px minmax(0, 1fr);
-    align-items: center;
-    gap: 0.55rem;
-    margin: 0;
-}
-#edit-project-modal .crm-simple-modal-body .form-group.ep-full {
-    grid-template-columns: 1fr;
-    align-items: start;
-}
-#edit-project-modal .crm-simple-modal-body .form-group.ep-full .form-label {
-    display: block;
-    margin-bottom: 0.22rem;
-}
-#edit-project-modal .crm-simple-modal-body .form-group.ep-published {
-    padding-top: 0.25rem;
-    border-top: 1px solid #f1f5f9;
-}
-#add-normal-project-modal .dynamic-master-stack,
-#add-normal-plot-modal .dynamic-master-stack,
-
-#add-normal-project-modal .crm-simple-modal-body .form-label,
-#add-normal-plot-modal .crm-simple-modal-body .form-label,
-#edit-plot-modal .crm-simple-modal-body .form-label,
-#add-interest-modal .crm-simple-modal-body .form-label,
-#edit-project-modal .crm-simple-modal-body .form-label {
-    margin: 0;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #566a7f;
-}
-#add-normal-project-modal .crm-simple-modal-body .form-input,
-#add-normal-plot-modal .crm-simple-modal-body .form-input,
-#edit-plot-modal .crm-simple-modal-body .form-input,
-#add-interest-modal .crm-simple-modal-body .form-input,
-#edit-project-modal .crm-simple-modal-body .form-input {
-    width: 100%;
-    min-width: 0;
-    height: 34px;
-    font-size: 0.86rem;
-    padding: 0.32rem 0.55rem;
-}
-#add-normal-project-modal .crm-simple-modal-body textarea.form-input,
-#add-normal-plot-modal .crm-simple-modal-body textarea.form-input,
-#edit-plot-modal .crm-simple-modal-body textarea.form-input,
-#add-interest-modal .crm-simple-modal-body textarea.form-input,
-#edit-project-modal .crm-simple-modal-body textarea.form-input {
-    min-height: 58px;
-    height: auto;
-    padding-top: 0.4rem;
-    padding-bottom: 0.4rem;
-}
-/* Contact modal layout — see crm.css entity modal block */
-#add-normal-plot-modal [style*="grid-template-columns:1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-}
-#add-normal-project-modal .modal-actions,
-#add-normal-plot-modal .modal-actions,
-#edit-plot-modal .modal-actions,
-#add-interest-modal .modal-actions,
-#share-workspace-modal .modal-actions,
-#edit-project-modal .modal-actions {
-    margin-top: 0.85rem;
-    padding-top: 0.45rem;
-    border-top: 1px solid #f1f5f9;
-    background: transparent;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.55rem;
-}
-@media (max-width: 768px) {
-    #add-normal-project-modal .crm-simple-modal-body .form-group,
-    #add-normal-plot-modal .crm-simple-modal-body .form-group,
-    #edit-plot-modal .crm-simple-modal-body .form-group,
-    #add-interest-modal .crm-simple-modal-body .form-group,
-    #edit-project-modal .crm-simple-modal-body .form-group {
-        grid-template-columns: 1fr;
-        align-items: stretch;
-    }
-    #edit-project-modal .crm-simple-modal-body .form-group.ep-full {
-        grid-template-columns: 1fr;
-    }
-}
-/* Deal modal layout — see crm.css entity modal block */
-.crm-page--sneat .view-btn.active {
-    background: var(--ms-brand-primary, var(--crm-blue, #696cff)) !important;
-    border-color: var(--ms-brand-primary, var(--crm-blue, #696cff)) !important;
-    color: #fff !important;
-}
-#deals-kanban-board {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(138px, 1fr));
-    gap: 0.7rem;
-    align-items: stretch;
-    overflow-x: auto;
-    overflow-y: visible;
-    padding-bottom: 0.35rem;
-}
-#deals-kanban-board .kanban-col {
-    min-width: 0;
-    min-height: 420px;
-    display: flex;
-    flex-direction: column;
-}
-/* The card list fills the rest of the column so the whole column is droppable. */
-#deals-kanban-board .kanban-cards {
-    min-height: 120px;
-    flex: 1 1 auto;
-}
-#deals-kanban-board .kb-card {
-    border: 1px solid var(--crm-line);
-    border-radius: 8px;
-    background: #fff;
-    padding: 0.58rem 0.62rem;
-    box-shadow: 0 2px 8px rgba(20, 28, 45, 0.06);
-    min-width: 0;
-}
-#deals-kanban-board .kb-card--dragging {
-    opacity: 0.55;
-}
-/* Keep Interests filter rail above table layers on mobile overlay */
-@media (max-width: 900px) {
-    .crm-filter-rail.filter-modal-backdrop,
-    .crm-filter-rail.filter-modal-backdrop.visible {
-        z-index: 1300 !important;
-    }
-}
-.entity-filter-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1400;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-}
-.entity-filter-modal-backdrop.visible {
-    display: flex;
-}
-.entity-filter-modal {
-    width: 260px !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
-    max-height: calc(100vh - 148px) !important;
-    min-height: 320px !important;
-    height: auto !important;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    border-radius: 12px;
-    border: 1px solid var(--crm-border);
-    background: #fff;
-    box-shadow: 0 24px 50px rgba(32, 42, 68, 0.14);
-}
-.entity-filter-modal .filter-modal-head {
-    flex: 0 0 auto;
-}
-.entity-filter-modal .filter-modal-body {
-    flex: 1 1 auto;
-    overflow: auto;
-    padding: 0.95rem 1rem 0.85rem;
-    display: grid;
-    gap: 0.68rem;
-}
-.entity-filter-modal .filter-modal-foot {
-    position: sticky;
-    bottom: 0;
-    background: #fff;
-    border-top: 1px solid var(--crm-border);
-    padding: 0.75rem 1rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.55rem;
-}
-.entity-filter-dynamic {
-    display: grid;
-    gap: 0.68rem;
-}
-@media (max-width: 768px) {
-    #deals-kanban-board {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        overflow-x: visible;
-    }
-    .entity-filter-modal {
-        width: min(96vw, 360px) !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        max-height: 90vh !important;
-    }
-}
-</style>
-<div class="crm-page crm-page--sneat crm-page--booting" id="crm-page">
-{% set loader_id = 'crm-boot-loader' %}
-{% set arc_id = 'crm-loader-arc' %}
-{% set percent_id = 'crm-loader-percent' %}
-{% set steps_id = 'crm-loader-steps' %}
-{% set caption_id = 'crm-loader-caption' %}
-{% set label_id = 'crm-loader-label' %}
-{% set initial_caption = 'Loading CRM' %}
-{% set initial_label = 'Verifying access' %}
-{% set steps = ['auth', 'profile', 'leads'] %}
-{% include 'components/portal_tab_loader.html' %}
+<div class="crm-page" id="crm-page">
     <div class="crm-page-content" id="crm-page-content" aria-busy="true">
-    {% include 'crm/components/tab_nav.html' %}
 
     <!-- Content -->
     <main class="crm-content">
@@ -361,7 +45,7 @@
                 </div>
                 <div class="crm-filter-bar" id="projects-normal-toolbar" style="display:none;">
                     <button class="btn btn-primary crm-add-action" id="btn-add-normal-project" type="button">
-                        <i class="icon-base bx bx-plus icon-sm" aria-hidden="true"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         <span>Add Project</span>
                     </button>
                 </div>
@@ -408,7 +92,7 @@
 
             <!-- ══════════ EDIT PROJECT DETAILS MODAL ══════════ -->
             <div class="crm-modal-backdrop" id="edit-project-modal">
-                <div class="crm-modal" style="width: min(720px, 94vw) !important; max-width: 720px !important; min-width: 560px; max-height: 92vh; overflow-y: auto;">
+                <div class="crm-modal">
                     <div class="crm-simple-modal-head">
                         <div class="modal-title" style="margin:0;">Edit Project Details</div>
                         <button type="button" class="modal-close" id="edit-project-modal-close" aria-label="Close">&times;</button>
@@ -478,7 +162,7 @@
                         </div>
                     </div>
                     <button class="btn btn-primary crm-add-action" id="btn-add-normal-plot" style="display:none;" type="button">
-                        <i class="icon-base bx bx-plus icon-sm" aria-hidden="true"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         <span>Add Plot</span>
                     </button>
                     <button class="filter-btn" id="btn-export-plots" type="button" title="Export all plotted list data to Excel">
@@ -672,7 +356,7 @@
             <section class="crm-section" id="sec-masters">
                 <div class="crm-filter-bar">
                     <button class="btn btn-primary crm-add-action" id="btn-add-master" type="button">
-                        <i class="icon-base bx bx-plus icon-sm" aria-hidden="true"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         <span>Add Master</span>
                     </button>
                 </div>
@@ -711,7 +395,7 @@
             <div class="crm-modal-actions">
                 <button class="btn btn-secondary" id="master-create-cancel" type="button">Cancel</button>
                 <button class="btn btn-primary crm-add-action" id="master-create-save" type="button">
-                    <i class="icon-base bx bx-plus icon-sm" aria-hidden="true"></i>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                     <span>Add Master</span>
                 </button>
             </div>
@@ -796,7 +480,7 @@
 
 {% include 'components/share_workspace_modal.html' %}
 <div class="crm-modal-backdrop" id="crm-export-filename-modal">
-    <div class="crm-modal" style="width: min(420px, 92vw) !important; max-width: 420px !important; min-width: 0; max-height: 92vh; overflow-y: auto;">
+    <div class="crm-modal">
         <div class="crm-simple-modal-head">
             <div class="modal-title" id="crm-export-filename-title" style="margin:0;">Export to Excel</div>
             <button type="button" class="modal-close" id="crm-export-filename-close" aria-label="Close">&times;</button>
@@ -819,12 +503,12 @@
 
 <!-- ══════════ QUOTATION MODAL ══════════ -->
 <div class="crm-modal-backdrop" id="quotation-modal-backdrop">
-    <div class="crm-modal" style="width:min(640px,94vw);">
+    <div class="crm-modal">
         <div class="crm-modal-header">
             <h2>Generate Quotation</h2>
             <button class="crm-modal-close" id="quotation-modal-close" type="button">&times;</button>
         </div>
-        <div class="crm-modal-body" style="padding:1.25rem 1.5rem;display:grid;gap:0.85rem;">
+        <div class="crm-modal-body">
             <div class="q-field">
                 <label class="drawer-field-label">Standard template</label>
                 <select class="toolbar-select" id="q-template-id" style="max-width:100%;width:100%;">
@@ -910,23 +594,11 @@
     </div>
     </div><!-- .crm-page-content -->
 </div>
-<div id="toast-container" style="position:fixed;top:1rem;right:1rem;z-index:10900;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;"></div>
+
 {% include 'components/portal_shell_end.html' %}
-<script>
-    window.__SUPABASE_URL__ = {{ (supabase_url or '')|tojson }};
-    window.__SUPABASE_ANON_KEY__ = {{ (supabase_anon_key or '')|tojson }};
-</script>
-<script>
-(function () {
-    var y = document.getElementById('footer-year');
-    if (y) y.textContent = new Date().getFullYear();
-})();
-</script>
-<script src="/static/js/sidebar.js?v=20260610-client-admin-2"></script>
-<script src="/static/js/portal_tab_loader.js?v=20260623-3"></script>
-<script src="/static/js/share-workspace-modal.js?v=20260622-3"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="/static/crm/crm-excel-export.js?v=20260826-1"></script>
+<script src="/static/ui/tab-loader.js?v={{ ui_asset_v }}"></script>
+<script src="/static/js/share-workspace-modal.js?v={{ ui_asset_v }}"></script>
+<script src="/static/crm/crm-excel-export.js?v={{ ui_asset_v }}"></script>
 <script>
 (function () {
     function waitForAuthSession(maxAttempts, delayMs) {
@@ -1018,9 +690,9 @@
     window.isRetryableCrmFetchStatus = isRetryableCrmFetchStatus;
 })();
 </script>
-<script src="/static/crm/crm-pager.js?v=20260822-pagination-2"></script>
-    <script src="/static/crm/crm-sort.js?v=20260826-1"></script>
-    <script src="/static/crm/crm-records.js?v=20260924-9"></script>
+<script src="/static/crm/crm-pager.js?v={{ ui_asset_v }}"></script>
+    <script src="/static/crm/crm-sort.js?v={{ ui_asset_v }}"></script>
+    <script src="/static/crm/crm-records.js?v={{ ui_asset_v }}"></script>
 <script>
 (function() {
     'use strict';
@@ -1121,15 +793,7 @@
     function normalizePhone(v) { return String(v || '').replace(/\D+/g, ''); }
     function normalizeEmail(v) { return String(v || '').trim().toLowerCase(); }
     function showToast(message, type) {
-        const c = document.getElementById('toast-container');
-        if(!c) return;
-        const t = document.createElement('div');
-        t.style.cssText = 'pointer-events:auto;padding:0.65rem 1rem;border-radius:8px;font-size:0.82rem;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.15);opacity:0;transform:translateY(-8px);transition:opacity 0.25s,transform 0.25s;';
-        t.style.background = type === 'error' ? '#ef4444' : '#162338';
-        t.textContent = message;
-        c.appendChild(t);
-        requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
-        setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-8px)'; setTimeout(() => t.remove(), 300); }, 3000);
+        window.Charm.toast(message, type);
     }
     window.showToast = showToast;
     // `toast` is the short alias used throughout this block; the deals/contacts
@@ -1218,6 +882,14 @@
 
     function setTabSectionLoading(sectionEl, isLoading, tabName) {
         if (!sectionEl) return;
+        // Already-rendered data stays on screen during a reload; only the
+        // first load swaps the section for its skeleton.
+        if (isLoading && tabDataLoaded[String(tabName || '').trim()]) {
+            sectionEl.classList.add('is-refreshing');
+            sectionEl.setAttribute('aria-busy', 'true');
+            return;
+        }
+        sectionEl.classList.remove('is-refreshing');
         const loader = sectionEl.querySelector('.portal-section-loader');
         const label = TAB_LOADER_LABELS[String(tabName || '').trim()] || 'Loading...';
         const controller = loader
@@ -1359,101 +1031,45 @@
         });
     });
 
-    // Ensure the Projects tab (for platform admins) also gets click handling in case it was unhidden later.
-    // The main loop above already binds every tab present at parse time, so
-    // this only fires for markup where the button was injected later —
-    // binding twice made one click run the section load twice.
-    (function ensureProjectsTabListener() {
-        const ptab = document.getElementById('tab-projects');
-        if (ptab && !ptab._crmProjectsListener && !ptab._crmTabBound) {
-            ptab._crmProjectsListener = true;
-            ptab.addEventListener('click', function() {
-                const sec = 'projects';
-                switchSection(sec);
-                const sectionEl = document.getElementById('sec-' + sec);
-                if (sectionEl && !tabDataLoaded[sec]) {
-                    setTabSectionLoading(sectionEl, true, sec);
-                }
-                ensureTabDataLoaded(sec, false).catch(function (err) {
-                    console.warn('CRM tab load failed:', sec, err);
-                    const failedSection = document.getElementById('sec-' + sec);
-                    if (failedSection) setTabSectionLoading(failedSection, false, sec);
-                });
-            });
-        }
-    })();
-
-    // Final defensive unhide for platform admins (in case role loads after initial paint)
-    setTimeout(function() {
-        try {
-            const r = (window.__crmUserRole || '').toLowerCase();
-            if (r === 'admin' || r === 'superadmin') {
-                const p = document.getElementById('tab-projects');
-                if (p) p.style.display = '';
-            }
-        } catch(e){}
-    }, 800);
 
 
-    // ── Load user info and set role ──
-    async function loadUserInfo(strict) {
-        try {
-            const r = await api('/api/crm/me');
-            if (!r.ok) {
-                const errData = await r.json().catch(() => ({}));
-                const errMsg = (errData && errData.error) ? errData.error : ('Failed to load profile (' + r.status + ')');
-                if (strict) throw new Error(errMsg);
-                console.warn(errMsg);
-                return;
-            }
-            const d = await r.json().catch(() => null);
-            if (!d || typeof d !== 'object') {
-                if (strict) throw new Error('Profile response was empty');
-                console.warn('Profile response was empty');
-                return;
-            }
-            window.__crmMeData = d || {};
-            userRole = d.role || 'user';
-            const isAdminRole = userRole === 'admin' || userRole === 'superadmin';
-            const isExternalBroker = !!d.is_broker || userRole === 'broker';
-            try { window.localStorage.setItem('portal_is_broker', isExternalBroker ? '1' : '0'); } catch (e) {}
-            isClientAdminUser = !!d.is_client_admin;
-            isExternalBrokerUser = !!isExternalBroker;
-            window.__crmIsExternalBroker = !!isExternalBroker;
-            window.__crmUserRole = userRole;
-            if (window.CrmRecords) window.CrmRecords.setProfile(d);
-            if (typeof window.configurePortalShell === 'function') {
-                window.configurePortalShell(d, isExternalBroker, isAdminRole, isClientAdminUser);
-            }
-            configureBrokerAccount();
-            // Show admin-only CRM tabs (only for platform admins, not client admins)
-            if (isAdminRole) {
-                const show = function(id) { const el = document.getElementById(id) || $(id); if (el) el.style.display = ''; };
-                show('tab-panoramas');
-                show('tab-manage-lock');
-                show('tab-projects');
-            } else {
-                if (isExternalBroker) {
-                    if ($('tab-allotted-clients')) $('tab-allotted-clients').style.display = '';
-                    if ($('tab-masters')) $('tab-masters').style.display = '';
-                }
-                if (isClientAdminUser && $('tab-masters')) $('tab-masters').style.display = '';
-            }
-        } catch(e) {
-            if (strict) throw e;
-            console.warn('Failed to load user info', e);
-        }
-        // Defensive: ensure Projects tab is visible for platform admins (role check after fetch)
-        try {
-            const r = (window.__crmUserRole || '').toLowerCase();
-            if (r === 'admin' || r === 'superadmin') {
-                const ptab = document.getElementById('tab-projects');
-                if (ptab) ptab.style.display = '';
-            }
-        } catch (e) {}
+    // ── User info and role-based tabs ──
+    const ROLE_TABS = {
+        'tab-panoramas': me => me.isAdmin,
+        'tab-manage-lock': me => me.isAdmin,
+        'tab-projects': me => me.isAdmin,
+        'tab-allotted-clients': me => !me.isAdmin && me.isBroker,
+        'tab-masters': me => !me.isAdmin && (me.isBroker || me.isClientAdmin)
+    };
+
+    function applyUserInfo(identity) {
+        const d = Object.assign({}, identity, { can_convert_leads: !!identity.can_manage_deals });
+        window.__crmMeData = d;
+        userRole = String(d.role || 'user').toLowerCase();
+        const me = {
+            isAdmin: userRole === 'admin' || userRole === 'superadmin',
+            isBroker: !!d.is_broker || userRole === 'broker',
+            isClientAdmin: !!d.is_client_admin
+        };
+        isClientAdminUser = me.isClientAdmin;
+        isExternalBrokerUser = me.isBroker;
+        window.__crmIsExternalBroker = me.isBroker;
+        window.__crmUserRole = userRole;
+        if (window.CrmRecords) window.CrmRecords.setProfile(d);
+        configureBrokerAccount();
+        Object.keys(ROLE_TABS).forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.style.display = ROLE_TABS[id](me) ? '' : 'none';
+        });
     }
 
-    let allottedClientRows = [];
+    async function loadUserInfo() {
+        const ctx = await window.Portal.ready;
+        applyUserInfo(ctx.identity || {});
+    }
+    window.Portal.onChange(applyUserInfo);
+
+   let allottedClientRows = [];
     function renderAllottedClients() {
         const tbody = $('allotted-clients-tbody');
         const empty = $('allotted-clients-empty');
@@ -1689,7 +1305,7 @@
             '<div class="master-value-add">' +
             '<input type="text" class="form-control form-control-sm master-value-input" maxlength="100" placeholder="Add option" autocomplete="off">' +
             '<button type="button" class="btn btn-sm btn-primary master-value-add-btn">' +
-            '<i class="icon-base bx bx-plus icon-sm" aria-hidden="true"></i><span>Add</span></button>' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>' +
             '</div></div></div>';
     }
     function renderMasterTable(fields) {
@@ -3490,45 +3106,9 @@
 
     const syncCrmBootLoaderOffset = syncCrmSidebarLayout;
 
-    const crmBootLoader = window.PortalTabLoader ? new window.PortalTabLoader({
-        shellId: 'crm-page',
-        loaderId: 'crm-boot-loader',
-        shellLoadingClass: 'crm-page--booting',
-        stepOrder: ['auth', 'profile', 'leads'],
-        finalStep: 'leads',
-        ids: {
-            percent: 'crm-loader-percent',
-            steps: 'crm-loader-steps',
-            caption: 'crm-loader-caption',
-            label: 'crm-loader-label',
-            arc: 'crm-loader-arc'
-        }
-    }) : null;
-
-    if (crmBootLoader) {
-        crmBootLoader.boot('auth', 'Loading CRM', 16, 'Verifying access');
-    }
-
     function setCrmBootLoading(isLoading) {
         const content = $('crm-page-content');
-        syncCrmBootLoaderOffset();
         if (content) content.setAttribute('aria-busy', isLoading ? 'true' : 'false');
-        if (!crmBootLoader) {
-            const loader = $('crm-boot-loader');
-            if (loader) loader.hidden = !isLoading;
-            const page = $('crm-page');
-            if (page) page.classList.toggle('crm-page--booting', !!isLoading);
-            return;
-        }
-        if (isLoading) {
-            crmBootLoader.setLoading(true);
-            crmBootLoader.setStep('auth', 'Authenticating session', 22, 'Verifying access');
-            return;
-        }
-        crmBootLoader.setLoading(false, {
-            finalCaption: 'CRM ready',
-            finalLabel: 'Fetching latest leads'
-        });
     }
 
     async function hydrateCrmData(force) {
@@ -3537,37 +3117,10 @@
         }
         crmHydrationInFlight = true;
         crmHydrationPromise = (async function () {
-            const maxAttempts = 4;
-            let lastError = null;
             try {
-                for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-                    try {
-                        if (attempt > 1) resetInterestsLoadState();
-                        if (crmBootLoader) {
-                            crmBootLoader.setStep('auth', 'Authenticating session', 28, 'Verifying access');
-                        }
-                        await window.ensureAuthenticated();
-                        if (crmBootLoader) {
-                            crmBootLoader.setStep('profile', 'Loading workspace profile', 48, 'Loading workspace');
-                        }
-                        await loadUserInfo(true);
-                        if (crmBootLoader) {
-                            crmBootLoader.setStep('leads', 'Fetching latest leads', 68, 'Syncing leads');
-                        }
-                        await ensureInterestsTableLoaded(!!force || attempt > 1);
-                        if (crmBootLoader) {
-                            crmBootLoader.setStep('leads', 'Finalizing CRM', 92, 'Loading project names');
-                        }
-                        crmLastHydrationAt = Date.now();
-                        lastError = null;
-                        break;
-                    } catch (err) {
-                        lastError = err;
-                        if (attempt >= maxAttempts) throw err;
-                        await new Promise(function (resolve) { setTimeout(resolve, 320 * attempt); });
-                    }
-                }
-                if (lastError) throw lastError;
+                // Profile (cached) and the first records page load in parallel.
+                await Promise.all([loadUserInfo(), ensureInterestsTableLoaded(!!force)]);
+                crmLastHydrationAt = Date.now();
             } finally {
                 crmHydrationInFlight = false;
                 crmHydrationPromise = null;
@@ -3613,10 +3166,6 @@
 
     window.crmBootReady = (async function init() {
         setCrmBootLoading(true);
-        if (typeof window.mountCrmHeaderTabs === 'function') window.mountCrmHeaderTabs();
-        if (window.sidebarReady && typeof window.sidebarReady.then === 'function') {
-            window.sidebarReady.then(syncCrmBootLoaderOffset).catch(function () {});
-        }
         try {
             await hydrateCrmData(false);
             setCrmBootLoading(false);
@@ -4238,7 +3787,35 @@
     }
 })();
 </script>
-<script src="/static/crm/crm-modals.js"></script>
+
+<script>
+(function () {
+    'use strict';
+    // Sliding indicator under the active tab + #hash deep links (/crm#deals).
+    var strip = document.getElementById('crm-tab-strip');
+    if (window.Charm && strip) window.Charm.tabs.watch(strip);
+    function tabFromHash() {
+        var name = String(window.location.hash || '').replace(/^#/, '');
+        var btn = name && document.getElementById('tab-' + name);
+        return btn && btn.style.display !== 'none' ? btn : null;
+    }
+    document.querySelectorAll('.crm-tab[data-tab]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var name = btn.getAttribute('data-tab');
+            if (window.history && window.history.replaceState) window.history.replaceState(null, '', name === 'interests' ? window.location.pathname : '#' + name);
+        });
+    });
+    var openFromHash = function () {
+        var btn = tabFromHash();
+        var plotQ = new URLSearchParams(window.location.search).get('plot_q');
+        var plotInput = document.getElementById('plot-search');
+        if (plotQ && plotInput && !plotInput.value) plotInput.value = plotQ;
+        if (btn && !btn.classList.contains('active')) btn.click();
+    };
+    window.Portal.ready.then(function () { setTimeout(openFromHash, 0); });
+    window.addEventListener('hashchange', openFromHash);
+})();
+</script>
 </body>
 </html>
 

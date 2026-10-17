@@ -59,6 +59,27 @@ def create_app():
         os.makedirs(os.path.join(_ROOT, 'templates'), exist_ok=True)
         os.makedirs(os.path.join(_ROOT, 'static'), exist_ok=True)
 
+        # Cache-busting token for the portal UI assets: newest mtime under static/ui
+        # and static/crm, so every deploy that touches them invalidates browser caches.
+        ui_dirs = [os.path.join(_ROOT, 'static', 'ui'), os.path.join(_ROOT, 'static', 'crm')]
+
+        def _compute_ui_asset_v():
+            try:
+                return str(int(max(
+                    os.path.getmtime(os.path.join(dirpath, name))
+                    for ui_dir in ui_dirs
+                    for dirpath, _dirs, files in os.walk(ui_dir) for name in files
+                )))
+            except ValueError:
+                return '1'
+
+        ui_asset_v = _compute_ui_asset_v()
+
+        @app.context_processor
+        def _ui_asset_version():
+            # Recompute while developing so edited CSS/JS is never served stale.
+            return {'ui_asset_v': _compute_ui_asset_v() if app.debug else ui_asset_v}
+
         # Register all routes (controllers)
         from app.controllers.register import register_routes
         register_routes(app)
