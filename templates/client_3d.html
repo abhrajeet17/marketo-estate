@@ -10,13 +10,13 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.css">
-    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/plugins/markers.css">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.css?v=20260924-subpixel">
+    <link rel="stylesheet" href="/static/vendor/photo-sphere-viewer/plugins/markers.css?v=20260924-subpixel">
     <script src="/static/vendor/uevent/browser.js" onload="window.UEVENT_LOADED = true"></script>
     <script src="/static/vendor/three/three.min.js" onload="window.THREE_LOADED = true"></script>
-    <script src="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.js"
+    <script src="/static/vendor/photo-sphere-viewer/photo-sphere-viewer.js?v=20260924-subpixel"
         onload="window.PSV_LOADED = true"></script>
-    <script src="/static/vendor/photo-sphere-viewer/plugins/markers.js"
+    <script src="/static/vendor/photo-sphere-viewer/plugins/markers.js?v=20260924-subpixel"
         onload="window.PSV_MARKERS_LOADED = true"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="/static/css/theme.css">
@@ -47,8 +47,8 @@
             gap: 0.38rem;
             padding: 0.34rem 0.66rem;
             border-radius: 999px;
-            background: rgba(8, 9, 11, 0.82);
-            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(10, 12, 16, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.26);
             color: #fff;
             font-family: var(--font-body);
             font-weight: 700;
@@ -57,8 +57,8 @@
             text-transform: uppercase;
             text-shadow: 0 2px 7px rgba(0, 0, 0, 0.55);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.36);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            will-change: transform;
+            backface-visibility: hidden;
             pointer-events: none;
             white-space: nowrap;
         }
@@ -75,6 +75,22 @@
         .psv-plot-label.psv-plot-label--hold::before {
             background: rgba(249, 115, 22, 0.95);
             box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.24);
+        }
+
+        /* Smooth marker motion: composite on the GPU and never round positions. */
+        .psv-markers .psv-marker--normal {
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        .psv-markers-svg-container {
+            shape-rendering: geometricPrecision;
+        }
+        .psv-markers-svg-container .psv-marker--svg {
+            transition: filter 0.15s ease;
+        }
+        .psv-markers-svg-container .psv-marker--svg:hover {
+            filter: brightness(1.1) saturate(1.12);
         }
 
         .psv-plot-label.psv-plot-label--sold::before {
@@ -1477,16 +1493,18 @@
         }
 
         const colorGradients = {
-            green: { start: '#22c55e', end: '#16a34a', fill: 'rgba(34, 197, 94, 0.35)' },
-            red: { start: '#ef4444', end: '#b91c1c', fill: 'rgba(239, 68, 68, 0.35)' },
-            emerald: { start: '#10b981', end: '#059669', fill: 'rgba(16, 185, 129, 0.35)' },
-            blue: { start: '#3b82f6', end: '#1d4ed8', fill: 'rgba(59, 130, 246, 0.35)' },
-            purple: { start: '#8b5cf6', end: '#6d28d9', fill: 'rgba(139, 92, 246, 0.35)' },
-            amber: { start: '#f59e0b', end: '#d97706', fill: 'rgba(245, 158, 11, 0.35)' },
-            rose: { start: '#f43f5e', end: '#be123c', fill: 'rgba(244, 63, 94, 0.35)' },
-            cyan: { start: '#06b6d4', end: '#0891b2', fill: 'rgba(6, 182, 212, 0.35)' },
-            lime: { start: '#84cc16', end: '#65a30d', fill: 'rgba(132, 204, 22, 0.35)' },
-            orange: { start: '#f97316', end: '#ea580c', fill: 'rgba(249, 115, 22, 0.35)' }
+            // Fill alpha is deliberately high so Available / Hold / Sold plots read
+            // clearly against the panorama instead of as a faint tint.
+            green: { start: '#22c55e', end: '#16a34a', fill: 'rgba(34, 197, 94, 0.62)' },
+            red: { start: '#ef4444', end: '#b91c1c', fill: 'rgba(239, 68, 68, 0.62)' },
+            emerald: { start: '#10b981', end: '#059669', fill: 'rgba(16, 185, 129, 0.55)' },
+            blue: { start: '#3b82f6', end: '#1d4ed8', fill: 'rgba(59, 130, 246, 0.55)' },
+            purple: { start: '#8b5cf6', end: '#6d28d9', fill: 'rgba(139, 92, 246, 0.55)' },
+            amber: { start: '#f59e0b', end: '#d97706', fill: 'rgba(245, 158, 11, 0.62)' },
+            rose: { start: '#f43f5e', end: '#be123c', fill: 'rgba(244, 63, 94, 0.55)' },
+            cyan: { start: '#06b6d4', end: '#0891b2', fill: 'rgba(6, 182, 212, 0.55)' },
+            lime: { start: '#84cc16', end: '#65a30d', fill: 'rgba(132, 204, 22, 0.55)' },
+            orange: { start: '#f97316', end: '#ea580c', fill: 'rgba(249, 115, 22, 0.62)' }
         };
         const allowedPlotColors = ['green', 'orange', 'red'];
         const statusLabels = { available: 'Available', reserved: 'On Hold', on_hold: 'On Hold', sold: 'Sold' };
@@ -1569,6 +1587,37 @@
             const g = parseInt(hex.slice(2, 4), 16);
             const b = parseInt(hex.slice(4, 6), 16);
             return `${r}, ${g}, ${b}`;
+        }
+
+        function setLoadingText(text) {
+            const el = loading ? loading.querySelector('.loading-text') : null;
+            if (el && text) el.textContent = text;
+        }
+
+        // Resolves once every marker image inside `root` has finished loading
+        // (or errored) and every iconify icon has rendered, or after `timeoutMs`.
+        function waitForMarkerAssets(root, timeoutMs) {
+            const scope = root || document;
+            const deadline = Date.now() + (timeoutMs || 8000);
+            const imageJobs = Array.from(scope.querySelectorAll('.psv-marker img, .marker-photo-image'))
+                .filter((img) => img.getAttribute('src'))
+                .map((img) => new Promise((resolve) => {
+                    if (img.complete) { resolve(); return; }
+                    const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
+                    img.addEventListener('load', done);
+                    img.addEventListener('error', done);
+                }));
+            const iconJob = new Promise((resolve) => {
+                const tick = () => {
+                    const pending = Array.from(scope.querySelectorAll('.psv-marker iconify-icon'))
+                        .filter((el) => !(el.shadowRoot && el.shadowRoot.querySelector('svg')));
+                    if (!pending.length || Date.now() > deadline) { resolve(); return; }
+                    setTimeout(tick, 80);
+                };
+                tick();
+            });
+            const all = Promise.all(imageJobs.concat([iconJob]));
+            return Promise.race([all, new Promise((resolve) => setTimeout(resolve, Math.max(0, deadline - Date.now())))]);
         }
 
         async function loadPlots() {
@@ -2273,7 +2322,7 @@
                     || marker.image_object_url
                     || (hasImage ? this.getMarkerImageRequestUrl(marker.id, true) : '');
                 const imageContent = hasImage
-                    ? `<img class="marker-photo-image"${imageSrc ? ` src="${this.escapeAttr(imageSrc)}"` : ''} data-marker-id="${this.escapeAttr(marker.id)}" alt="${this.escapeAttr(marker.name || 'Marker')}" loading="lazy">`
+                    ? `<img class="marker-photo-image"${imageSrc ? ` src="${this.escapeAttr(imageSrc)}"` : ''} data-marker-id="${this.escapeAttr(marker.id)}" alt="${this.escapeAttr(marker.name || 'Marker')}" loading="eager" decoding="async">`
                     : `<span class="marker-photo-placeholder">${this.escapeHtml((marker.name || 'POI').slice(0, 2).toUpperCase())}</span>`;
                 return `<button class="psv-glass-marker marker-photo ${statusClass}" type="button" data-marker-id="${this.escapeAttr(marker.id)}" aria-label="${this.escapeAttr(marker.name || 'Marker')}"><span class="marker-photo-name">${this.escapeHtml(marker.name || 'Marker')}</span><span class="marker-photo-disc">${imageContent}</span><span class="marker-photo-stem" aria-hidden="true"></span><span class="marker-photo-base" aria-hidden="true"></span></button>`;
             }
@@ -2937,10 +2986,16 @@
             markersPlugin = viewer.getPlugin(PhotoSphereViewer.MarkersPlugin);
             markerManager.init(viewer, markersPlugin);
 
-            viewer.on('ready', () => {
+            viewer.on('ready', async () => {
+                // Keep the loading screen up until plots AND markers (including
+                // their photos / icons) are rendered, so the scene never pops in
+                // half-built. A hard cap guarantees the viewer is never blocked
+                // by one slow or broken image.
+                setLoadingText('Loading plots and markers...');
+                const settle = Promise.allSettled([loadPlots(), markerManager.loadMarkers()])
+                    .then(() => waitForMarkerAssets(psvContainer, 8000));
+                await Promise.race([settle, new Promise((resolve) => setTimeout(resolve, 12000))]);
                 loading.classList.add('hidden');
-                loadPlots();
-                markerManager.loadMarkers();
             });
 
             if (markersPlugin) {
@@ -3010,11 +3065,15 @@
                         id: `plot-${plot.id}`,
                         polygonPx: plot.points.map(point => [point.x, point.y]),
                         svgStyle: {
+                            // Border and interior are the same colour/opacity; the stroke is
+                            // painted under the fill (paint-order) so no ring is visible.
                             fill: colors.fill,
-                            stroke: colors.start,
-                            strokeWidth: 3.1,
+                            stroke: colors.fill,
+                            strokeWidth: 3,
                             strokeLinecap: 'round',
-                            strokeLinejoin: 'round'
+                            strokeLinejoin: 'round',
+                            paintOrder: 'stroke',
+                            shapeRendering: 'geometricPrecision'
                         },
                         tooltip: plot.name || '',
                         data: { plotId: plot.id }
@@ -3035,6 +3094,10 @@
                             latitude: labelLat,
                             html: `<div class="psv-plot-label ${labelClass}">${escapeHtml(plot.name)}</div>`,
                             anchor: 'center center',
+                            // Zoom level 0..100 -> 0.85x..2.0x (about 1.1x at the default zoom).
+                            // Polygons grow ~2.15x from default to full zoom, so the plot
+                            // number keeps its size relative to the plot instead of shrinking.
+                            scale: { zoom: [0.85, 2.0] },
                             style: { pointerEvents: 'none' },
                             data: { plotId: plot.id, label: true }
                         });

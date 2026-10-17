@@ -200,7 +200,7 @@
                 configLoaded = false;
             };
             row.querySelectorAll('.master-mode-select,.master-enabled,.master-entity-cb').forEach(function (input) {
-                input.addEventListener('change', function () { saveAttr().catch(function (e) { alert(e.message || 'Failed'); }); });
+                input.addEventListener('change', function () { saveAttr().catch(function (e) { (window.Charm ? window.Charm.toast(e.message || 'Failed', 'error') : alert(e.message || 'Failed')); }); });
             });
         });
         root.querySelectorAll('.master-values-row').forEach(function (row) {
@@ -223,9 +223,9 @@
                 await renderMastersPanel(true);
                 populatePlotStatusSelect(plotStatusSelect ? plotStatusSelect.value : 'available');
             };
-            if (addBtn) addBtn.addEventListener('click', function () { addValue().catch(function (e) { alert(e.message || 'Failed'); }); });
+            if (addBtn) addBtn.addEventListener('click', function () { addValue().catch(function (e) { (window.Charm ? window.Charm.toast(e.message || 'Failed', 'error') : alert(e.message || 'Failed')); }); });
             if (input) input.addEventListener('keydown', function (ev) {
-                if (ev.key === 'Enter') { ev.preventDefault(); addValue().catch(function (e) { alert(e.message || 'Failed'); }); }
+                if (ev.key === 'Enter') { ev.preventDefault(); addValue().catch(function (e) { (window.Charm ? window.Charm.toast(e.message || 'Failed', 'error') : alert(e.message || 'Failed')); }); }
             });
             if (chips) chips.querySelectorAll('.master-value-remove').forEach(function (btn) {
                 btn.addEventListener('click', async function () {

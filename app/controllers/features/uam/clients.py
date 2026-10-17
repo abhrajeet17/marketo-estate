@@ -113,6 +113,61 @@ def _id_name_map(sb, table_name, ids):
     }
 
 
+def _iso(row, *keys):
+    """Stringify timestamp columns in place (Supabase may return datetime objects)."""
+    for key in keys:
+        if row.get(key):
+            row[key] = str(row[key])
+    return row
+
+
+def _shape_members(sb, member_rows):
+    """Attach display name / email to client_members rows."""
+    user_ids = _unique_values(r.get('user_id') for r in member_rows if r.get('user_id'))
+    profiles = {}
+    if user_ids:
+        pr = sb.table('profiles').select('user_id, display_name, email').in_('user_id', user_ids).execute()
+        profiles = {str(p.get('user_id')): p for p in (pr.data or [])}
+    out = []
+    for row in member_rows:
+        o = dict(row)
+        uid = str(o.get('user_id') or '')
+        prof = profiles.get(uid, {})
+        o['member_role'] = _normalize_client_member_role(o.get('member_role')) or CLIENT_MEMBER_ROLE_CLIENT_USER
+        o['display_name'] = prof.get('display_name') or prof.get('email') or uid
+        o['email'] = prof.get('email') or ''
+        out.append(_iso(o, 'created_at'))
+    return out
+
+
+def _shape_invites(invite_rows):
+    out = []
+    for row in invite_rows:
+        o = dict(row)
+        o['member_role'] = _normalize_client_member_role(o.get('member_role')) or CLIENT_MEMBER_ROLE_CLIENT_USER
+        out.append(_iso(o, 'created_at', 'expires_at'))
+    return out
+
+
+def _is_missing_invites_table(error):
+    msg = str(error or '')
+    return 'client_team_invites' in msg and ('does not exist' in msg.lower() or 'relation' in msg.lower())
+
+
+_MEMBER_COLUMNS = 'id, client_id, user_id, member_role, invited_by, created_at'
+_INVITE_COLUMNS = 'id, client_id, email, display_name, member_role, status, invite_link, expires_at, created_at'
+
+
+def _client_access_error(sb, user_id, role, client_id):
+    """None when the caller may manage this client team, else a Flask error response."""
+    if role in ('admin', 'superadmin'):
+        _client, err = _get_client_org(sb, client_id, user_id, role)
+        return err
+    if not _is_client_admin_of(sb, user_id, client_id):
+        return jsonify({'error': 'Forbidden'}), 403
+    return None
+
+
 def register_uam_client_routes(app):
     @app.route('/api/clients', methods=['GET'])
     @require_admin
@@ -244,6 +299,18 @@ def register_uam_client_routes(app):
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
+    def _my_admin_client_groups(sb, user_id):
+        rows = sb.table('client_members').select('client_id').eq('user_id', user_id).eq('member_role', 'client_admin').execute()
+        client_ids = _unique_values(r.get('client_id') for r in (rows.data or []) if r.get('client_id'))
+        if not client_ids:
+            return []
+        r = sb.table('clients').select('id, name, description, members_allowed, created_at').in_('id', client_ids).order('name').execute()
+        groups = r.data or []
+        ids = [g.get('id') for g in groups]
+        member_counts = _client_member_counts(sb, ids)
+        pending_invite_counts = _client_pending_invite_counts(sb, ids)
+        return [_iso(_with_client_capacity(g, member_counts, pending_invite_counts), 'created_at') for g in groups]
+
     @app.route('/api/clients/mine', methods=['GET'])
     @require_auth
     def list_my_client_groups(user_id, role):
@@ -252,21 +319,45 @@ def register_uam_client_routes(app):
         if not sb:
             return jsonify({'error': 'Database not configured'}), 503
         try:
-            rows = sb.table('client_members').select('client_id').eq('user_id', user_id).eq('member_role', 'client_admin').execute()
-            client_ids = [r.get('client_id') for r in (rows.data or []) if r.get('client_id')]
-            if not client_ids:
-                return jsonify([])
-            r = sb.table('clients').select('id, name, description, members_allowed, created_at').in_('id', client_ids).order('name').execute()
-            selected_client_ids = [row.get('id') for row in (r.data or [])]
-            member_counts = _client_member_counts(sb, selected_client_ids)
-            pending_invite_counts = _client_pending_invite_counts(sb, selected_client_ids)
-            out = []
-            for row in (r.data or []):
-                o = _with_client_capacity(row, member_counts, pending_invite_counts)
-                if o.get('created_at'):
-                    o['created_at'] = str(o['created_at'])
-                out.append(o)
-            return jsonify(out)
+            return jsonify(_my_admin_client_groups(sb, user_id))
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/clients/mine/roster', methods=['GET'])
+    @require_auth
+    def list_my_client_rosters(user_id, role):
+        """Client-admin teams with members and invites embedded: one request for the team page."""
+        sb = get_supabase()
+        if not sb:
+            return jsonify({'error': 'Database not configured'}), 503
+        try:
+            groups = _my_admin_client_groups(sb, user_id)
+            ids = [str(g.get('id')) for g in groups if g.get('id')]
+            members_by_group = {gid: [] for gid in ids}
+            invites_by_group = {gid: [] for gid in ids}
+            if ids:
+                member_rows = (
+                    sb.table('client_members').select(_MEMBER_COLUMNS)
+                    .in_('client_id', ids).order('created_at').execute().data or []
+                )
+                for member in _shape_members(sb, member_rows):
+                    members_by_group.setdefault(str(member.get('client_id')), []).append(member)
+                try:
+                    invite_rows = (
+                        sb.table('client_team_invites').select(_INVITE_COLUMNS)
+                        .in_('client_id', ids).order('created_at', desc=True).execute().data or []
+                    )
+                except Exception as e:
+                    if not _is_missing_invites_table(e):
+                        raise
+                    invite_rows = []
+                for invite in _shape_invites(invite_rows):
+                    invites_by_group.setdefault(str(invite.get('client_id')), []).append(invite)
+            for group in groups:
+                gid = str(group.get('id'))
+                group['members'] = members_by_group.get(gid, [])
+                group['invites'] = invites_by_group.get(gid, [])
+            return jsonify(groups)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
@@ -276,33 +367,12 @@ def register_uam_client_routes(app):
         sb = get_supabase()
         if not sb:
             return jsonify({'error': 'Database not configured'}), 503
-        is_admin = role in ('admin', 'superadmin')
-        if not is_admin and not _is_client_admin_of(sb, user_id, client_id):
-            return jsonify({'error': 'Forbidden'}), 403
-        if is_admin:
-            _client, err = _get_client_org(sb, client_id, user_id, role)
-            if err:
-                return err
+        err = _client_access_error(sb, user_id, role, client_id)
+        if err:
+            return err
         try:
-            rows = sb.table('client_members').select('id, user_id, member_role, invited_by, created_at').eq('client_id', client_id).order('created_at').execute()
-            member_user_ids = [r.get('user_id') for r in (rows.data or []) if r.get('user_id')]
-            profiles_map = {}
-            if member_user_ids:
-                pr = sb.table('profiles').select('user_id, display_name, email').in_('user_id', member_user_ids).execute()
-                for p in (pr.data or []):
-                    profiles_map[str(p.get('user_id'))] = p
-            out = []
-            for row in (rows.data or []):
-                o = dict(row)
-                o['member_role'] = _normalize_client_member_role(o.get('member_role')) or CLIENT_MEMBER_ROLE_CLIENT_USER
-                uid = str(o.get('user_id') or '')
-                prof = profiles_map.get(uid, {})
-                o['display_name'] = prof.get('display_name') or prof.get('email') or uid
-                o['email'] = prof.get('email') or ''
-                if o.get('created_at'):
-                    o['created_at'] = str(o['created_at'])
-                out.append(o)
-            return jsonify(out)
+            rows = sb.table('client_members').select(_MEMBER_COLUMNS).eq('client_id', client_id).order('created_at').execute()
+            return jsonify(_shape_members(sb, rows.data or []))
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
@@ -819,36 +889,22 @@ def register_uam_client_routes(app):
         sb = get_supabase()
         if not sb:
             return jsonify({'error': 'Database not configured'}), 503
-        is_admin = role in ('admin', 'superadmin')
-        if not is_admin and not _is_client_admin_of(sb, user_id, client_id):
-            return jsonify({'error': 'Forbidden'}), 403
-        if is_admin:
-            _client, err = _get_client_org(sb, client_id, user_id, role)
-            if err:
-                return err
+        err = _client_access_error(sb, user_id, role, client_id)
+        if err:
+            return err
         try:
             r = (
                 sb.table('client_team_invites')
-                .select('id, email, display_name, member_role, status, invite_link, expires_at, created_at')
+                .select(_INVITE_COLUMNS)
                 .eq('client_id', str(client_id))
                 .order('created_at', desc=True)
                 .execute()
             )
-            out = []
-            for row in (r.data or []):
-                o = dict(row)
-                o['member_role'] = _normalize_client_member_role(o.get('member_role')) or CLIENT_MEMBER_ROLE_CLIENT_USER
-                if o.get('created_at'):
-                    o['created_at'] = str(o['created_at'])
-                if o.get('expires_at'):
-                    o['expires_at'] = str(o['expires_at'])
-                out.append(o)
-            return jsonify(out)
+            return jsonify(_shape_invites(r.data or []))
         except Exception as e:
-            msg = str(e)
-            if 'client_team_invites' in msg and ('does not exist' in msg.lower() or 'relation' in msg.lower()):
+            if _is_missing_invites_table(e):
                 return jsonify([])
-            return jsonify({'error': msg}), 500
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/api/clients/<client_id>/invites/<invite_id>/resend', methods=['POST'])
     @require_auth

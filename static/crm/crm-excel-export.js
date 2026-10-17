@@ -65,9 +65,17 @@
 
     // rows: array of plain objects. columns: [{ header, key, width, formatter(row) }]
     // fileName: exact name to save as (".xlsx" appended if missing).
+    // SheetJS (~900 KB) is only fetched when someone actually exports.
+    var XLSX_SRC = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    function ensureLibrary() {
+        if (typeof global.XLSX !== 'undefined') return Promise.resolve();
+        if (global.Charm && global.Charm.loadScript) return global.Charm.loadScript(XLSX_SRC);
+        return Promise.reject(new Error('Excel library unavailable'));
+    }
+
     function exportRows(rows, columns, sheetName, fileName) {
         if (typeof global.XLSX === 'undefined') {
-            throw new Error('Excel library is still loading, please try again in a moment');
+            throw new Error('Excel library could not be loaded. Check your connection and try again.');
         }
         if (!rows || !rows.length) return false;
         var wb = global.XLSX.utils.book_new();
@@ -90,6 +98,14 @@
     // Shows the shared "name the download" modal (markup lives once in
     // crm.html) and resolves with the sanitized name, or null if cancelled.
     function promptFilename(defaultName, title) {
+        // Load the library while the user is naming the file; resolve once both are ready.
+        var library = ensureLibrary().catch(function () { /* exportRows reports it */ });
+        return promptFilenameOnly(defaultName, title).then(function (name) {
+            return name ? library.then(function () { return name; }) : name;
+        });
+    }
+
+    function promptFilenameOnly(defaultName, title) {
         return new Promise(function (resolve) {
             var backdrop = document.getElementById('crm-export-filename-modal');
             var input = document.getElementById('crm-export-filename-input');

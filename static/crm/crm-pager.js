@@ -56,6 +56,7 @@
                     ? 'Showing ' + escape(start) + '–' + escape(end) + ' of ' + escape(total) + ' records'
                     : 'No records to show') +
             '</span>' +
+            '<span class="crm-pagination__spinner" data-page-spinner hidden aria-hidden="true"></span>' +
             '<span class="crm-pagination__size">' +
                 '<label class="crm-pagination__label" for="' + escape(sizeId) + '">Rows per page</label>' +
                 '<select id="' + escape(sizeId) + '" data-page-size title="Set how many rows are shown per page">' +
@@ -69,11 +70,23 @@
             '<span class="crm-pagination__meta crm-pagination__meta--page" aria-live="polite">Page ' + escape(pager.page) + ' of ' + escape(pages) + '</span>' +
             '<button class="btn" type="button" data-page-next' + (pager.page >= pages ? ' disabled' : '') +
                 ' title="Go to the next page" aria-label="Go to the next page">Next page &#8594;</button>';
+        function markBusy() {
+            // The fetch this triggers can take a moment; without this the
+            // range text keeps showing the old page and looks unresponsive
+            // for the whole round trip. Controls stay enabled (not disabled)
+            // since some callers don't re-render this bar on a failed fetch,
+            // and a disabled control left that way would be a lockout.
+            var rangeEl = el.querySelector('.crm-pagination__meta--range');
+            if (rangeEl) rangeEl.textContent = 'Loading…';
+            var spinnerEl = el.querySelector('[data-page-spinner]');
+            if (spinnerEl) spinnerEl.hidden = false;
+        }
         var sizeEl = el.querySelector('[data-page-size]');
         if (sizeEl) {
             sizeEl.addEventListener('change', function () {
                 pager.size = parseInt(sizeEl.value || String(DEFAULT_SIZE), 10) || DEFAULT_SIZE;
                 pager.page = 1;
+                markBusy();
                 onChange();
             });
         }
@@ -81,6 +94,7 @@
         if (prev) {
             prev.addEventListener('click', function () {
                 pager.page = Math.max(1, pager.page - 1);
+                markBusy();
                 onChange();
             });
         }
@@ -88,6 +102,7 @@
         if (next) {
             next.addEventListener('click', function () {
                 pager.page = Math.min(pages, pager.page + 1);
+                markBusy();
                 onChange();
             });
         }

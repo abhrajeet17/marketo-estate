@@ -5,8 +5,7 @@ from flask import jsonify, request
 from app import config as app_config
 from app.core.auth import get_profile, require_admin, require_auth, require_superadmin
 from app.core.database import get_supabase
-from app.services.org_service import slugify_org_name
-from app.services.uam_reference_service import user_is_broker, user_is_client_admin
+from app.services.portal_identity_service import invalidate_portal_identity, resolve_portal_identity
 
 
 def register_uam_profile_org_routes(app):
@@ -42,6 +41,7 @@ def register_uam_profile_org_routes(app):
                 if 'email' in data:
                     full['email'] = email
                 sb.table('profiles').upsert(full, on_conflict='user_id').execute()
+            invalidate_portal_identity(user_id)
             return jsonify({'success': True})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -52,39 +52,20 @@ def register_uam_profile_org_routes(app):
         sb = get_supabase()
         if not sb:
             return jsonify({'error': 'Database not configured'}), 503
-        profile = get_profile(sb, user_id) or {}
-        org_id = profile.get('org_id')
-        org = None
-        if org_id:
-            try:
-                r = sb.table('organizations').select('id, name, accent_color, created_at, updated_at').eq('id', org_id).limit(1).execute()
-                if r.data and len(r.data) > 0:
-                    org = dict(r.data[0])
-                    for k in ('created_at', 'updated_at'):
-                        if k in org and org[k]:
-                            org[k] = str(org[k])
-            except Exception as e:
-                msg = str(e)
-                if 'organizations' in msg and ('does not exist' in msg.lower() or 'relation' in msg.lower()):
-                    return jsonify({'error': 'organizations table not found. Run db/schema.sql in Supabase SQL Editor.'}), 503
-            if org and org.get('name'):
-                org['slug'] = slugify_org_name(org.get('name'))
-        profile_role = str(profile.get('role') or role or 'user')
-        is_broker = user_is_broker(sb, user_id, profile_role)
-        is_client_admin = user_is_client_admin(sb, user_id)
-        out_profile = {
-            'user_id': str(profile.get('user_id') or user_id),
-            'role': profile_role,
-            'org_id': str(org_id) if org_id else None,
-            'display_name': profile.get('display_name'),
-            'email': profile.get('email'),
-            'is_broker': is_broker,
-            'is_client_admin': is_client_admin,
-        }
+        identity = resolve_portal_identity(sb, user_id, role)
+        is_portal_user = identity['is_broker'] or identity['is_client_admin']
         return jsonify({
-            'profile': out_profile,
-            'org': org,
-            'post_login_path': '/customer-dashboard' if is_broker or is_client_admin else None,
+            'profile': {
+                'user_id': identity['user_id'],
+                'role': identity['role'],
+                'org_id': identity['org_id'],
+                'display_name': identity['display_name'] or None,
+                'email': identity['email'] or None,
+                'is_broker': identity['is_broker'],
+                'is_client_admin': identity['is_client_admin'],
+            },
+            'org': identity['org'],
+            'post_login_path': '/customer-dashboard' if is_portal_user else None,
         })
 
     @app.route('/api/orgs', methods=['GET'])

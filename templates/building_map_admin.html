@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/theme.css">
-    <link rel="stylesheet" href="/static/css/building_map_admin.css">
+    <link rel="stylesheet" href="/static/css/building_map_admin.css?v=20261017-1">
 </head>
 <body>
 
@@ -30,14 +30,13 @@
 <div class="bma-ui-overlay">
     <div class="bma-header">
         <div class="bma-header-left">
-            <a href="/salestools?tab=building-maps" class="bma-back-btn">
+            <a href="/building-plans" class="bma-back-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 Back
             </a>
-            <span class="bma-map-name" id="bma-map-name"></span>
+            <span class="bma-map-name" id="bma-map-name" contenteditable="true" spellcheck="false" title="Rename"></span>
         </div>
         <div class="bma-header-right">
-            <span class="bma-mode-badge" id="bma-mode-badge" style="display:none;">DRAW MODE</span>
         </div>
     </div>
 
@@ -57,6 +56,44 @@
     </div>
     <div class="panel-body" id="bma-panel-body">
 
+        <!-- Customer view settings -->
+        <div class="bma-section-header">
+            <span class="bma-section-title">Customer View</span>
+            <a class="bma-preview-link" id="bma-preview-link" href="#" target="_blank" rel="noopener">Preview &#8599;</a>
+        </div>
+        <div class="bma-linked-from" id="bma-linked-from"></div>
+        <div class="bma-settings-grid">
+            <label class="bma-mini-field">
+                <span>This map is</span>
+                <select class="form-input" id="bma-view-level">
+                    <option value="">Auto (by link depth)</option>
+                    <option value="aerial">Building group (aerial)</option>
+                    <option value="tower">Building (floors)</option>
+                    <option value="floor">Floor map (units)</option>
+                </select>
+            </label>
+            <div class="bma-settings-grid" id="bma-root-settings" hidden>
+            <label class="bma-mini-field">
+                <span>Brand label</span>
+                <input class="form-input" id="bma-brand-name" maxlength="60" placeholder="Project name">
+            </label>
+            <label class="bma-mini-field">
+                <span>RERA number</span>
+                <input class="form-input" id="bma-rera" maxlength="120" placeholder="From project if empty">
+            </label>
+            <label class="bma-mini-field">
+                <span>VR tour URL</span>
+                <input class="form-input" id="bma-vr-url" maxlength="500" placeholder="Optional">
+            </label>
+            <label class="bma-check">
+                <input type="checkbox" id="bma-show-interest" checked>
+                <span>Show Interest</span>
+            </label>
+            </div>
+        </div>
+
+        <div class="bma-sep"></div>
+
         <!-- Catalogue link -->
         <div class="form-group" style="margin-bottom:0.75rem;">
             <label class="form-label" style="font-size:0.75rem; margin-bottom:0.25rem;">Floor Plan Catalogue</label>
@@ -73,24 +110,11 @@
             <span class="bma-section-badge" id="bma-zone-count">0</span>
         </div>
 
-        <div class="bma-edit-instruction" id="bma-edit-instruction">Toggle draw mode to start drawing zones.</div>
-        <div class="bma-edit-actions">
-            <button class="bma-edit-btn primary" id="bma-draw-toggle">Draw Zone</button>
-        </div>
-        <div class="bma-draw-controls" id="bma-draw-controls" style="display:none;">
+        <div class="bma-draw-controls" id="bma-draw-controls" hidden>
+            <span class="bma-edit-instruction" id="bma-edit-instruction"></span>
             <div class="bma-edit-actions">
-                <button class="bma-edit-btn secondary" id="bma-complete-draw" disabled>Complete</button>
+                <button class="bma-edit-btn primary" id="bma-complete-draw" disabled>Done</button>
                 <button class="bma-edit-btn secondary" id="bma-cancel-draw">Cancel</button>
-            </div>
-            <div class="bma-color-row">
-                <span class="bma-color-label">Color:</span>
-                <div class="bma-color-options">
-                    <div class="bma-color-opt selected" data-color="green" style="background:#22c55e;" title="Green"></div>
-                    <div class="bma-color-opt" data-color="orange" style="background:#f97316;" title="Orange"></div>
-                    <div class="bma-color-opt" data-color="red" style="background:#ef4444;" title="Red"></div>
-                    <div class="bma-color-opt" data-color="blue" style="background:#3b82f6;" title="Blue"></div>
-                    <div class="bma-color-opt" data-color="purple" style="background:#a855f7;" title="Purple"></div>
-                </div>
             </div>
         </div>
 
@@ -128,28 +152,71 @@
                     <script>for(var i=0;i<=100;i++){document.write('<option value="'+i+'">'+i+'</option>');}</script>
                 </select>
             </div>
-            <div class="form-group">
-                <label class="form-label">Color</label>
-                <div class="bma-color-options" id="bma-zone-color-options">
-                    <div class="bma-color-opt selected" data-color="green" style="background:#22c55e;"></div>
-                    <div class="bma-color-opt" data-color="orange" style="background:#f97316;"></div>
-                    <div class="bma-color-opt" data-color="red" style="background:#ef4444;"></div>
-                    <div class="bma-color-opt" data-color="blue" style="background:#3b82f6;"></div>
-                    <div class="bma-color-opt" data-color="purple" style="background:#a855f7;"></div>
+            <div class="bma-split" id="bma-split-wrap" hidden>
+                <label class="bma-check"><input type="checkbox" id="bma-split-on"><span>Split this outline into floor bands</span></label>
+                <div class="bma-meta-grid" id="bma-split-fields" hidden>
+                    <label class="bma-mini-field"><span>Number of floors</span><input class="form-input" type="number" id="bma-split-count" min="1" max="100" value="10"></label>
+                    <label class="bma-mini-field"><span>Lowest floor no.</span><input class="form-input" type="number" id="bma-split-start" min="0" max="100" value="1"></label>
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Link to Panorama</label>
-                <select class="form-input" id="bma-zone-panorama">
-                    <option value="">— None —</option>
-                </select>
+                <label class="form-label">When clicked, open</label>
+                <div class="bma-link-types" id="bma-link-types" role="radiogroup">
+                    <button type="button" class="bma-dir-btn" data-link="building_map" role="radio">Building map</button>
+                    <button type="button" class="bma-dir-btn" data-link="floor_plan" role="radio">Floor plan</button>
+                    <button type="button" class="bma-dir-btn" data-link="panorama" role="radio">Panorama</button>
+                    <button type="button" class="bma-dir-btn" data-link="" role="radio">Unit details</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Link to Floor Plan</label>
+            <div class="form-group" data-link-group="building_map">
+                <label class="form-label">Building map</label>
+                <div class="bma-inline">
+                    <select class="form-input" id="bma-zone-building-map">
+                        <option value="">— Select —</option>
+                    </select>
+                    <button type="button" class="bma-edit-btn secondary" id="bma-upload-map-btn" title="Upload a new building map image for this zone">Upload new</button>
+                    <input type="file" id="bma-upload-map-file" accept="image/png,image/jpeg,image/webp" hidden>
+                </div>
+                <div class="bma-upload-status" id="bma-upload-status" hidden></div>
+            </div>
+            <div class="form-group" data-link-group="floor_plan">
+                <label class="form-label">Floor plan</label>
                 <select class="form-input" id="bma-zone-floorplan">
-                    <option value="">— None —</option>
+                    <option value="">— Select —</option>
                 </select>
             </div>
+            <div class="form-group" data-link-group="panorama">
+                <label class="form-label">Panorama</label>
+                <select class="form-input" id="bma-zone-panorama">
+                    <option value="">— Select —</option>
+                </select>
+            </div>
+
+            <div class="bma-floor-units" id="bma-floor-units" hidden>
+                <div class="bma-card-head">Units on this floor</div>
+                <div class="bma-floor-units-list" id="bma-floor-units-list"></div>
+            </div>
+            <div class="bma-card-head">Info card</div>
+            <div class="bma-meta-grid">
+                <label class="bma-mini-field" data-levels="aerial floor"><span>Short label</span><input class="form-input" data-meta="label" maxlength="40" placeholder="e.g. T5 / 3202"></label>
+                <label class="bma-mini-field" data-levels="tower floor"><span>Unit status</span>
+                    <select class="form-input" data-meta="status">
+                        <option value="">—</option>
+                        <option value="available">Available</option>
+                        <option value="sold">Sold</option>
+                        <option value="hold">Hold</option>
+                    </select>
+                </label>
+                <label class="bma-mini-field" data-levels="aerial"><span>Floors</span><input class="form-input" data-meta="floors" type="number" min="0" placeholder="41"></label>
+                <label class="bma-mini-field" data-levels="aerial tower"><span>Apartments</span><input class="form-input" data-meta="units" type="number" min="0" placeholder="162"></label>
+                <label class="bma-mini-field bma-span2" data-levels="aerial tower"><span>Configurations</span><input class="form-input" data-meta="configurations" maxlength="120" placeholder="2BHK, 3BHK, 4BHK"></label>
+                <label class="bma-mini-field" data-levels="aerial tower"><span>Size from (sq ft)</span><input class="form-input" data-meta="size_min" type="number" min="0" placeholder="2440"></label>
+                <label class="bma-mini-field" data-levels="aerial tower"><span>Size to (sq ft)</span><input class="form-input" data-meta="size_max" type="number" min="0" placeholder="6780"></label>
+                <label class="bma-mini-field bma-span2" data-levels="floor"><span>Unit type</span><input class="form-input" data-meta="unit_type" maxlength="120" placeholder="B1 - 4BHK + Study + Utility"></label>
+                <label class="bma-mini-field" data-levels="floor"><span>Total area</span><input class="form-input" data-meta="area" maxlength="60" placeholder="3660 Sq. Ft."></label>
+                <label class="bma-mini-field" data-levels="floor"><span>Price</span><input class="form-input" data-meta="price" maxlength="60" placeholder="Optional"></label>
+            </div>
+            <div class="bma-form-error" id="bma-zone-error" role="alert" hidden></div>
         </div>
         <div class="bma-modal-actions">
             <button class="bma-modal-btn secondary" data-close="bma-zone-modal">Cancel</button>
@@ -167,13 +234,11 @@
     </div>
     <div class="bma-modal-content">
         <div class="bma-modal-body">
-            <div style="font-size:0.82rem; color:var(--color-muted); margin-bottom:1rem; line-height:1.5;">
-                Drag the highlighted copy on the image to reposition it.
-            </div>
             <div class="form-group">
                 <label class="form-label">New Zone Name</label>
                 <input type="text" class="form-input" id="bma-rep-name" maxlength="200" placeholder="e.g., Floor 2 - Unit A">
             </div>
+            <div class="bma-form-error" id="bma-rep-error" role="alert" hidden></div>
             <div class="form-group">
                 <label class="form-label">Floor Number</label>
                 <select class="form-input" id="bma-rep-floor">
@@ -195,6 +260,20 @@
 <script>
 (function() {
     var MAP_ID = {{ map_id|tojson }};
+
+    // GETs retry once on a transient 502/503 (e.g. the server briefly losing its DB connection).
+    var _nativeFetch = window.fetch.bind(window);
+    function fetch(url, opts) {
+        var method = String((opts && opts.method) || 'GET').toUpperCase();
+        return _nativeFetch(url, opts).then(function(r) {
+            if (method === 'GET' && (r.status === 502 || r.status === 503) && !(opts && opts._retried)) {
+                return new Promise(function(res) { setTimeout(res, 350); })
+                    .then(function() { return fetch(url, Object.assign({}, opts || {}, { _retried: true })); });
+            }
+            return r;
+        });
+    }
+
     var SUPABASE_URL = {{ (supabase_url or '')|tojson }};
     var SUPABASE_ANON_KEY = {{ (supabase_anon_key or '')|tojson }};
 
@@ -206,8 +285,19 @@
         return new Promise(function(resolve, reject) {
             if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { reject('No config'); return; }
             sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Keep the bearer token current while the editor stays open (tokens expire hourly).
+            sb.auth.onAuthStateChange(function(evt, session) {
+                if (session && session.access_token) accessToken = session.access_token;
+            });
             sb.auth.getSession().then(function(res) {
                 var s = res && res.data && res.data.session;
+                if (!s || !s.access_token) return null;
+                var expMs = (s.expires_at || 0) * 1000;
+                if (expMs && expMs - Date.now() < 60000) {
+                    return sb.auth.refreshSession().then(function(r) { return r && r.data && r.data.session; });
+                }
+                return s;
+            }).then(function(s) {
                 if (!s || !s.access_token) {
                     window.location.href = '/login';
                     reject('No session');
@@ -215,6 +305,9 @@
                 }
                 accessToken = s.access_token;
                 resolve();
+            }).catch(function() {
+                window.location.href = '/login';
+                reject('No session');
             });
         });
     }
@@ -228,8 +321,12 @@
     var zones = [];
     var panoramas = [];
     var floorPlanItems = [];
+    var buildingMaps = [];
+    var zoneLinkType = '';
 
-    var isDrawMode = false;
+    var isDrawMode = true;   // always on: click adds points, drag pans, click a zone to edit it
+    var suppressClick = false;
+    var downX = 0, downY = 0;
     var isDrawing = false;
     var currentPoints = [];
     var selectedColor = 'green';
@@ -241,7 +338,8 @@
     var dragStartX, dragStartY, startPanX, startPanY;
     var imgNatW = 0, imgNatH = 0;
 
-    var CLOSE_DISTANCE = 20;
+    // Screen pixels: thin floor bands (≈14 image px) must not auto-close on their 4th corner.
+    var CLOSE_DISTANCE_PX = 7;
     var CLICK_DELAY_MS = 220;
     var clickTimer = null;
     var ignoreClick = false;
@@ -262,11 +360,11 @@
 
     // ── Color map ──
     var COLOR_MAP = {
-        green:  { stroke: 'rgba(34,197,94,0.5)',  fill: 'rgba(34,197,94,0.12)' },
-        orange: { stroke: 'rgba(249,115,22,0.5)', fill: 'rgba(249,115,22,0.12)' },
-        red:    { stroke: 'rgba(239,68,68,0.5)',  fill: 'rgba(239,68,68,0.12)' },
-        blue:   { stroke: 'rgba(59,130,246,0.5)', fill: 'rgba(59,130,246,0.12)' },
-        purple: { stroke: 'rgba(168,85,247,0.5)', fill: 'rgba(168,85,247,0.12)' }
+        green:  { stroke: 'rgba(34,197,94,0.9)',  fill: 'rgba(34,197,94,0.22)',  fillHi: 'rgba(34,197,94,0.4)' },
+        orange: { stroke: 'rgba(249,115,22,0.9)', fill: 'rgba(249,115,22,0.22)', fillHi: 'rgba(249,115,22,0.4)' },
+        red:    { stroke: 'rgba(239,68,68,0.9)',  fill: 'rgba(239,68,68,0.22)',  fillHi: 'rgba(239,68,68,0.4)' },
+        blue:   { stroke: 'rgba(59,130,246,0.9)', fill: 'rgba(59,130,246,0.22)', fillHi: 'rgba(59,130,246,0.4)' },
+        purple: { stroke: 'rgba(168,85,247,0.9)', fill: 'rgba(168,85,247,0.22)', fillHi: 'rgba(168,85,247,0.4)' }
     };
 
     // ── Init ──
@@ -274,15 +372,145 @@
         loadMapData();
         loadPanoramas();
         loadFloorPlanItems();
+        loadBuildingMaps();
+    });
+
+    function jsonOrThrow(r) {
+        return r.json().catch(function() { return {}; }).then(function(d) {
+            if (!r.ok) throw new Error((d && d.error) || ('Request failed (' + r.status + ')'));
+            return d;
+        });
+    }
+
+    function loadBuildingMaps() {
+        return fetch('/api/building-maps/flow', { headers: authHeaders() })
+            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(function(list) {
+                buildingMaps = Array.isArray(list) ? list : [];
+                populateBuildingMapSelect();
+                renderLinkedFrom();
+                updateZonesList();
+            })
+            .catch(function() { buildingMaps = []; });
+    }
+
+    function populateBuildingMapSelect(selected) {
+        var sel = document.getElementById('bma-zone-building-map');
+        var cur = selected !== undefined ? selected : sel.value;
+        var ws = mapData ? (mapData.workspace_id || null) : null;
+        var opts = buildingMaps.filter(function(m) { return String(m.id) !== String(MAP_ID); });
+        // Same-project maps first.
+        opts.sort(function(a, b) {
+            var sa = (a.workspace_id || null) === ws ? 0 : 1, sb2 = (b.workspace_id || null) === ws ? 0 : 1;
+            return sa - sb2 || String(a.name).localeCompare(String(b.name));
+        });
+        sel.innerHTML = '<option value="">— Select —</option>' + opts.map(function(m) {
+            var lvl = m.view_config && m.view_config.level ? ' · ' + m.view_config.level : '';
+            return '<option value="' + m.id + '">' + esc(m.name) + esc(lvl) + '</option>';
+        }).join('');
+        if (cur) sel.value = cur;
+    }
+
+    function renderLinkedFrom() {
+        var el = document.getElementById('bma-linked-from');
+        var parents = [];
+        buildingMaps.forEach(function(m) {
+            (m.zones || []).forEach(function(z) {
+                if (z.link === 'building_map' && String(z.target) === String(MAP_ID)) parents.push({ map: m, zone: z });
+            });
+        });
+        document.getElementById('bma-root-settings').hidden = parents.length > 0;
+        if (!parents.length) {
+            el.innerHTML = '';
+            return;
+        }
+        el.innerHTML = parents.map(function(p) {
+            return '<a href="/building-map/admin/' + p.map.id + '">' + esc(p.map.name) + '</a> &rsaquo; ' + esc(p.zone.name);
+        }).join(', ');
+    }
+
+    function mapNameById(id) {
+        var m = buildingMaps.find(function(x) { return String(x.id) === String(id); });
+        return m ? m.name : 'Building map';
+    }
+
+    function fillSettings() {
+        var cfg = (mapData && mapData.view_config) || {};
+        document.getElementById('bma-view-level').value = cfg.level || '';
+        document.getElementById('bma-brand-name').value = cfg.brand_name || '';
+        document.getElementById('bma-rera').value = cfg.rera_number || '';
+        document.getElementById('bma-vr-url').value = cfg.vr_tour_url || '';
+        document.getElementById('bma-show-interest').checked = cfg.show_interest !== false;
+        var link = document.getElementById('bma-preview-link');
+        if (mapData && mapData.share_url) link.href = mapData.share_url;
+    }
+
+    // Rename by editing the title in place (Enter or blur saves, Esc cancels).
+    (function() {
+        var el = document.getElementById('bma-map-name');
+        el.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+            else if (e.key === 'Escape') { el.textContent = (mapData && mapData.name) || ''; el.blur(); }
+        });
+        el.addEventListener('blur', function() {
+            var name = el.textContent.replace(/\s+/g, ' ').trim();
+            if (!mapData || !name || name === mapData.name) { el.textContent = (mapData && mapData.name) || ''; return; }
+            fetch('/api/building-maps/' + MAP_ID, {
+                method: 'PATCH',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                body: JSON.stringify({ name: name })
+            })
+            .then(jsonOrThrow)
+            .then(function(d) { mapData.name = d.name || name; el.textContent = mapData.name; showToast('Renamed'); })
+            .catch(function(err) { el.textContent = mapData.name; showToast(err.message, true); });
+        });
+    })();
+
+    // Settings save as you edit (no Save button).
+    var settingsTimer = null;
+    function saveSettings() {
+        var cfg = {
+            level: document.getElementById('bma-view-level').value,
+            brand_name: document.getElementById('bma-brand-name').value.trim(),
+            rera_number: document.getElementById('bma-rera').value.trim(),
+            vr_tour_url: document.getElementById('bma-vr-url').value.trim(),
+            show_interest: document.getElementById('bma-show-interest').checked
+        };
+        fetch('/api/building-maps/' + MAP_ID, {
+            method: 'PATCH',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+            body: JSON.stringify({ view_config: cfg })
+        })
+        .then(jsonOrThrow)
+        .then(function(data) {
+            mapData.view_config = data.view_config || cfg;
+            showToast('Saved');
+        })
+        .catch(function(err) { showToast(err.message, true); });
+    }
+    ['bma-view-level', 'bma-show-interest'].forEach(function(id) {
+        document.getElementById(id).addEventListener('change', saveSettings);
+    });
+    ['bma-brand-name', 'bma-rera', 'bma-vr-url'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', function() {
+            clearTimeout(settingsTimer);
+            settingsTimer = setTimeout(saveSettings, 700);
+        });
     });
 
     function loadMapData() {
         fetch('/api/building-maps/' + MAP_ID, { headers: authHeaders() })
-            .then(function(r) { if (!r.ok) throw new Error('Not found'); return r.json(); })
+            .then(function(r) {
+                if (r.status === 401 || r.status === 403) throw new Error('access');
+                if (!r.ok) throw new Error('Not found');
+                return r.json();
+            })
             .then(function(data) {
                 mapData = data;
                 zones = data.zones || [];
                 document.getElementById('bma-map-name').textContent = data.name || 'Building Map';
+                fillSettings();
+                populateBuildingMapSelect();
                 imgEl.src = data.image_url;
                 imgEl.onload = function() {
                     imgNatW = imgEl.naturalWidth;
@@ -296,9 +524,16 @@
                     loading.classList.add('hidden');
                 };
             })
-            .catch(function() {
-                loading.querySelector('.loading-text').textContent = 'Failed to load building map.';
+            .catch(function(err) {
+                loading.querySelector('.loading-spinner').style.display = 'none';
+                loading.querySelector('.loading-text').innerHTML = err && err.message === 'access'
+                    ? 'No access to this map. <a href="/building-plans">Building Plans</a>'
+                    : 'Failed to load building map. <a href="javascript:location.reload()">Retry</a>';
             });
+        imgEl.onerror = function() {
+            loading.querySelector('.loading-spinner').style.display = 'none';
+            loading.querySelector('.loading-text').innerHTML = 'The map image could not be loaded. <a href="javascript:location.reload()">Retry</a>';
+        };
     }
 
     // ── Load panoramas and floor plan items ──
@@ -360,18 +595,20 @@
             method: 'PATCH',
             headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
             body: JSON.stringify({ catalogue_id: catId })
-        }).then(function(r) { return r.json(); })
+        }).then(jsonOrThrow)
           .then(function(data) {
               if (data && data.catalogue_id !== undefined) {
                   mapData.catalogue_id = data.catalogue_id;
                   populateFloorPlanSelect();
+                  showToast('Floor plan catalogue saved');
               }
-          });
+          })
+          .catch(function(err) { showToast(err.message, true); });
     });
 
     function populatePanoramaSelect() {
         var sel = document.getElementById('bma-zone-panorama');
-        sel.innerHTML = '<option value="">— None —</option>';
+        sel.innerHTML = '<option value="">— Select —</option>';
         panoramas.forEach(function(p) {
             sel.innerHTML += '<option value="' + p.id + '">' + esc(p.name) + '</option>';
         });
@@ -379,7 +616,8 @@
 
     function populateFloorPlanSelect() {
         var sel = document.getElementById('bma-zone-floorplan');
-        sel.innerHTML = '<option value="">— None —</option>';
+        var keep = sel.value;
+        sel.innerHTML = '<option value="">— Select —</option>';
         var linkedCatId = mapData ? mapData.catalogue_id : null;
         floorPlanItems.forEach(function(fp) {
             // If a catalogue is linked, only show items from that catalogue
@@ -387,6 +625,7 @@
             var label = linkedCatId ? fp.name : (fp._catalogue_name ? fp._catalogue_name + ' / ' + fp.name : fp.name);
             sel.innerHTML += '<option value="' + fp.id + '">' + esc(label) + '</option>';
         });
+        if (keep) sel.value = keep;
     }
 
     // ── Zoom & Pan ──
@@ -400,8 +639,12 @@
         applyTransform();
     }
 
+    var lastRenderedScale = 0;
     function applyTransform() {
         imageWrap.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+        // Line widths and labels depend on scale: redraw when zoom changes (not on pan).
+        if (lastRenderedScale && Math.abs(lastRenderedScale - scale) > 1e-6 && !currentPoints.length) renderAllZones();
+        lastRenderedScale = scale;
     }
 
     document.getElementById('bma-zoom-in').addEventListener('click', function() {
@@ -429,7 +672,7 @@
 
     // Pan with mouse drag (when not in draw mode or when right-click)
     container.addEventListener('mousedown', function(e) {
-        if (isDrawMode && e.button === 0) return; // left click reserved for drawing
+        downX = e.clientX; downY = e.clientY;
         // Replicate preview drag
         if (replicatePreviewPoints && replicatePreviewPoints.length >= 3 && e.button === 0) {
             var repCoords = clientToImageCoords(e.clientX, e.clientY);
@@ -467,7 +710,9 @@
         panY = startPanY + (e.clientY - dragStartY);
         applyTransform();
     });
-    window.addEventListener('mouseup', function() {
+    window.addEventListener('mouseup', function(e) {
+        // A drag pans; it must not also drop a point.
+        if (isDragging && Math.hypot(e.clientX - downX, e.clientY - downY) > 4) suppressClick = true;
         if (isReplicateDragging) {
             isReplicateDragging = false;
             container.style.cursor = '';
@@ -530,11 +775,12 @@
         }
         if (points.length >= 3) {
             ctx.closePath();
-            ctx.fillStyle = highlight ? c.fill.replace('0.12', '0.28') : c.fill;
+            ctx.fillStyle = highlight ? c.fillHi : c.fill;
             ctx.fill();
         }
-        ctx.strokeStyle = highlight ? 'rgba(255,255,255,0.7)' : c.stroke;
-        ctx.lineWidth = highlight ? 1.5 : 1;
+        // Canvas units are image pixels; divide by the view scale so lines stay ~2px on screen.
+        ctx.strokeStyle = highlight ? 'rgba(255,255,255,0.95)' : c.stroke;
+        ctx.lineWidth = (highlight ? 2.5 : 2) / scale;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
         ctx.stroke();
@@ -555,16 +801,20 @@
             var pts = typeof z.points === 'string' ? JSON.parse(z.points) : z.points;
             if (pts && pts.length >= 3) {
                 drawPolygon(pts, z.color || 'green', false);
-                // Draw label
+                // Label only when the zone is tall/wide enough on screen; thin floor bands
+                // would otherwise stack unreadable text (hover the list to identify them).
+                var minY = Infinity, maxY = -Infinity, minX = Infinity, maxX = -Infinity;
+                pts.forEach(function(p) { minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); });
+                if ((maxY - minY) * scale < 18 || (maxX - minX) * scale < 40) return;
                 var cx = 0, cy = 0;
                 pts.forEach(function(p) { cx += p.x; cy += p.y; });
                 cx /= pts.length; cy /= pts.length;
-                ctx.font = 'bold 13px Syne, sans-serif';
+                ctx.font = 'bold ' + Math.round(14 / scale) + 'px Syne, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#fff';
                 ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 3 / scale;
                 ctx.lineJoin = 'round';
                 ctx.strokeText(z.name, cx, cy);
                 ctx.fillText(z.name, cx, cy);
@@ -578,7 +828,7 @@
             var rcx = 0, rcy = 0;
             replicatePreviewPoints.forEach(function(p) { rcx += p.x; rcy += p.y; });
             rcx /= replicatePreviewPoints.length; rcy /= replicatePreviewPoints.length;
-            ctx.font = 'bold 13px Syne, sans-serif';
+            ctx.font = 'bold ' + Math.round(14 / scale) + 'px Syne, sans-serif';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillStyle = '#fff';
             ctx.strokeStyle = 'rgba(0,0,0,0.5)';
@@ -598,49 +848,35 @@
             // Draw vertex dots
             currentPoints.forEach(function(p) {
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, 4 / scale, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
                 ctx.fill();
                 ctx.strokeStyle = (COLOR_MAP[selectedColor] || COLOR_MAP.green).stroke;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 2 / scale;
                 ctx.stroke();
             });
         }
     }
 
     // ── Draw mode ──
-    var drawToggleBtn = document.getElementById('bma-draw-toggle');
     var drawControls = document.getElementById('bma-draw-controls');
     var completeDrawBtn = document.getElementById('bma-complete-draw');
     var cancelDrawBtn = document.getElementById('bma-cancel-draw');
-    var modeBadge = document.getElementById('bma-mode-badge');
     var editInstruction = document.getElementById('bma-edit-instruction');
 
-    drawToggleBtn.addEventListener('click', function() {
-        isDrawMode = !isDrawMode;
-        if (isDrawMode) {
-            drawToggleBtn.textContent = 'Exit Draw Mode';
-            drawControls.style.display = '';
-            modeBadge.style.display = '';
-            container.classList.add('edit-mode');
-            editInstruction.textContent = 'Click on the image to start drawing a zone boundary.';
-        } else {
-            cancelDrawing();
-            drawToggleBtn.textContent = 'Draw Zone';
-            drawControls.style.display = 'none';
-            modeBadge.style.display = 'none';
-            container.classList.remove('edit-mode');
-            editInstruction.textContent = 'Toggle draw mode to start drawing zones.';
-        }
+    container.classList.add('edit-mode');
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && currentPoints.length && document.getElementById('bma-zone-modal').style.display === 'none') cancelDrawing();
     });
 
     function cancelDrawing() {
         currentPoints = [];
         isDrawing = false;
         completeDrawBtn.disabled = true;
+        updateEditInstructionText();
         renderAllZones();
         if (isDrawMode) {
-            editInstruction.textContent = 'Click on the image to start drawing a zone boundary.';
+            editInstruction.textContent = '';
         }
     }
 
@@ -675,11 +911,20 @@
 
     // ── Click handling on canvas for drawing ──
     container.addEventListener('click', function(e) {
+        if (suppressClick) { suppressClick = false; return; }
         if (!isDrawMode || ignoreClick || e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
         var coords = clientToImageCoords(e.clientX, e.clientY);
         if (coords.x < 0 || coords.y < 0 || coords.x > imgNatW || coords.y > imgNatH) return;
+        // Not drawing yet and clicked an existing zone: edit it.
+        if (!currentPoints.length) {
+            var hit = getFilteredZones().slice().reverse().find(function(z) {
+                var pts = typeof z.points === 'string' ? JSON.parse(z.points) : z.points;
+                return pts && pts.length >= 3 && pointInPolygon(coords, pts);
+            });
+            if (hit) { openZoneForm(hit); return; }
+        }
 
         if (clickTimer) clearTimeout(clickTimer);
         clickTimer = setTimeout(function() {
@@ -700,7 +945,7 @@
 
     container.addEventListener('mousemove', function(e) {
         if (!isDrawMode || currentPoints.length === 0 || isDragging) return;
-        var coords = clientToImageCoords(e.clientX, e.clientY);
+        var coords = snapPoint(clientToImageCoords(e.clientX, e.clientY));
         // Redraw saved zones, then draw preview polygon (current points + hover)
         renderAllZones();
         var previewPts = currentPoints.concat([coords]);
@@ -708,7 +953,7 @@
         // Draw vertex dots on existing points
         currentPoints.forEach(function(p) {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, 4 / scale, 0, Math.PI * 2);
             ctx.fillStyle = '#fff';
             ctx.fill();
             ctx.strokeStyle = (COLOR_MAP[selectedColor] || COLOR_MAP.green).stroke;
@@ -726,11 +971,42 @@
         }
     });
 
+    // Snap to existing vertices first, then to existing edges, so neighbouring zones share
+    // exact borders (no slivers or overlaps between floors/units).
+    var SNAP_PX = 9;
+    function snapPoint(p) {
+        var best = null, bestD = SNAP_PX / scale;
+        var all = getFilteredZones().map(function(z) { return typeof z.points === 'string' ? JSON.parse(z.points) : z.points; });
+        if (currentPoints.length > 2) all.push([currentPoints[0]]);
+        all.forEach(function(pts) {
+            (pts || []).forEach(function(v) {
+                var d = Math.hypot(v.x - p.x, v.y - p.y);
+                if (d < bestD) { bestD = d; best = { x: v.x, y: v.y }; }
+            });
+        });
+        if (best) return best;
+        bestD = (SNAP_PX * 0.7) / scale;
+        all.forEach(function(pts) {
+            if (!pts || pts.length < 2) return;
+            for (var i = 0; i < pts.length; i++) {
+                var a = pts[i], b = pts[(i + 1) % pts.length];
+                var dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
+                if (!len2) continue;
+                var t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+                var q = { x: Math.round(a.x + t * dx), y: Math.round(a.y + t * dy) };
+                var d = Math.hypot(q.x - p.x, q.y - p.y);
+                if (d < bestD) { bestD = d; best = q; }
+            }
+        });
+        return best || p;
+    }
+
     function addPointAt(coords) {
         if (!isDrawMode) return;
+        coords = snapPoint(coords);
         if (currentPoints.length >= 3) {
             var first = currentPoints[0];
-            if (Math.hypot(coords.x - first.x, coords.y - first.y) < CLOSE_DISTANCE) {
+            if (Math.hypot(coords.x - first.x, coords.y - first.y) * scale < CLOSE_DISTANCE_PX) {
                 completeDrawing();
                 return;
             }
@@ -746,13 +1022,8 @@
 
     function updateEditInstructionText() {
         if (!isDrawMode) return;
-        if (currentPoints.length === 0) {
-            editInstruction.textContent = 'Click on the image to start drawing a zone boundary.';
-        } else if (currentPoints.length < 3) {
-            editInstruction.textContent = currentPoints.length + ' point(s) added. Click to add more.';
-        } else {
-            editInstruction.textContent = currentPoints.length + ' points. Click first point or press Complete to finish.';
-        }
+        editInstruction.textContent = currentPoints.length ? currentPoints.length + ' points' : '';
+        document.getElementById('bma-draw-controls').hidden = !currentPoints.length;
     }
 
     // ── Color picker (draw controls) ──
@@ -772,6 +1043,22 @@
         document.getElementById('bma-zone-floor').value = zone ? String(zone.floor_number || 0) : '0';
         document.getElementById('bma-zone-panorama').value = zone && zone.linked_panorama_id ? String(zone.linked_panorama_id) : '';
         document.getElementById('bma-zone-floorplan').value = zone && zone.linked_floor_plan_item_id ? String(zone.linked_floor_plan_item_id) : '';
+        populateBuildingMapSelect(zone && zone.linked_building_map_id ? String(zone.linked_building_map_id) : '');
+        setLinkType(zone ? zoneLinkTypeOf(zone) : defaultLinkType());
+        fillMeta(zone ? zone.meta : null);
+        editingMeta = zone ? (typeof zone.meta === 'string' ? JSON.parse(zone.meta || '{}') : (zone.meta || {})) : {};
+        setZoneError('');
+        // Show only the info-card fields that matter at this level.
+        var lvl = effectiveLevel();
+        document.querySelectorAll('#bma-zone-modal [data-levels]').forEach(function(el) {
+            el.hidden = (' ' + el.dataset.levels + ' ').indexOf(' ' + lvl + ' ') < 0;
+        });
+        renderFloorUnits();
+        var canSplit = !zone && currentPoints.length === 4;
+        document.getElementById('bma-split-wrap').hidden = !canSplit;
+        document.getElementById('bma-split-on').checked = false;
+        document.getElementById('bma-split-fields').hidden = true;
+        document.getElementById('bma-upload-status').hidden = true;
 
         // Set color
         var col = (zone ? zone.color : selectedColor) || 'green';
@@ -779,9 +1066,202 @@
             o.classList.toggle('selected', o.dataset.color === col);
         });
 
+        modalAnchorPoints = zone ? (typeof zone.points === 'string' ? JSON.parse(zone.points) : zone.points) : currentPoints.slice();
         showFloatingModal('bma-zone-modal');
+        modalAnchorPoints = null;
         setTimeout(function() { document.getElementById('bma-zone-name').focus(); }, 100);
     }
+
+    function splitBands(points, count) {
+        // Order the 4 corners: top pair (smaller y) and bottom pair, each left to right.
+        var pts = points.slice().sort(function(a, b) { return a.y - b.y; });
+        var top = pts.slice(0, 2).sort(function(a, b) { return a.x - b.x; });
+        var bot = pts.slice(2).sort(function(a, b) { return a.x - b.x; });
+        var TL = top[0], TR = top[1], BL = bot[0], BR = bot[1];
+        var lerp = function(a, b, t) { return { x: Math.round(a.x + (b.x - a.x) * t), y: Math.round(a.y + (b.y - a.y) * t) }; };
+        var bands = [];
+        for (var i = 0; i < count; i++) {
+            var t0 = i / count, t1 = (i + 1) / count;  // measured from the bottom
+            bands.push([lerp(BL, TL, t1), lerp(BR, TR, t1), lerp(BR, TR, t0), lerp(BL, TL, t0)]);
+        }
+        return bands;
+    }
+
+    function splitActive() {
+        return !editingZoneId && currentPoints.length === 4 && document.getElementById('bma-split-on').checked;
+    }
+
+    function renderSplitPreview() {
+        renderAllZones();
+        if (!currentPoints.length) return;
+        if (!splitActive()) { renderDraft(); return; }
+        var n = Math.max(1, Math.min(100, parseInt(document.getElementById('bma-split-count').value) || 1));
+        splitBands(currentPoints, n).forEach(function(b, i) {
+            drawPolygon(b, selectedColor, i % 2 === 0);
+        });
+    }
+
+    ['bma-split-on', 'bma-split-count', 'bma-split-start'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', function() {
+            document.getElementById('bma-split-fields').hidden = !document.getElementById('bma-split-on').checked;
+            renderSplitPreview();
+        });
+    });
+
+    function zoneLinkTypeOf(z) {
+        if (z.link_type) return z.link_type;
+        if (z.linked_building_map_id) return 'building_map';
+        if (z.linked_floor_plan_item_id) return 'floor_plan';
+        if (z.linked_panorama_id) return 'panorama';
+        return '';
+    }
+
+    function effectiveLevel() {
+        var cfg = (mapData && mapData.view_config) || {};
+        if (cfg.level) return cfg.level;
+        var isChild = buildingMaps.some(function(m) {
+            return (m.zones || []).some(function(z) { return z.link === 'building_map' && String(z.target) === String(MAP_ID); });
+        });
+        return isChild ? 'tower' : 'aerial';
+    }
+
+    function defaultLinkType() {
+        var lvl = effectiveLevel();
+        if (lvl === 'aerial') return 'building_map';
+        if (lvl === 'tower') return 'floor_plan';
+        return '';
+    }
+
+
+    function setLinkType(t) {
+        zoneLinkType = t || '';
+        document.querySelectorAll('#bma-link-types .bma-dir-btn').forEach(function(b) {
+            var on = b.dataset.link === zoneLinkType;
+            b.classList.toggle('selected', on);
+            b.setAttribute('aria-checked', on ? 'true' : 'false');
+        });
+        document.querySelectorAll('[data-link-group]').forEach(function(g) {
+            g.hidden = g.dataset.linkGroup !== zoneLinkType;
+        });
+    }
+    document.querySelectorAll('#bma-link-types .bma-dir-btn').forEach(function(b) {
+        b.addEventListener('click', function() { setLinkType(b.dataset.link); renderFloorUnits(); });
+    });
+
+    // A floor that opens a map with units gets its own status per unit; the floor colour
+    // in the customer view is derived from them (any available > any hold > all sold).
+    var editingMeta = {};
+    function floorUnitsTarget() {
+        if (zoneLinkType !== 'building_map') return null;
+        var id = document.getElementById('bma-zone-building-map').value;
+        var m = buildingMaps.find(function(x) { return String(x.id) === String(id); });
+        var units = m ? (m.zones || []).filter(function(z) { return !z.link && z.status; }) : [];
+        return units.length ? units : null;
+    }
+    function renderFloorUnits() {
+        var units = floorUnitsTarget();
+        var wrap = document.getElementById('bma-floor-units');
+        wrap.hidden = !units;
+        var statusField = document.querySelector('#bma-zone-modal [data-meta="status"]');
+        var statusLabel = statusField && statusField.closest('[data-levels]');
+        if (statusLabel) {
+            statusLabel.hidden = !!units || (' ' + statusLabel.dataset.levels + ' ').indexOf(' ' + effectiveLevel() + ' ') < 0;
+        }
+        if (!units) return;
+        var overrides = (editingMeta && editingMeta.unit_status) || {};
+        document.getElementById('bma-floor-units-list').innerHTML = units.map(function(u) {
+            var cur = overrides[String(u.id)] || u.status;
+            return '<label class="bma-unit-row"><span>' + esc(u.name) + '</span>' +
+                '<select class="form-input" data-unit-status="' + u.id + '">' +
+                ['available', 'hold', 'sold'].map(function(k) {
+                    return '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + k.charAt(0).toUpperCase() + k.slice(1) + '</option>';
+                }).join('') + '</select></label>';
+        }).join('');
+    }
+    document.getElementById('bma-zone-building-map').addEventListener('change', renderFloorUnits);
+
+    function fillMeta(meta) {
+        meta = meta || {};
+        if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch (e) { meta = {}; } }
+        document.querySelectorAll('#bma-zone-modal [data-meta]').forEach(function(el) {
+            var v = meta[el.dataset.meta];
+            if (el.type === 'checkbox') el.checked = !!v;
+            else el.value = v == null ? '' : String(v);
+        });
+    }
+
+    function readMeta() {
+        var meta = {};
+        var keep = (editingZoneId && (zones.find(function(z) { return z.id === editingZoneId; }) || {}).meta) || {};
+        if (typeof keep === 'string') { try { keep = JSON.parse(keep); } catch (e) { keep = {}; } }
+        Object.keys(keep).forEach(function(k) { meta[k] = keep[k]; });
+        document.querySelectorAll('#bma-zone-modal [data-meta]').forEach(function(el) {
+            var k = el.dataset.meta;
+            var field = el.closest('[data-levels]');
+            if (field && field.hidden) return;
+            delete meta[k];
+            if (el.type === 'checkbox') { if (el.checked) meta[k] = true; return; }
+            var v = String(el.value || '').trim();
+            if (!v) return;
+            meta[k] = el.type === 'number' ? Number(v) : v;
+        });
+        var unitSelects = document.querySelectorAll('#bma-floor-units:not([hidden]) [data-unit-status]');
+        if (unitSelects.length) {
+            meta.unit_status = {};
+            unitSelects.forEach(function(sel) { meta.unit_status[sel.dataset.unitStatus] = sel.value; });
+            delete meta.status;
+        } else {
+            delete meta.unit_status;
+        }
+        return meta;
+    }
+
+    function setZoneError(msg) {
+        var el = document.getElementById('bma-zone-error');
+        el.hidden = !msg;
+        el.textContent = msg || '';
+    }
+
+    // Upload a new building map straight from the zone form.
+    document.getElementById('bma-upload-map-btn').addEventListener('click', function() {
+        document.getElementById('bma-upload-map-file').click();
+    });
+    document.getElementById('bma-upload-map-file').addEventListener('change', function() {
+        var file = this.files && this.files[0];
+        this.value = '';
+        if (!file) return;
+        var status = document.getElementById('bma-upload-status');
+        var btn = document.getElementById('bma-upload-map-btn');
+        var zoneName = document.getElementById('bma-zone-name').value.trim();
+        var base = zoneName || file.name.replace(/\.[^.]+$/, '');
+        var name = base;
+        var n = 2;
+        var taken = function(nm) { return buildingMaps.some(function(m) { return String(m.name).toLowerCase() === nm.toLowerCase(); }); };
+        while (taken(name)) name = base + ' (' + (n++) + ')';
+        var fd = new FormData();
+        fd.append('name', name);
+        fd.append('file', file);
+        if (mapData && mapData.workspace_id) fd.append('workspace_id', mapData.workspace_id);
+        // The new map sits one level below this one.
+        fd.append('level', effectiveLevel() === 'aerial' ? 'tower' : 'floor');
+        btn.disabled = true;
+        status.hidden = false;
+        status.className = 'bma-upload-status';
+        status.textContent = 'Uploading…';
+        fetch('/api/building-maps', { method: 'POST', headers: authHeaders(), body: fd })
+            .then(jsonOrThrow)
+            .then(function(created) {
+                return loadBuildingMaps().then(function() {
+                    populateBuildingMapSelect(String(created.id));
+                    status.innerHTML = esc(created.name) + ' &middot; <a href="/building-map/admin/' + created.id + '" target="_blank" rel="noopener">Open &#8599;</a>';
+                });
+            })
+            .catch(function(err) {
+                status.className = 'bma-upload-status is-error';
+                status.textContent = err.message;
+            })
+            .then(function() { btn.disabled = false; });
+    });
 
     document.querySelectorAll('#bma-zone-color-options .bma-color-opt').forEach(function(el) {
         el.addEventListener('click', function() {
@@ -794,72 +1274,82 @@
         var name = document.getElementById('bma-zone-name').value.trim();
         if (!name) { document.getElementById('bma-zone-name').focus(); return; }
         var floorNumber = parseInt(document.getElementById('bma-zone-floor').value) || 0;
-        var panoramaId = document.getElementById('bma-zone-panorama').value || null;
-        var floorplanId = document.getElementById('bma-zone-floorplan').value || null;
         var colorSel = document.querySelector('#bma-zone-color-options .bma-color-opt.selected');
         var color = colorSel ? colorSel.dataset.color : 'green';
+        var linkBody = {
+            link_type: zoneLinkType,
+            linked_building_map_id: zoneLinkType === 'building_map' ? (document.getElementById('bma-zone-building-map').value || null) : null,
+            linked_floor_plan_item_id: zoneLinkType === 'floor_plan' ? (document.getElementById('bma-zone-floorplan').value || null) : null,
+            linked_panorama_id: zoneLinkType === 'panorama' ? (document.getElementById('bma-zone-panorama').value || null) : null
+        };
+        var missingTarget = { building_map: 'Pick or upload the building map this zone opens.', floor_plan: 'Pick a floor plan.', panorama: 'Pick a panorama.' };
+        if (zoneLinkType && !linkBody['linked_' + (zoneLinkType === 'floor_plan' ? 'floor_plan_item' : zoneLinkType) + '_id']) {
+            setZoneError(missingTarget[zoneLinkType]);
+            return;
+        }
+        var meta = readMeta();
+        if (meta.size_min && meta.size_max && meta.size_min > meta.size_max) {
+            setZoneError('Size from must be less than size to.');
+            return;
+        }
+        setZoneError('');
 
         var btn = this;
         btn.disabled = true;
-
-        if (editingZoneId) {
-            // Update existing zone
-            fetch('/api/building-zones/' + editingZoneId, {
+        btn.textContent = 'Saving…';
+        var body = Object.assign({ name: name, floor_number: floorNumber, color: color, meta: meta }, linkBody);
+        var req;
+        if (splitActive()) {
+            var count = Math.max(1, Math.min(100, parseInt(document.getElementById('bma-split-count').value) || 1));
+            var start = Math.max(0, Math.min(100, parseInt(document.getElementById('bma-split-start').value) || 0));
+            if (start + count - 1 > 100) { setZoneError('Floor numbers must stay between 0 and 100.'); btn.disabled = false; btn.textContent = 'Save Zone'; return; }
+            var batch = splitBands(currentPoints, count).map(function(pts, i) {
+                var fl = start + i;
+                var m = Object.assign({}, meta, { label: String(fl) });
+                return Object.assign({}, linkBody, { name: name + ' ' + fl, floor_number: fl, color: color, meta: m, points: pts, sort_order: fl });
+            });
+            req = fetch('/api/building-maps/' + MAP_ID + '/zones/batch', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                body: JSON.stringify({ zones: batch })
+            });
+        } else if (editingZoneId) {
+            req = fetch('/api/building-zones/' + editingZoneId, {
                 method: 'PUT',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-                body: JSON.stringify({
-                    name: name,
-                    floor_number: floorNumber,
-                    color: color,
-                    linked_panorama_id: panoramaId,
-                    linked_floor_plan_item_id: floorplanId
-                })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function() {
-                btn.disabled = false;
-                hideFloatingModal('bma-zone-modal');
-                reloadZones();
-                showToast('Zone updated');
-            })
-            .catch(function() { btn.disabled = false; });
+                body: JSON.stringify(body)
+            });
         } else {
-            // Create new zone
-            var points = currentPoints.slice();
-            var body = {
-                name: name,
-                floor_number: floorNumber,
-                color: color,
-                points: points,
-                linked_panorama_id: panoramaId,
-                linked_floor_plan_item_id: floorplanId
-            };
-            fetch('/api/building-maps/' + MAP_ID + '/zones', {
+            body.points = currentPoints.slice();
+            req = fetch('/api/building-maps/' + MAP_ID + '/zones', {
                 method: 'POST',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
                 body: JSON.stringify(body)
-            })
-            .then(function(r) { return r.json(); })
-            .then(function() {
-                btn.disabled = false;
-                hideFloatingModal('bma-zone-modal');
-                currentPoints = [];
-                reloadZones();
-                showToast('Zone created');
-            })
-            .catch(function() { btn.disabled = false; });
+            });
         }
+        var wasEditing = !!editingZoneId;
+        req.then(jsonOrThrow)
+            .then(function() {
+                hideFloatingModal('bma-zone-modal');
+                if (!wasEditing) { currentPoints = []; updateEditInstructionText(); }
+                reloadZones();
+                loadBuildingMaps();
+                showToast(wasEditing ? 'Zone updated' : 'Zone created');
+            })
+            .catch(function(err) { setZoneError(err.message); })
+            .then(function() { btn.disabled = false; btn.textContent = 'Save Zone'; });
     });
 
     function reloadZones() {
         fetch('/api/building-maps/' + MAP_ID + '/zones', { headers: authHeaders() })
-            .then(function(r) { return r.ok ? r.json() : []; })
+            .then(jsonOrThrow)
             .then(function(data) {
-                zones = data;
+                zones = Array.isArray(data) ? data : [];
                 renderAllZones();
                 updateZonesList();
                 updateFloorFilter();
-            });
+            })
+            .catch(function(err) { showToast('Could not refresh zones: ' + err.message, true); });
     }
 
     // ── Zones list panel ──
@@ -870,8 +1360,7 @@
 
         if (!filtered.length) {
             var floorVal = document.getElementById('bma-floor-filter').value;
-            list.innerHTML = '<div style="font-size:0.82rem; color:var(--color-muted); padding:0.5rem 0;">No zones' +
-                (floorVal !== 'all' ? ' on this floor' : '') + '.</div>';
+            list.innerHTML = '<div class="bma-zones-empty">No zones</div>';
             return;
         }
 
@@ -882,9 +1371,9 @@
                     '<div class="bma-zone-item-color" style="background:' + c.stroke + ';"></div>' +
                     esc(z.name) + '<span class="bma-zone-item-floor">F' + z.floor_number + '</span>' +
                 '</div>' +
+                zoneBadge(z) +
                 '<div class="bma-zone-item-actions">' +
                     '<button class="bma-zone-action" data-action="edit" data-id="' + z.id + '" title="Edit">&#9998;</button>' +
-                    '<button class="bma-zone-action" data-action="replicate" data-id="' + z.id + '" title="Replicate">&#10697;</button>' +
                     '<button class="bma-zone-action bma-zone-action-del" data-action="delete" data-id="' + z.id + '" title="Delete">&#10005;</button>' +
                 '</div>' +
             '</div>';
@@ -921,6 +1410,17 @@
         });
     }
 
+    function zoneBadge(z) {
+        var t = zoneLinkTypeOf(z);
+        var meta = z.meta || {};
+        var st = meta.status ? '<i class="bma-st bma-st-' + meta.status + '" title="' + meta.status + '"></i>' : '';
+        var label = t === 'building_map' ? '&rarr; ' + esc(mapNameById(z.linked_building_map_id))
+            : t === 'floor_plan' ? 'Floor plan'
+            : t === 'panorama' ? '360°'
+            : (Object.keys(meta).length ? 'Unit' : '');
+        return label || st ? '<span class="bma-zone-badge" title="Opens">' + st + label + '</span>' : '';
+    }
+
     // Floor filter
     function updateFloorFilter() {
         var sel = document.getElementById('bma-floor-filter');
@@ -946,10 +1446,13 @@
     function deleteZone(zone) {
         if (!confirm('Delete zone "' + zone.name + '"?')) return;
         fetch('/api/building-zones/' + zone.id, { method: 'DELETE', headers: authHeaders() })
+            .then(jsonOrThrow)
             .then(function() {
                 reloadZones();
+                loadBuildingMaps();
                 showToast('Zone deleted');
-            });
+            })
+            .catch(function(err) { showToast(err.message, true); });
     }
 
     // ── Replicate modal ──
@@ -984,8 +1487,11 @@
             floor_number: floor,
             color: replicateSourceZone.color || 'green',
             points: replicatePreviewPoints,
+            link_type: zoneLinkTypeOf(replicateSourceZone),
             linked_panorama_id: replicateSourceZone.linked_panorama_id || null,
-            linked_floor_plan_item_id: replicateSourceZone.linked_floor_plan_item_id || null
+            linked_floor_plan_item_id: replicateSourceZone.linked_floor_plan_item_id || null,
+            linked_building_map_id: replicateSourceZone.linked_building_map_id || null,
+            meta: replicateSourceZone.meta || {}
         };
 
         fetch('/api/building-maps/' + MAP_ID + '/zones', {
@@ -993,7 +1499,7 @@
             headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
             body: JSON.stringify(body)
         })
-        .then(function(r) { return r.json(); })
+        .then(jsonOrThrow)
         .then(function() {
             btn.disabled = false;
             replicatePreviewPoints = null;
@@ -1001,7 +1507,12 @@
             reloadZones();
             showToast('Zone replicated');
         })
-        .catch(function() { btn.disabled = false; });
+        .catch(function(err) {
+            btn.disabled = false;
+            var el = document.getElementById('bma-rep-error');
+            el.hidden = false;
+            el.textContent = err.message;
+        });
     });
 
     // ── Panel collapse ──
@@ -1090,15 +1601,33 @@
     // Floating modal system (no backdrop, draggable, collapsible)
     // ═══════════════════════════════════════════════
 
+    var modalAnchorPoints = null;  // image-space points the open dialog should not cover
+
     function showFloatingModal(id) {
         var modal = document.getElementById(id);
         modal.style.display = '';
         modal.classList.remove('collapsed');
-        // Center the modal
         var w = modal.offsetWidth || 400;
         var h = modal.offsetHeight || 300;
-        modal.style.left = Math.max(16, (window.innerWidth - w) / 2) + 'px';
-        modal.style.top = Math.max(16, (window.innerHeight - h) / 2) + 'px';
+        var left = Math.max(16, (window.innerWidth - w) / 2);
+        var top = Math.max(16, (window.innerHeight - h) / 2);
+        var pts = modalAnchorPoints;
+        if (pts && pts.length) {
+            // Place the dialog on whichever side of the shape has more room.
+            var rect = container.getBoundingClientRect();
+            var xs = pts.map(function(p) { return rect.left + panX + p.x * scale; });
+            var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
+            var panel = document.getElementById('bma-edit-panel').getBoundingClientRect();
+            var leftLimit = panel.right + 16;
+            var roomRight = window.innerWidth - 90 - maxX;
+            var roomLeft = minX - leftLimit;
+            if (roomRight >= w + 24) left = maxX + 24;
+            else if (roomLeft >= w + 24) left = minX - w - 24;
+            else left = roomRight > roomLeft ? window.innerWidth - w - 90 : leftLimit;
+            top = Math.max(16, Math.min(window.innerHeight - h - 16, 72));
+        }
+        modal.style.left = Math.max(16, left) + 'px';
+        modal.style.top = top + 'px';
     }
 
     function hideFloatingModal(id) {
@@ -1107,6 +1636,7 @@
         // If closing zone modal and we were creating (not editing), clear draft
         if (id === 'bma-zone-modal' && !editingZoneId) {
             currentPoints = [];
+            updateEditInstructionText();
             renderAllZones();
         }
         // If closing replicate modal, clear preview
@@ -1174,10 +1704,11 @@
         return d.innerHTML;
     }
 
-    function showToast(msg) {
+    function showToast(msg, isError) {
         var tc = document.getElementById('bma-toast-container');
         var el = document.createElement('div');
-        el.className = 'bma-toast';
+        el.className = 'bma-toast' + (isError ? ' is-error' : '');
+        el.setAttribute('role', isError ? 'alert' : 'status');
         el.textContent = msg;
         tc.appendChild(el);
         setTimeout(function() { el.remove(); }, 3000);

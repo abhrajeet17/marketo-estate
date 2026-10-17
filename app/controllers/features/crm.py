@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import re
 import time
@@ -5,22 +6,17 @@ import uuid
 
 from flask import jsonify, request
 
-from app import config as app_config
 from app.core.auth import get_profile, require_admin, require_auth
-from app.core.database import get_supabase, is_transient_supabase_error, require_supabase, with_supabase_retry
+from app.core.database import get_supabase
 from app.services.access_policy import _chunks, annotate_resource_rows_with_client_scope, get_client_memberships
-from app.services.email_service import send_email as send_smtp_email
 from app.controllers.features.crm_pagination import (
     crm_page_payload,
     crm_parse_page_args,
     crm_parse_sort_args,
     crm_sort_rows,
 )
+from app.services.crm_lead_service import LEAD_TABLE, STATUS_DEAL, STATUS_INTEREST, apply_broker_visibility
 
-CRM_CONTACT_SORT_FIELDS = ('full_name', 'email', 'phone', 'birthday', 'address', 'updated_at', 'created_at')
-# Email/phone are blanked for reference-scoped brokers; sorting by them would
-# expose the hidden ordering.
-CRM_CONTACT_SORT_FIELDS_MASKED = ('full_name', 'birthday', 'updated_at', 'created_at')
 CRM_PLOT_SORT_FIELDS = ('name', 'area', 'status', 'description', 'panorama_name', 'workspace_name')
 from app.services.plot_service import get_plot_panorama_id, update_plot as plot_update
 from app.services.uam_reference_service import (
@@ -107,6 +103,159 @@ def _fetch_pages(fetch_page, page_size=1000):
         start += page_size
 
 
+def _run_parallel(*fns):
+    """Run independent Supabase reads concurrently; each result in call order.
+
+    A failing read returns None instead of raising, matching the previous
+    best-effort behaviour where every lookup was wrapped in try/except.
+    """
+    def safe(fn):
+        try:
+            return fn()
+        except Exception:
+            return None
+    if len(fns) == 1:
+        return [safe(fns[0])]
+    with ThreadPoolExecutor(max_workers=min(6, len(fns))) as pool:
+        return list(pool.map(safe, fns))
+
+
+def _select_in(sb, table, columns, column, values):
+    """SELECT columns FROM table WHERE column IN values, chunked."""
+    rows = []
+    for chunk in _chunks(values):
+        rows.extend(sb.table(table).select(columns).in_(column, chunk).execute().data or [])
+    return rows
+
+
+def _allotted_client_stats(sb, client_ids, memberships, *, is_client_admin, user_id):
+    """
+    Names, projects, plot status and lead counts per client, in four
+    dependency stages; reads within a stage run in parallel:
+
+      1. client names | member ids (client admins) | lead counts
+      2. workspace_access | panorama_access          (needs member ids)
+      3. panoramas by workspace | panoramas by id     (needs access rows)
+      4. plot statuses                                (needs panorama ids)
+    """
+    client_set = set(client_ids)
+
+    def lead_rows():
+        out = []
+        for chunk in _chunks(client_ids):
+            def fetch_page(start, end, chunk=chunk):
+                query = sb.table(LEAD_TABLE).select('client_id, record_status').in_('client_id', chunk)
+                if not is_client_admin:
+                    query = apply_broker_visibility(query, user_id)
+                return query.range(start, end).execute().data or []
+            out.extend(_fetch_pages(fetch_page))
+        return out
+
+    def member_rows():
+        if is_client_admin:
+            return _select_in(sb, 'client_members', 'id, client_id', 'client_id', client_ids)
+        return [{'id': m.get('id'), 'client_id': m.get('client_id')} for m in memberships]
+
+    names_rows, members, leads = _run_parallel(
+        lambda: _select_in(sb, 'clients', 'id, name', 'id', client_ids),
+        member_rows,
+        lead_rows,
+    )
+
+    names = {str(r.get('id')): (str(r.get('name') or '').strip() or str(r.get('id'))) for r in (names_rows or []) if r.get('id')}
+
+    client_of_member = {}
+    for row in members or []:
+        cid = str(row.get('client_id') or '')
+        if cid in client_set and row.get('id'):
+            client_of_member[row['id']] = cid
+
+    # Stage 2: one batched query per access table (was one per client).
+    member_ids = list(client_of_member)
+    ws_access, pano_access = _run_parallel(
+        lambda: _select_in(sb, 'workspace_access', 'workspace_id, client_member_id', 'client_member_id', member_ids) if member_ids else [],
+        lambda: _select_in(sb, 'panorama_access', 'panorama_id, client_member_id', 'client_member_id', member_ids) if member_ids else [],
+    )
+    projects = {cid: set() for cid in client_ids}
+    panoramas = {cid: set() for cid in client_ids}
+    for row in ws_access or []:
+        cid = client_of_member.get(row.get('client_member_id'))
+        if cid and row.get('workspace_id'):
+            projects[cid].add(str(row['workspace_id']))
+    for row in pano_access or []:
+        cid = client_of_member.get(row.get('client_member_id'))
+        try:
+            if cid and row.get('panorama_id') is not None:
+                panoramas[cid].add(int(row['panorama_id']))
+        except (TypeError, ValueError):
+            continue
+
+    # Stage 3: panoramas inside granted projects, and projects of granted panoramas.
+    def invert(mapping):
+        out = {}
+        for cid, keys in mapping.items():
+            for key in keys:
+                out.setdefault(key, set()).add(cid)
+        return out
+    clients_by_ws = invert(projects)
+    clients_by_pano = invert(panoramas)
+    by_ws, by_id = _run_parallel(
+        lambda: _select_in(sb, 'panoramas', 'id, workspace_id', 'workspace_id', list(clients_by_ws)) if clients_by_ws else [],
+        lambda: _select_in(sb, 'panoramas', 'id, workspace_id', 'id', list(clients_by_pano)) if clients_by_pano else [],
+    )
+    for row in by_ws or []:
+        try:
+            pid = int(row.get('id'))
+        except (TypeError, ValueError):
+            continue
+        for cid in clients_by_ws.get(str(row.get('workspace_id') or ''), ()):
+            panoramas[cid].add(pid)
+    for row in by_id or []:
+        try:
+            pid = int(row.get('id'))
+        except (TypeError, ValueError):
+            continue
+        if row.get('workspace_id'):
+            for cid in clients_by_pano.get(pid, ()):
+                projects[cid].add(str(row['workspace_id']))
+
+    # Stage 4: plot status counts.
+    plots = {cid: {'total': 0, 'sold': 0, 'pending': 0, 'available': 0} for cid in client_ids}
+    clients_by_pano = invert(panoramas)
+    plot_rows = _run_parallel(
+        lambda: _select_in(sb, 'plots', 'panorama_id, status', 'panorama_id', list(clients_by_pano)) if clients_by_pano else []
+    )[0]
+    for row in plot_rows or []:
+        try:
+            pid = int(row.get('panorama_id'))
+        except (TypeError, ValueError):
+            continue
+        key = _crm_plot_status_key(row.get('status'))
+        bucket = 'sold' if key == 'sold' else ('pending' if key in ('reserved', 'onhold', 'pending') else ('available' if key == 'available' else None))
+        for cid in clients_by_pano.get(pid, ()):
+            plots[cid]['total'] += 1
+            if bucket:
+                plots[cid][bucket] += 1
+
+    lead_counts = {cid: 0 for cid in client_ids}
+    interest_counts = {cid: 0 for cid in client_ids}
+    deal_counts = {cid: 0 for cid in client_ids}
+    for row in leads or []:
+        cid = str(row.get('client_id') or '')
+        if cid not in lead_counts:
+            continue
+        lead_counts[cid] += 1
+        if str(row.get('record_status') or STATUS_INTEREST) == STATUS_DEAL:
+            deal_counts[cid] += 1
+        else:
+            interest_counts[cid] += 1
+
+    return {
+        'names': names, 'projects': projects, 'plots': plots,
+        'leads': lead_counts, 'interests': interest_counts, 'deals': deal_counts,
+    }
+
+
 def register_crm_broker_routes(app, *, crm_panorama_ids, crm_client_scope_ids):
     @app.route('/api/crm/allotted-clients', methods=['GET'])
     @require_auth
@@ -141,160 +290,16 @@ def register_crm_broker_routes(app, *, crm_panorama_ids, crm_client_scope_ids):
         if not client_ids:
             return jsonify([])
 
-        member_ids_by_client = {cid: [] for cid in client_ids}
-        if is_client_admin:
-            try:
-                for chunk in _chunks(client_ids):
-                    rows = (
-                        sb.table('client_members')
-                        .select('id, client_id')
-                        .in_('client_id', chunk)
-                        .execute()
-                        .data or []
-                    )
-                    for row in rows:
-                        cid = str(row.get('client_id') or '')
-                        mid = row.get('id')
-                        if cid in member_ids_by_client and mid:
-                            member_ids_by_client[cid].append(mid)
-            except Exception:
-                pass
-        else:
-            for member in memberships:
-                cid = member.get('client_id')
-                mid = member.get('id')
-                if cid in member_ids_by_client and mid:
-                    member_ids_by_client[cid].append(mid)
-
-        client_names = {}
-        try:
-            for chunk in _chunks(client_ids):
-                rows = sb.table('clients').select('id, name').in_('id', chunk).execute().data or []
-                for row in rows:
-                    cid = str(row.get('id') or '')
-                    if cid:
-                        client_names[cid] = str(row.get('name') or '').strip() or cid
-        except Exception:
-            client_names = {}
-
-        project_sets = {cid: set() for cid in client_ids}
-        panorama_sets = {cid: set() for cid in client_ids}
-        for cid, member_ids in member_ids_by_client.items():
-            for chunk in _chunks(member_ids):
-                try:
-                    rows = sb.table('workspace_access').select('workspace_id').in_('client_member_id', chunk).execute().data or []
-                    for row in rows:
-                        wsid = row.get('workspace_id')
-                        if wsid:
-                            project_sets[cid].add(str(wsid))
-                except Exception:
-                    pass
-                try:
-                    rows = sb.table('panorama_access').select('panorama_id').in_('client_member_id', chunk).execute().data or []
-                    for row in rows:
-                        pid = row.get('panorama_id')
-                        try:
-                            if pid is not None:
-                                panorama_sets[cid].add(int(pid))
-                        except Exception:
-                            continue
-                except Exception:
-                    pass
-
-        workspace_to_clients = {}
-        for cid, workspace_ids in project_sets.items():
-            for workspace_id in workspace_ids:
-                workspace_to_clients.setdefault(workspace_id, set()).add(cid)
-        if workspace_to_clients:
-            try:
-                for chunk in _chunks(workspace_to_clients.keys()):
-                    rows = sb.table('panoramas').select('id, workspace_id').in_('workspace_id', chunk).execute().data or []
-                    for row in rows:
-                        try:
-                            pid = int(row.get('id'))
-                        except Exception:
-                            continue
-                        wsid = str(row.get('workspace_id') or '')
-                        for cid in workspace_to_clients.get(wsid, set()):
-                            panorama_sets.setdefault(cid, set()).add(pid)
-            except Exception:
-                pass
-
-        direct_panorama_to_clients = {}
-        for cid, panorama_ids in panorama_sets.items():
-            for panorama_id in panorama_ids:
-                direct_panorama_to_clients.setdefault(panorama_id, set()).add(cid)
-        if direct_panorama_to_clients:
-            try:
-                for chunk in _chunks(direct_panorama_to_clients.keys()):
-                    rows = sb.table('panoramas').select('id, workspace_id').in_('id', chunk).execute().data or []
-                    for row in rows:
-                        try:
-                            pid = int(row.get('id'))
-                        except Exception:
-                            continue
-                        wsid = row.get('workspace_id')
-                        if wsid:
-                            for cid in direct_panorama_to_clients.get(pid, set()):
-                                project_sets.setdefault(cid, set()).add(str(wsid))
-            except Exception:
-                pass
-
-        plot_counts = {
-            cid: {'total': 0, 'sold': 0, 'pending': 0, 'available': 0}
-            for cid in client_ids
-        }
-        panorama_to_clients = {}
-        for cid, panorama_ids in panorama_sets.items():
-            for panorama_id in panorama_ids:
-                panorama_to_clients.setdefault(panorama_id, set()).add(cid)
-        if panorama_to_clients:
-            try:
-                for chunk in _chunks(panorama_to_clients.keys()):
-                    rows = sb.table('plots').select('panorama_id, status').in_('panorama_id', chunk).execute().data or []
-                    for row in rows:
-                        try:
-                            pid = int(row.get('panorama_id'))
-                        except Exception:
-                            continue
-                        status_key = _crm_plot_status_key(row.get('status'))
-                        for cid in panorama_to_clients.get(pid, set()):
-                            counts = plot_counts[cid]
-                            counts['total'] += 1
-                            if status_key == 'sold':
-                                counts['sold'] += 1
-                            elif status_key in ('reserved', 'onhold', 'pending'):
-                                counts['pending'] += 1
-                            elif status_key == 'available':
-                                counts['available'] += 1
-            except Exception:
-                pass
-
-        lead_counts = {cid: 0 for cid in client_ids}
-        contact_sets = {cid: set() for cid in client_ids}
-        try:
-            for chunk in _chunks(client_ids):
-                def fetch_interest_page(start, end):
-                    query = (
-                        sb.table('buy_interests')
-                        .select('client_id, contact_id')
-                        .in_('client_id', chunk)
-                    )
-                    if not is_client_admin:
-                        query = query.eq('reference_user_id', str(user_id))
-                    return query.range(start, end).execute().data or []
-
-                rows = _fetch_pages(fetch_interest_page)
-                for row in rows:
-                    cid = str(row.get('client_id') or '')
-                    if cid not in lead_counts:
-                        continue
-                    lead_counts[cid] += 1
-                    contact_id = row.get('contact_id')
-                    if contact_id:
-                        contact_sets[cid].add(str(contact_id))
-        except Exception:
-            pass
+        stats = _allotted_client_stats(
+            sb, client_ids, memberships,
+            is_client_admin=is_client_admin, user_id=str(user_id),
+        )
+        client_names = stats['names']
+        project_sets = stats['projects']
+        plot_counts = stats['plots']
+        lead_counts = stats['leads']
+        interest_counts = stats['interests']
+        deal_counts = stats['deals']
 
         out = []
         for cid in client_ids:
@@ -304,8 +309,9 @@ def register_crm_broker_routes(app, *, crm_panorama_ids, crm_client_scope_ids):
                 'member_role': next((m.get('member_role') for m in memberships if m.get('client_id') == cid), ''),
                 'project_count': len(project_sets.get(cid) or set()),
                 'lead_count': int(lead_counts.get(cid, 0)),
-                'interest_count': int(lead_counts.get(cid, 0)),
-                'contact_count': len(contact_sets.get(cid) or set()),
+                'interest_count': int(interest_counts.get(cid, 0)),
+                'deal_count': int(deal_counts.get(cid, 0)),
+                'contact_count': int(deal_counts.get(cid, 0)),
                 'plot_count': int(plot_counts.get(cid, {}).get('total', 0)),
                 'sold_plot_count': int(plot_counts.get(cid, {}).get('sold', 0)),
                 'pending_plot_count': int(plot_counts.get(cid, {}).get('pending', 0)),
@@ -451,6 +457,166 @@ def _crm_plot_filter_options(rows):
     return {'projects': projects_out, 'sectors': sectors_out}
 
 
+# A page-size/next-page click on the Plotted List should cost O(page size),
+# not O(every plot the user can see). _crm_load_all_plots above is the exact,
+# always-correct path (handles free-text search across joined panorama/
+# workspace names and the numeric-aware column sort in crm_sort_rows), but it
+# fetches everything before slicing, so every request pays for the whole
+# accessible dataset regardless of what page/size was asked for.
+#
+# _crm_load_plots_page is a narrower, DB-paginated path used only when it can
+# reproduce that exact behavior with a plain `.range()` query: no free-text
+# search, no status filter (its canonical/alias matching in
+# _crm_plot_status_canonical can't be replicated by a plain column filter
+# without risking the exact "Hold filter matches nothing" bug that function's
+# docstring describes), no active column sort (avoids case-sensitivity/
+# null-ordering differences from crm_sort_rows), and only when the caller's
+# accessible panorama set is small enough for a single unchunked `.in_()`
+# query. Outside those conditions, the caller falls back to
+# _crm_load_all_plots unchanged.
+_CRM_PLOTS_FAST_PATH_MAX_PANOS = 200
+
+
+def _crm_build_panorama_map(sb, pano_ids):
+    """Panorama/workspace/client-scope lookup for a bounded set of ids.
+
+    Mirrors the panorama+workspace+client-scope portion of
+    _crm_load_all_plots, kept separate (rather than shared) so that function
+    stays untouched as the exact fallback path.
+    """
+    pano_rows = []
+    pano_by_id = {}
+    for chunk in _chunks(pano_ids):
+        try:
+            panos_r = (
+                sb.table('panoramas')
+                .select('id, name, workspace_id, is_360')
+                .in_('id', chunk)
+                .execute()
+            )
+            for row in (panos_r.data or []):
+                pano_rows.append(row)
+                try:
+                    pano_by_id[int(row.get('id'))] = row
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    annotated_panos = annotate_resource_rows_with_client_scope(sb, pano_rows, 'panorama')
+    pano_scope = {}
+    ws_ids_needed = set()
+    for row in annotated_panos:
+        try:
+            pano_scope[int(row.get('id'))] = {
+                'client_ids': [str(cid) for cid in (row.get('client_ids') or []) if cid],
+                'client_names': [str(name) for name in (row.get('client_names') or []) if name],
+            }
+        except Exception:
+            continue
+        wsid = row.get('workspace_id')
+        if wsid:
+            ws_ids_needed.add(str(wsid))
+
+    ws_names = {}
+    if ws_ids_needed:
+        ws_list = list(ws_ids_needed)
+        for i in range(0, len(ws_list), 100):
+            chunk = ws_list[i:i + 100]
+            try:
+                wr = sb.table('workspaces').select('id, name').in_('id', chunk).execute()
+                for row in (wr.data or []):
+                    ws_names[str(row.get('id'))] = str(row.get('name') or '')
+            except Exception:
+                pass
+
+    pano_map = {}
+    for pid, pano in pano_by_id.items():
+        scope = pano_scope.get(pid) or {}
+        wsid = pano.get('workspace_id')
+        pano_map[pid] = {
+            'panorama_name': pano.get('name') or ('Project #' + str(pid)),
+            'is_360': bool(pano.get('is_360')),
+            'workspace_id': str(wsid) if wsid else None,
+            'workspace_name': ws_names.get(str(wsid), '') if wsid else '',
+            'client_ids': scope.get('client_ids') or [],
+            'client_names': scope.get('client_names') or [],
+        }
+    return pano_map
+
+
+def _crm_plot_filter_options_fast(sb, pano_ids, pano_map, *, crm_cache_get, crm_cache_set, crm_cache_version, user_id, role):
+    """Same dropdown options as _crm_plot_filter_options, from a lighter query.
+
+    Fetches only the `panorama_id` column across the accessible plots (still
+    bounded to what the plots table already scans for the row-count query
+    below, just without the other 5 columns), so the Project/Sector dropdowns
+    keep reflecting only panoramas that actually have plots.
+    """
+    cache_key = (
+        'crm_plots_filter_options',
+        crm_cache_version.get('v', 1),
+        str(user_id),
+        str(role or ''),
+        tuple(pano_ids),
+    )
+    # Unlike the plots-data cache, staleness here is cosmetic (a dropdown
+    # option appears a few seconds late) rather than a correctness/security
+    # concern, so this key can safely outlive the 5s plots-data TTL.
+    cached = crm_cache_get(cache_key, ttl_seconds=30)
+    if cached is not None:
+        return cached
+
+    pano_ids_with_plots = set()
+    for chunk in _chunks(pano_ids):
+        try:
+            r = sb.table('plots').select('panorama_id').in_('panorama_id', chunk).execute()
+            for row in (r.data or []):
+                try:
+                    pano_ids_with_plots.add(int(row.get('panorama_id')))
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    rows = []
+    for pid in pano_ids_with_plots:
+        info = pano_map.get(pid)
+        if info:
+            rows.append({'panorama_id': pid, 'panorama_name': info['panorama_name'], 'workspace_id': info['workspace_id'], 'workspace_name': info['workspace_name']})
+    options = _crm_plot_filter_options(rows)
+    crm_cache_set(cache_key, options)
+    return options
+
+
+def _crm_load_plots_page(sb, eligible_pano_ids, pano_map, *, limit, offset):
+    """DB-paginated plot fetch for the fast path. Returns (page_rows, total)."""
+    query = (
+        sb.table('plots')
+        .select('id, panorama_id, name, area, price, status, description', count='exact')
+        .in_('panorama_id', eligible_pano_ids)
+        .order('id')
+        .range(offset, offset + limit - 1)
+    )
+    resp = query.execute()
+    rows = list(resp.data or [])
+    total = int(getattr(resp, 'count', None) or 0)
+    for plot in rows:
+        try:
+            pid = int(plot.get('panorama_id'))
+        except Exception:
+            pid = None
+        info = pano_map.get(pid) or {}
+        plot['panorama_name'] = info.get('panorama_name') or ('Project #' + str(pid or ''))
+        plot['panorama_id'] = pid
+        plot['is_360'] = bool(info.get('is_360'))
+        plot['workspace_id'] = info.get('workspace_id')
+        plot['workspace_name'] = info.get('workspace_name') or ''
+        plot['client_ids'] = info.get('client_ids') or []
+        plot['client_names'] = info.get('client_names') or []
+    return rows, total
+
+
 def register_crm_plot_routes(app, *, crm_panorama_ids, crm_cache_get, crm_cache_set, crm_cache_version, crm_cache_bump=None):
     def _broker_share_workspace_ids(sb, user_id, role):
         """Workspace ids an external broker can share, or None when unrestricted."""
@@ -489,6 +655,50 @@ def register_crm_plot_routes(app, *, crm_panorama_ids, crm_cache_get, crm_cache_
         workspace_id = str(request.args.get('workspace_id') or '').strip()
         panorama_id = str(request.args.get('panorama_id') or '').strip()
         status = _crm_plot_status_canonical(request.args.get('status') or '')
+        plot_sort_field, plot_sort_desc = crm_parse_sort_args(CRM_PLOT_SORT_FIELDS)
+
+        fast_path_ok = (
+            not q and not status and not plot_sort_field
+            and len(pano_ids) <= _CRM_PLOTS_FAST_PATH_MAX_PANOS
+        )
+        if fast_path_ok:
+            pano_map = _crm_build_panorama_map(sb, pano_ids)
+            # _crm_load_all_plots still includes a plot even when its panorama
+            # lookup failed (transient error), just with a generic label. The
+            # fast path below drops any panorama_id missing from pano_map
+            # entirely, so a partial/failed lookup here would silently hide
+            # plots instead of degrading gracefully - fall back instead.
+            fast_path_ok = len(pano_map) == len(pano_ids)
+        if fast_path_ok:
+            share_ws_ids = _broker_share_workspace_ids(sb, user_id, role)
+            # Broker scope narrows the accessible set first, same order as the
+            # slow path (crm.py: rows filtered by share_ws_ids before
+            # _crm_plot_filter_options runs) - so a restricted broker's
+            # dropdowns never name a project/sector they can't select.
+            broker_scoped_pano_ids = [
+                pid for pid in pano_ids
+                if pid in pano_map
+                and (share_ws_ids is None or pano_map[pid]['workspace_id'] in share_ws_ids)
+            ]
+            eligible_pano_ids = [
+                pid for pid in broker_scoped_pano_ids
+                if (not client_id or client_id in pano_map[pid]['client_ids'])
+                and (not workspace_id or pano_map[pid]['workspace_id'] == workspace_id)
+                and (not panorama_id or str(pid) == panorama_id)
+            ]
+            filter_options = _crm_plot_filter_options_fast(
+                sb, broker_scoped_pano_ids, pano_map,
+                crm_cache_get=crm_cache_get, crm_cache_set=crm_cache_set,
+                crm_cache_version=crm_cache_version, user_id=user_id, role=role,
+            )
+            if not eligible_pano_ids:
+                payload = crm_page_payload([], 0, page, limit)
+                payload['filter_options'] = filter_options
+                return jsonify(payload)
+            page_rows, total = _crm_load_plots_page(sb, eligible_pano_ids, pano_map, limit=limit, offset=offset)
+            payload = crm_page_payload(page_rows, total, page, limit)
+            payload['filter_options'] = filter_options
+            return jsonify(payload)
 
         all_plots = _crm_load_all_plots(
             sb,
@@ -528,7 +738,6 @@ def register_crm_plot_routes(app, *, crm_panorama_ids, crm_cache_get, crm_cache_
             rows = [p for p in rows if str(p.get('panorama_id') or '') == panorama_id]
         if status:
             rows = [p for p in rows if _crm_plot_status_canonical(p.get('status')) == status]
-        plot_sort_field, plot_sort_desc = crm_parse_sort_args(CRM_PLOT_SORT_FIELDS)
         if plot_sort_field:
             rows = crm_sort_rows(rows, plot_sort_field, plot_sort_desc)
         total = len(rows)
@@ -1379,426 +1588,3 @@ def register_crm_master_routes(app, *, crm_client_scope_ids, crm_cache_bump):
         crm_cache_bump()
         _CRM_MASTER_CONFIG_CACHE.clear()
         return jsonify({'success': True, 'attribute': (created[0] if created else row)}), 201
-
-
-def _crm_contact_list_select():
-    return ('id, org_id, client_id, panorama_id, full_name, email, phone, birthday, address, '
-            'notes, custom_fields, created_at, updated_at')
-
-
-def _crm_apply_contact_list_filters(query, *, requested_client_id=None, client_scope_ids=None, q=''):
-    if requested_client_id:
-        query = query.eq('client_id', requested_client_id)
-    elif client_scope_ids is not None:
-        query = query.in_('client_id', client_scope_ids)
-    token = str(q or '').strip().lower()
-    if token:
-        token = token.replace('%', '').replace('(', '').replace(')', '').replace(',', '')
-        if token:
-            query = query.or_(f"full_name.ilike.%{token}%,email.ilike.%{token}%,phone.ilike.%{token}%")
-    return query
-
-
-def _crm_fetch_contact_rows(
-    sb,
-    panorama_ids,
-    *,
-    client_scope_ids=None,
-    requested_client_id=None,
-    reference_scope_user_id=None,
-    reference_contact_ids=None,
-    reference_interest_ids=None,
-    q='',
-    offset=0,
-    limit=10,
-    sort_field='updated_at',
-    sort_desc=True,
-):
-    select_cols = _crm_contact_list_select()
-    rows_by_id = {}
-
-    def add_rows(data):
-        for row in (data or []):
-            row_id = row.get('id')
-            if row_id:
-                rows_by_id[str(row_id)] = row
-
-    if reference_scope_user_id:
-        if not reference_contact_ids and not reference_interest_ids:
-            return [], 0
-        if reference_contact_ids:
-            for chunk in _chunks(reference_contact_ids):
-                query = _crm_apply_contact_list_filters(
-                    sb.table('crm_contacts').select(select_cols).in_('id', chunk),
-                    requested_client_id=requested_client_id,
-                    client_scope_ids=client_scope_ids,
-                    q=q,
-                )
-                add_rows(query.execute().data)
-        if reference_interest_ids:
-            for chunk in _chunks(reference_interest_ids):
-                query = _crm_apply_contact_list_filters(
-                    sb.table('crm_contacts').select(select_cols).in_('source_interest_id', chunk),
-                    requested_client_id=requested_client_id,
-                    client_scope_ids=client_scope_ids,
-                    q=q,
-                )
-                add_rows(query.execute().data)
-    else:
-        if len(panorama_ids) <= 100:
-            query = _crm_apply_contact_list_filters(
-                sb.table('crm_contacts').select(select_cols, count='exact').in_('panorama_id', panorama_ids),
-                requested_client_id=requested_client_id,
-                client_scope_ids=client_scope_ids,
-                q=q,
-            )
-            query = query.order(sort_field or 'updated_at', desc=bool(sort_desc))
-            if (sort_field or 'updated_at') != 'updated_at':
-                query = query.order('updated_at', desc=True)
-            resp = query.range(offset, offset + limit - 1).execute()
-            return resp.data or [], int(getattr(resp, 'count', None) or 0)
-        for chunk in _chunks(panorama_ids):
-            query = _crm_apply_contact_list_filters(
-                sb.table('crm_contacts').select(select_cols).in_('panorama_id', chunk),
-                requested_client_id=requested_client_id,
-                client_scope_ids=client_scope_ids,
-                q=q,
-            )
-            add_rows(query.execute().data)
-
-    rows = crm_sort_rows(list(rows_by_id.values()), sort_field or 'updated_at', bool(sort_desc))
-    total = len(rows)
-    return rows[offset:offset + limit], total
-
-
-def register_crm_contact_routes(
-    app,
-    *,
-    crm_panorama_ids,
-    crm_client_scope_ids,
-    crm_interest_reference_scope_user_id,
-    crm_apply_broker_referred_contact_mask,
-    crm_reference_linked_ids,
-    crm_cache_get,
-    crm_cache_set,
-    crm_cache_version,
-):
-    @app.route('/api/crm/contacts', methods=['GET'])
-    @require_auth
-    def list_crm_contacts(user_id, role):
-        sb = get_supabase()
-        if not sb:
-            return jsonify({'error': 'Database not configured'}), 503
-        try:
-            panorama_ids = with_supabase_retry(
-                lambda: crm_panorama_ids(require_supabase(), user_id, role),
-                attempts=3,
-            )
-        except Exception as e:
-            if is_transient_supabase_error(e):
-                return jsonify({'error': 'Temporary CRM connection issue. Please retry.'}), 503
-            return jsonify({'error': str(e) or 'Failed to load CRM panoramas'}), 503
-        page, limit, offset = crm_parse_page_args(default_limit=10, max_limit=100)
-        if not panorama_ids:
-            return jsonify(crm_page_payload([], 0, page, limit))
-        try:
-            client_scope_ids = with_supabase_retry(
-                lambda: crm_client_scope_ids(require_supabase(), user_id, role),
-                attempts=3,
-            )
-        except Exception as e:
-            if is_transient_supabase_error(e):
-                return jsonify({'error': 'Temporary CRM connection issue. Please retry.'}), 503
-            return jsonify({'error': str(e) or 'Failed to load CRM client scope'}), 503
-        if client_scope_ids is not None and not client_scope_ids:
-            return jsonify(crm_page_payload([], 0, page, limit))
-        try:
-            reference_scope_user_id = with_supabase_retry(
-                lambda: crm_interest_reference_scope_user_id(
-                    require_supabase(),
-                    user_id,
-                    role,
-                    client_scope_ids,
-                ),
-                attempts=3,
-            )
-        except Exception:
-            reference_scope_user_id = None
-        requested_client_id = (request.args.get('client_id') or '').strip() or None
-        q = str(request.args.get('q') or '').strip().lower()
-        include_counts = str(request.args.get('include_counts', '1')).strip() != '0'
-        if requested_client_id and client_scope_ids is not None and requested_client_id not in client_scope_ids:
-            return jsonify({'error': 'Forbidden for this client group'}), 403
-        reference_interest_ids, reference_contact_ids = [], []
-        if reference_scope_user_id:
-            try:
-                reference_interest_ids, reference_contact_ids = with_supabase_retry(
-                    lambda: crm_reference_linked_ids(
-                        require_supabase(),
-                        reference_scope_user_id,
-                        panorama_ids,
-                        client_ids=client_scope_ids,
-                        requested_client_id=requested_client_id,
-                    ),
-                    attempts=3,
-                )
-            except Exception:
-                reference_interest_ids, reference_contact_ids = [], []
-            if not reference_interest_ids and not reference_contact_ids:
-                return jsonify(crm_page_payload([], 0, page, limit))
-        contact_sort_field, contact_sort_desc = crm_parse_sort_args(
-            CRM_CONTACT_SORT_FIELDS_MASKED if reference_scope_user_id else CRM_CONTACT_SORT_FIELDS,
-            default_field='updated_at',
-            default_desc=True,
-        )
-        cache_key = (
-            'crm_contacts',
-            contact_sort_field,
-            contact_sort_desc,
-            crm_cache_version.get('v', 1),
-            str(user_id),
-            str(role or ''),
-            tuple(panorama_ids),
-            tuple(client_scope_ids) if isinstance(client_scope_ids, list) else '__ALL__',
-            reference_scope_user_id or '',
-            tuple(reference_interest_ids),
-            tuple(reference_contact_ids),
-            requested_client_id or '',
-            q,
-            int(include_counts),
-            page,
-            limit,
-            offset,
-        )
-        cached = crm_cache_get(cache_key, ttl_seconds=3)
-        if cached is not None:
-            return jsonify(cached)
-        try:
-            rows, total = with_supabase_retry(
-                lambda: _crm_fetch_contact_rows(
-                    require_supabase(),
-                    panorama_ids,
-                    client_scope_ids=client_scope_ids,
-                    requested_client_id=requested_client_id,
-                    reference_scope_user_id=reference_scope_user_id,
-                    reference_contact_ids=reference_contact_ids,
-                    reference_interest_ids=reference_interest_ids,
-                    q=q,
-                    offset=offset,
-                    limit=limit,
-                    sort_field=contact_sort_field,
-                    sort_desc=contact_sort_desc,
-                ),
-                attempts=3,
-            )
-        except Exception as e:
-            msg = str(e)
-            if is_transient_supabase_error(e):
-                return jsonify({'error': 'Temporary CRM connection issue. Please retry.'}), 503
-            if 'crm_contacts' in msg and ('does not exist' in msg.lower() or 'relation' in msg.lower()):
-                return jsonify({'error': 'crm_contacts table not found. Run db/migration_crm_contacts_deals_quotes.sql in Supabase.'}), 503
-            return jsonify({'error': msg}), 500
-
-        contact_ids = [row.get('id') for row in rows if row.get('id')]
-        deals_count = {}
-        interests_count = {}
-        if include_counts and contact_ids:
-            try:
-                dr_rows = []
-                counts_sb = require_supabase()
-                for chunk in _chunks(contact_ids):
-                    drq = (
-                        counts_sb.table('crm_deals')
-                        .select('id, contact_id, interest_id')
-                        .in_('contact_id', chunk)
-                    )
-                    if requested_client_id:
-                        drq = drq.eq('client_id', requested_client_id)
-                    elif client_scope_ids is not None:
-                        drq = drq.in_('client_id', client_scope_ids)
-                    chunk_rows = drq.execute().data or []
-                    if reference_scope_user_id and reference_interest_ids:
-                        allowed = {str(i) for i in reference_interest_ids}
-                        chunk_rows = [d for d in chunk_rows if str(d.get('interest_id') or '') in allowed]
-                    dr_rows.extend(chunk_rows)
-                for d in dr_rows:
-                    cid = d.get('contact_id')
-                    if not cid:
-                        continue
-                    deals_count[cid] = deals_count.get(cid, 0) + 1
-            except Exception:
-                deals_count = {}
-            try:
-                ir_rows = []
-                counts_sb = require_supabase()
-                for chunk in _chunks(contact_ids):
-                    irq = (
-                        counts_sb.table('buy_interests')
-                        .select('id, contact_id')
-                        .in_('contact_id', chunk)
-                    )
-                    if requested_client_id:
-                        irq = irq.eq('client_id', requested_client_id)
-                    elif client_scope_ids is not None:
-                        irq = irq.in_('client_id', client_scope_ids)
-                    if reference_scope_user_id:
-                        irq = irq.eq('reference_user_id', reference_scope_user_id)
-                    ir_rows.extend(irq.execute().data or [])
-                for irow in ir_rows:
-                    cid = irow.get('contact_id')
-                    if not cid:
-                        continue
-                    interests_count[cid] = interests_count.get(cid, 0) + 1
-                if reference_scope_user_id and reference_interest_ids:
-                    source_by_interest = {
-                        str(row.get('source_interest_id') or ''): row.get('id')
-                        for row in rows
-                        if row.get('source_interest_id')
-                    }
-                    for iid in reference_interest_ids:
-                        cid = source_by_interest.get(str(iid))
-                        if cid:
-                            interests_count[cid] = interests_count.get(cid, 0) + 1
-            except Exception:
-                interests_count = {}
-
-        from app.services.uam_reference_service import (
-            apply_broker_referred_contact_mask_to_contact,
-            load_broker_refer_interest_reveal_map,
-        )
-
-        source_interest_ids = [
-            str(row.get('source_interest_id') or '').strip()
-            for row in rows
-            if str(row.get('source_interest_id') or '').strip()
-        ]
-        interest_reveal_map = load_broker_refer_interest_reveal_map(sb, source_interest_ids)
-
-        out = []
-        for row in rows:
-            cid = row.get('id')
-            source_interest_id = str(row.get('source_interest_id') or '').strip()
-            interest_row = interest_reveal_map.get(source_interest_id) or {}
-            o = apply_broker_referred_contact_mask_to_contact(
-                row,
-                interest_row,
-                user_id=user_id,
-                role=role,
-                reference_scope_user_id=reference_scope_user_id,
-                sb=sb,
-            )
-            o['deals_count'] = int(deals_count.get(cid, 0))
-            o['interests_count'] = int(interests_count.get(cid, 0))
-            out.append(o)
-        payload = crm_page_payload(out, total, page, limit)
-        crm_cache_set(cache_key, payload)
-        return jsonify(payload)
-
-
-def register_crm_quote_routes(
-    app,
-    *,
-    crm_panorama_ids,
-    crm_client_scope_ids,
-    crm_apply_client_scope,
-    crm_interest_reference_scope_user_id,
-    crm_reference_linked_ids,
-    get_contact_for_user,
-    crm_cache_bump,
-):
-    @app.route('/api/crm/deals/<deal_id>/quotation/share', methods=['POST'])
-    @require_auth
-    def share_deal_quote(user_id, role, deal_id):
-        sb = get_supabase()
-        if not sb:
-            return jsonify({'error': 'Database not configured'}), 503
-        panorama_ids = crm_panorama_ids(sb, user_id, role)
-        if not panorama_ids:
-            return jsonify({'error': 'Forbidden'}), 403
-        client_scope_ids = crm_client_scope_ids(sb, user_id, role)
-        # Brokers may only share quotes on their own referred deals; without
-        # this they could mail another broker's contact details to any address.
-        reference_scope_user_id = crm_interest_reference_scope_user_id(sb, user_id, role, client_scope_ids)
-        reference_interest_ids = []
-        if reference_scope_user_id:
-            reference_interest_ids, _reference_contact_ids = crm_reference_linked_ids(
-                sb,
-                reference_scope_user_id,
-                panorama_ids,
-                client_ids=client_scope_ids,
-            )
-            if not reference_interest_ids:
-                return jsonify({'error': 'Deal not found or access denied'}), 404
-        data = request.get_json(silent=True) or {}
-        quote_id = str(data.get('quote_id') or '').strip()
-        if not quote_id:
-            return jsonify({'error': 'quote_id is required'}), 400
-        qr = (
-            sb.table('crm_deal_quotes')
-            .select('id, deal_id, contact_id, quote_payload, share_token')
-            .eq('id', quote_id)
-            .eq('deal_id', str(deal_id))
-            .limit(1)
-            .execute()
-        )
-        if not qr.data:
-            return jsonify({'error': 'Quote not found'}), 404
-        quote = qr.data[0]
-        drq = (
-            sb.table('crm_deals')
-            .select('id, panorama_id, title')
-            .eq('id', str(deal_id))
-        )
-        drq = drq.in_('panorama_id', panorama_ids)
-        if client_scope_ids is not None:
-            drq = crm_apply_client_scope(drq, client_scope_ids)
-            if drq is None:
-                return jsonify({'error': 'Deal not found or access denied'}), 404
-        if reference_scope_user_id:
-            drq = drq.in_('interest_id', reference_interest_ids)
-        dr = drq.limit(1).execute()
-        if not dr.data:
-            return jsonify({'error': 'Deal not found or access denied'}), 404
-        to_email = str(data.get('email') or '').strip()[:254]
-        to_phone = str(data.get('phone') or '').strip()[:32]
-        if to_email and ('@' not in to_email or ' ' in to_email):
-            return jsonify({'error': 'Invalid recipient email'}), 400
-        if not to_email and quote.get('contact_id'):
-            contact = get_contact_for_user(sb, quote.get('contact_id'), panorama_ids, client_ids=client_scope_ids)
-            if contact:
-                to_email = str(contact.get('email') or '').strip()
-                to_phone = str(contact.get('phone') or '').strip()
-        if not to_email:
-            return jsonify({'error': 'No recipient email found'}), 400
-        share_url = f"{request.url_root.rstrip('/')}/api/crm/deals/{deal_id}/quotation/{quote_id}?token={quote.get('share_token')}"
-        subject = f"Quotation for {dr.data[0].get('title') or 'your deal'}"
-        body = (
-            f"Hello,\n\nPlease review your quotation using the link below:\n{share_url}\n\n"
-            f"Shared via MarketoState CRM on {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}.\n"
-        )
-        try:
-            send_smtp_email(
-                smtp_host=app_config.SMTP_HOST,
-                smtp_port=app_config.SMTP_PORT,
-                smtp_username=app_config.SMTP_USERNAME,
-                smtp_password=app_config.SMTP_PASSWORD,
-                smtp_use_tls=app_config.SMTP_USE_TLS,
-                from_email=app_config.SMTP_FROM_EMAIL,
-                from_name=app_config.SMTP_FROM_NAME,
-                to_email=to_email,
-                subject=subject,
-                text_body=body,
-            )
-        except Exception as e:
-            return jsonify({'error': f'Email send failed: {e}'}), 500
-        now = datetime.utcnow().isoformat()
-        sb.table('crm_deal_quotes').update({
-            'sent_to_email': to_email,
-            'sent_to_phone': to_phone,
-            'shared_via': 'email',
-            'sent_at': now,
-            'updated_at': now,
-            'status': 'sent',
-        }).eq('id', quote_id).execute()
-        crm_cache_bump()
-        return jsonify({'success': True, 'share_url': share_url})

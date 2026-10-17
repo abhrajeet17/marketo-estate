@@ -730,10 +730,12 @@ def upload_floorplan_to_s3(filename, raw_bytes, content_type='image/webp'):
         Key=key,
         Body=raw_bytes,
         ContentType=content_type,
+        CacheControl=IMMUTABLE_CACHE_CONTROL,
     )
 
 
-def get_floorplan_s3_url(filename):
+def get_floorplan_s3_url(filename, verify=True):
+    """Signed GET URL. verify=False skips the HEAD existence check (one network round-trip)."""
     client = get_s3_client()
     if not client or not filename:
         return None
@@ -744,10 +746,11 @@ def get_floorplan_s3_url(filename):
         url, expires_at = cached
         if url and expires_at and now < (expires_at - 30):
             return url
-    try:
-        client.head_object(Bucket=app_config.SUPABASE_S3_BUCKET, Key=key)
-    except Exception:
-        return None
+    if verify:
+        try:
+            client.head_object(Bucket=app_config.SUPABASE_S3_BUCKET, Key=key)
+        except Exception:
+            return None
     url = client.generate_presigned_url(
         ClientMethod='get_object',
         Params={'Bucket': app_config.SUPABASE_S3_BUCKET, 'Key': key},
@@ -774,6 +777,8 @@ def delete_floorplan_from_s3(filename):
 # Building Map helpers (optimised JPEG for building photos/panoramas)
 # ---------------------------------------------------------------------------
 
+# Upload filenames are unique per upload, so objects never change: let browsers keep them.
+IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable'
 BUILDING_MAP_MAX_DIMENSION = 4096
 BUILDING_MAP_JPEG_QUALITY = 92
 MAX_BUILDING_MAP_READ_BYTES = int(os.environ.get('MAX_BUILDING_MAP_READ_BYTES', str(50 * 1024 * 1024)))  # 50MB
@@ -788,6 +793,54 @@ def building_map_object_key(filename):
     if app_config.SUPABASE_S3_BUILDING_MAP_PREFIX:
         return f"{app_config.SUPABASE_S3_BUILDING_MAP_PREFIX}/{safe_name}"
     return safe_name
+
+
+def _flatten_building_render(img):
+    """RGB copy of a render. Transparent pixels are painted, not dropped: a plain
+    convert('RGB') exposes whatever colour data hides under alpha (often black/green).
+    Renders with a cut-out sky get a soft sky gradient; anything else (e.g. isometric
+    floor plans) gets the warm neutral used behind floor views in the customer viewer.
+    """
+    if img.mode == 'P' and 'transparency' in img.info:
+        img = img.convert('RGBA')
+    if img.mode not in ('RGBA', 'LA'):
+        return img.convert('RGB')
+    rgba = img.convert('RGBA')
+    w, h = rgba.size
+    alpha = rgba.getchannel('A')
+    small = alpha.resize((64, 64))
+    px = list(small.getdata())
+    top = px[:64 * 19]
+    bottom = px[64 * 45:]
+    clear_top = sum(1 for a in top if a < 16) / float(len(top))
+    clear_bottom = sum(1 for a in bottom if a < 16) / float(len(bottom))
+    if clear_top < 0.02 and clear_bottom < 0.02:
+        return rgba.convert('RGB')
+    if clear_top > 0.5 and clear_bottom < 0.2:
+        bg = Image.new('RGB', (1, 256))
+        for y in range(256):
+            t = y / 255.0
+            bg.putpixel((0, y), (int(126 + (214 - 126) * t), int(190 + (234 - 190) * t), int(232 + (244 - 232) * t)))
+        bg = bg.resize((w, h))
+    else:
+        bg = Image.new('RGB', (w, h), (155, 142, 123))
+    bg.paste(rgba, (0, 0), alpha)
+    return bg
+
+
+def make_image_placeholder(image_bytes, width=32):
+    """Tiny blurred-preview data URI (~1KB) shown while the full render downloads."""
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        img = _flatten_building_render(img)
+        w, h = img.size
+        img = img.resize((width, max(1, round(width * h / float(w)))), RESAMPLE_LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, 'JPEG', quality=60, optimize=True)
+        import base64
+        return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
+    except Exception:
+        return None
 
 
 def compress_building_map_image(raw_bytes):
@@ -812,7 +865,7 @@ def compress_building_map_image(raw_bytes):
             img = img.rotate(90, expand=True)
     except Exception:
         pass
-    img = img.convert('RGB')
+    img = _flatten_building_render(img)
     w, h = img.size
     if max(w, h) > BUILDING_MAP_MAX_DIMENSION:
         ratio = BUILDING_MAP_MAX_DIMENSION / float(max(w, h))
@@ -821,7 +874,8 @@ def compress_building_map_image(raw_bytes):
         img = img.resize((w, h), RESAMPLE_LANCZOS)
     buf = io.BytesIO()
     try:
-        img.save(buf, 'JPEG', quality=BUILDING_MAP_JPEG_QUALITY, optimize=True, progressive=True)
+        # 4:4:4 chroma keeps thin facade lines and zone edges crisp (visually lossless).
+        img.save(buf, 'JPEG', quality=BUILDING_MAP_JPEG_QUALITY, optimize=True, progressive=True, subsampling=0)
     except Exception:
         return None, 0, 0
     return buf.getvalue(), w, h
@@ -837,10 +891,12 @@ def upload_building_map_to_s3(filename, raw_bytes, content_type='image/jpeg'):
         Key=key,
         Body=raw_bytes,
         ContentType=content_type,
+        CacheControl=IMMUTABLE_CACHE_CONTROL,
     )
 
 
-def get_building_map_s3_url(filename):
+def get_building_map_s3_url(filename, verify=True):
+    """Signed GET URL. verify=False skips the HEAD existence check (one network round-trip)."""
     client = get_s3_client()
     if not client or not filename:
         return None
@@ -851,10 +907,11 @@ def get_building_map_s3_url(filename):
         url, expires_at = cached
         if url and expires_at and now < (expires_at - 30):
             return url
-    try:
-        client.head_object(Bucket=app_config.SUPABASE_S3_BUCKET, Key=key)
-    except Exception:
-        return None
+    if verify:
+        try:
+            client.head_object(Bucket=app_config.SUPABASE_S3_BUCKET, Key=key)
+        except Exception:
+            return None
     url = client.generate_presigned_url(
         ClientMethod='get_object',
         Params={'Bucket': app_config.SUPABASE_S3_BUCKET, 'Key': key},

@@ -11,7 +11,7 @@ from app.config import (
     SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET,
     CLERK_ISSUER, CLERK_JWKS_URL
 )
-from app.core.database import get_supabase, _get_httpx_client
+from app.core.database import get_supabase, _get_httpx_client, reset_supabase_client
 
 try:
     import jwt
@@ -22,6 +22,43 @@ try:
     from jwt import PyJWKClient
 except Exception:
     PyJWKClient = None
+
+# Verified bearer tokens -> (user_id, cache_until). ES256 tokens cannot be checked with the
+# HS256 secret, so each request otherwise costs a round-trip to Supabase Auth.
+_TOKEN_CACHE = {}
+_TOKEN_CACHE_TTL_SECONDS = 300
+_TOKEN_CACHE_MAX = 5000
+
+
+def _token_cache_key(token):
+    import hashlib
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+def _token_cache_get(token):
+    hit = _TOKEN_CACHE.get(_token_cache_key(token))
+    if hit and hit[1] > time.time():
+        return hit[0]
+    return None
+
+
+def _token_cache_set(token, user_id):
+    exp = None
+    try:
+        import base64
+        import json as _json
+        part = token.split('.')[1]
+        part += '=' * (-len(part) % 4)
+        exp = float(_json.loads(base64.urlsafe_b64decode(part)).get('exp') or 0)
+    except Exception:
+        exp = None
+    until = time.time() + _TOKEN_CACHE_TTL_SECONDS
+    if exp:
+        until = min(until, exp)
+    if len(_TOKEN_CACHE) > _TOKEN_CACHE_MAX:
+        _TOKEN_CACHE.clear()
+    _TOKEN_CACHE[_token_cache_key(token)] = (user_id, until)
+
 
 _PROFILE_CACHE = {}
 _PROFILE_CACHE_TTL_SECONDS = 8
@@ -161,6 +198,8 @@ def get_current_user():
                 user_id = payload.get('sub')
             except Exception:
                 pass
+        if not user_id:
+            user_id = _token_cache_get(header_token)
         if not user_id and SUPABASE_URL and SUPABASE_ANON_KEY:
             try:
                 client = _get_httpx_client()
@@ -171,6 +210,8 @@ def get_current_user():
                 if r.status_code == 200:
                     data = r.json()
                     user_id = (data.get('id') or data.get('user', {}).get('id'))
+                    if user_id:
+                        _token_cache_set(header_token, user_id)
             except Exception:
                 pass
 
@@ -206,14 +247,28 @@ def get_profile(sb, user_id):
     cached, hit = _profile_cache_get(user_id)
     if hit:
         return cached
-    try:
-        r = sb.table('profiles').select('*').eq('user_id', user_id).limit(1).execute()
-        if r.data and len(r.data) > 0:
-            row = r.data[0]
-            _profile_cache_set(user_id, row)
-            return row
-    except Exception:
-        pass
+    r = None
+    for attempt in range(3):
+        try:
+            r = sb.table('profiles').select('*').eq('user_id', user_id).limit(1).execute()
+            break
+        except Exception:
+            # Concurrent requests can kill the shared HTTP/2 connection (ConnectionTerminated):
+            # retry on a fresh client, and never cache the failure (it would demote an admin
+            # to 'user' and produce 403s).
+            if attempt == 2:
+                try:
+                    g._auth_profile_error = True
+                except RuntimeError:
+                    pass
+                return None
+            reset_supabase_client()
+            sb = get_supabase() or sb
+            time.sleep(0.1 * (attempt + 1))
+    if r is not None and r.data and len(r.data) > 0:
+        row = r.data[0]
+        _profile_cache_set(user_id, row)
+        return row
     _profile_cache_set(user_id, None)
     return None
 
@@ -287,6 +342,9 @@ def require_admin(f):
         if not user_id:
             return jsonify({'error': 'Unauthorized'}), 401
         if role not in ('admin', 'superadmin'):
+            if getattr(g, '_auth_profile_error', False):
+                # The role could not be read: a retryable 503, not a misleading 403.
+                return jsonify({'error': 'Temporarily unavailable, please retry'}), 503
             return jsonify({'error': 'Forbidden'}), 403
         return f(user_id, role, *args, **kwargs)
     return wrapped
