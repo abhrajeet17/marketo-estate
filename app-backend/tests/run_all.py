@@ -6,6 +6,7 @@ Run every test suite in order and write one summary. Use before every deployment
     python tests/run_all.py --write      # also run the create/rename/delete browser flows
     python tests/run_all.py --headed     # show the Chrome window
     python tests/run_all.py --base-url http://localhost:5000   # test a server you already run
+    python tests/run_all.py --no-cov     # skip unit coverage measurement (faster)
 
 Exit code 0 only when every suite passed. Summary: tests/reports/summary.md, JUnit XML per
 suite next to it, failure screenshots in tests/e2e/reports/.
@@ -23,15 +24,26 @@ REPORT_DIR = os.path.join(HERE, 'reports')
 
 SUITES = [
     # (key, title, pytest target)
-    ('unit', 'Backend unit tests (offline)', 'tests/unit'),
+    ('unit', 'Backend unit tests (offline, with coverage)', 'tests/unit'),
     ('api', 'API tests: every GET route, no 5xx, under the time budget', 'tests/perf'),
     ('e2e', 'End-to-end in Google Chrome', 'tests/e2e'),
 ]
 
 
-def run_suite(key, target, env):
+# Per-suite extras: unit coverage (HTML report in tests/reports/coverage/) and a per-test time limit,
+# so a hung test fails with a stack trace instead of stalling the run.
+SUITE_ARGS = {
+    'unit': ['--cov=app', '--cov-report=term', f'--cov-report=html:{os.path.join(REPORT_DIR, "coverage")}',
+             '--timeout=180'],
+    'api': ['--timeout=300'],
+    'e2e': ['--timeout=300'],
+}
+
+
+def run_suite(key, target, env, coverage=True):
     junit = os.path.join(REPORT_DIR, f'{key}.xml')
-    cmd = [sys.executable, '-m', 'pytest', target, '-q', '-rfEs', '-p', 'no:cacheprovider', f'--junitxml={junit}']
+    cmd = [sys.executable, '-m', 'pytest', target, '-q', '-rfEs', '-p', 'no:cacheprovider', f'--junitxml={junit}',
+           *[a for a in SUITE_ARGS.get(key, []) if coverage or not a.startswith('--cov')]]
     start = time.time()
     proc = subprocess.run(cmd, cwd=BACKEND_DIR, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace')
     elapsed = time.time() - start
@@ -39,6 +51,9 @@ def run_suite(key, target, env):
     lines = [l for l in output.splitlines() if l.strip()]
     tally = next((l.strip('= ') for l in reversed(lines) if (' passed' in l or ' failed' in l or ' error' in l) and ' in ' in l), '')
     failures = [l for l in lines if l.startswith(('FAILED', 'ERROR'))]
+    total = next((l.split()[-1] for l in lines if l.startswith('TOTAL ')), '')
+    if total:
+        tally = f'{tally} · coverage {total}' if tally else f'coverage {total}'
     with open(os.path.join(REPORT_DIR, f'{key}.log'), 'w', encoding='utf-8') as f:
         f.write(output)
     # pytest exit code 5 = nothing collected (e.g. database not configured): not a pass.
@@ -53,6 +68,7 @@ def main():
     parser.add_argument('--headed', action='store_true', help='show the Chrome window')
     parser.add_argument('--base-url', help='test an already running server instead of starting one')
     parser.add_argument('--only', choices=[s[0] for s in SUITES], action='append', help='run only these suites')
+    parser.add_argument('--no-cov', action='store_true', help='skip unit test coverage measurement')
     args = parser.parse_args()
 
     os.makedirs(REPORT_DIR, exist_ok=True)
@@ -68,7 +84,7 @@ def main():
     results = []
     for key, title, target in chosen:
         print(f'▶ {title} …', flush=True)
-        result = run_suite(key, target, env)
+        result = run_suite(key, target, env, coverage=not args.no_cov)
         results.append((key, title, result))
         print(f"  {'PASS' if result['ok'] else 'FAIL'}  {result['tally']}  ({result['seconds']:.0f}s)", flush=True)
         for line in result['failures'][:15]:
@@ -90,6 +106,7 @@ def main():
             lines.append(f'### {title}')
             lines += [f'- `{l}`' for l in r['failures']]
     lines += ['', 'Logs: `tests/reports/<suite>.log` · JUnit: `tests/reports/<suite>.xml` · '
+                  'Unit coverage: `tests/reports/coverage/index.html` · '
                   'Screenshots of failed browser tests: `tests/e2e/reports/` · '
                   'API timings: `tests/perf/reports/api_timings.md`']
     with open(os.path.join(REPORT_DIR, 'summary.md'), 'w', encoding='utf-8') as f:

@@ -1,0 +1,4 @@
+{# Contact address for the legal pages; a visible placeholder until LEGAL_CONTACT_EMAIL is set. #}
+{% macro email(legal) -%}
+{%- if legal.contact_email %}<a href="mailto:{{ legal.contact_email }}">{{ legal.contact_email }}</a>{% else %}<span class="lg-todo">[contact email]</span>{% endif -%}
+{%- endmacro %}

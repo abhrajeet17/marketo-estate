@@ -14,7 +14,7 @@ from flask import Response, render_template, request
 from app import paths
 
 # Public, indexable pages. Keep in sync with the sitemap and llms.txt.
-INDEXABLE_PATHS = ('/', '/explore')
+INDEXABLE_PATHS = ('/', '/explore', '/privacy', '/terms')
 
 # Search engines and AI assistants that may read and cite the marketing pages.
 AI_CRAWLERS = (
@@ -30,6 +30,13 @@ DISALLOWED_PREFIXES = (
     '/auth/', '/uploads/',
 )
 
+
+# Legal pages (/privacy, /terms). Set LEGAL_CONTACT_EMAIL to the inbox that answers privacy and legal requests.
+LEGAL = {
+    'entity': 'MarketoState, Inc.',
+    'effective_date': '18 October 2026',
+    'contact_email': os.environ.get('LEGAL_CONTACT_EMAIL', '').strip(),
+}
 
 LANDING_TITLE = '360° Virtual Site Visit & Plot Sales Software | MarketoState'
 LANDING_DESCRIPTION = (
@@ -148,6 +155,14 @@ def register_seo_routes(app, auth_ctx):
             'landing.html', site=site, seo_title=LANDING_TITLE, seo_description=LANDING_DESCRIPTION,
             faqs=LANDING_FAQS, schema=landing_schema(site, _template_mtime('landing.html')), **auth_ctx(),
         )
+
+    @app.route('/privacy')
+    def privacy_page():
+        return render_template('legal/privacy.html', site=site_url(), legal=LEGAL)
+
+    @app.route('/terms')
+    def terms_page():
+        return render_template('legal/terms.html', site=site_url(), legal=LEGAL)
 
     @app.route('/robots.txt')
     def robots_txt():

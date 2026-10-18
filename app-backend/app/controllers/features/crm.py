@@ -383,7 +383,7 @@ def _crm_load_all_plots(sb, pano_ids, *, crm_cache_get, crm_cache_set, crm_cache
         if wsid:
             ws_ids_needed.add(str(wsid))
 
-    ws_ids_needed -= set(ws_names)
+    ws_names = {}
     if ws_ids_needed:
         ws_list = list(ws_ids_needed)
         for i in range(0, len(ws_list), 100):
@@ -1023,6 +1023,16 @@ def register_crm_lock_routes(
             allowed_pano_ids = set()
         if panorama_id not in allowed_pano_ids:
             return jsonify({'error': 'Forbidden'}), 403
+
+        # A plot held by someone else stays theirs: same rule as unlocking.
+        if role not in ('admin', 'superadmin'):
+            try:
+                held = sb.table('plot_locks').select('locked_by').eq('plot_id', plot_id).limit(1).execute()
+            except Exception:
+                held = None
+            holder = str(((held.data or [{}])[0] if held else {}).get('locked_by') or '')
+            if holder and holder != str(user_id):
+                return jsonify({'error': 'This plot is already locked by another user'}), 409
 
         data = request.get_json(silent=True) or {}
         lock_row = {

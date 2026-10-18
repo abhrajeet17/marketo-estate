@@ -51,3 +51,8 @@ app-backend/tests/perf/reports/
 
 # Local Claude Code settings
 .claude/
+
+# Coverage data (generated)
+.coverage
+.coverage.*
+htmlcov/

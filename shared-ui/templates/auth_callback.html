@@ -49,8 +49,9 @@
                 if (!session || !session.access_token || !session.user) return Promise.resolve();
                 var pending = loadPendingSignupProfile();
                 var displayName = (pending && pending.display_name) ? String(pending.display_name).trim() : '';
-                if (!displayName && session.user.user_metadata && session.user.user_metadata.display_name)
-                    displayName = String(session.user.user_metadata.display_name || '').trim();
+                // Email sign-up stores display_name; Google provides full_name / name.
+                var meta = session.user.user_metadata || {};
+                if (!displayName) displayName = String(meta.display_name || meta.full_name || meta.name || '').trim();
                 if (!displayName) return Promise.resolve();
                 var pendingEmail = (pending && pending.email) ? String(pending.email).trim().toLowerCase() : '';
                 var sessionEmail = String(session.user.email || '').trim().toLowerCase();
@@ -103,17 +104,22 @@
                 });
             }
 
-            // Handle Supabase redirect errors (e.g. otp_expired, access_denied) in hash
-            var hash = window.location.hash.slice(1) || '';
+            // Supabase redirect errors (otp_expired, access_denied, ...) arrive in the hash (email links)
+            // or in the query string (Google / PKCE).
             var params = {};
-            hash.split('&').forEach(function (p) {
-                var kv = p.split('=');
-                if (kv[0]) params[decodeURIComponent(kv[0])] = kv[1] ? decodeURIComponent(kv[1].replace(/\+/g, ' ')) : '';
+            [window.location.hash.slice(1), window.location.search.slice(1)].forEach(function (part) {
+                (part || '').split('&').forEach(function (p) {
+                    var kv = p.split('=');
+                    if (kv[0] && !(decodeURIComponent(kv[0]) in params)) params[decodeURIComponent(kv[0])] = kv[1] ? decodeURIComponent(kv[1].replace(/\+/g, ' ')) : '';
+                });
             });
             if (params.error || params.error_code) {
-                var friendly = params.error_code === 'otp_expired' || (params.error_description || '').indexOf('expired') !== -1
+                var description = params.error_description || '';
+                var friendly = params.error_code === 'otp_expired' || description.indexOf('expired') !== -1
                     ? 'This link has expired. Please request a new sign-in or password reset link.'
-                    : (params.error_description || params.error || 'Something went wrong.');
+                    : params.error === 'access_denied'
+                        ? 'Google sign-in was cancelled.'
+                        : (description || params.error || 'Something went wrong.');
                 msg.textContent = friendly + ' Redirecting to sign in…';
                 setTimeout(function () { window.location.replace('/login'); }, 2500);
                 return;

@@ -93,3 +93,26 @@ class FakeSupabase:
 @pytest.fixture
 def fake_sb():
     return FakeSupabase
+
+
+@pytest.fixture
+def world(flask_app, monkeypatch, tmp_path):
+    """A seeded in-memory database and storage behind the real app (see world.py)."""
+    from world import World
+    return World(flask_app, monkeypatch, tmp_path)
+
+
+@pytest.fixture
+def make_world(flask_app, monkeypatch, tmp_path):
+    """Factory for fresh worlds inside one test (each call re-seeds everything)."""
+    from world import World
+    return lambda: World(flask_app, monkeypatch, tmp_path)
+
+
+@pytest.fixture(autouse=True)
+def no_leaked_flask_context():
+    """Every test must leave Flask's app/request context stack empty; a leak breaks later tests."""
+    from flask.globals import _cv_app, _cv_request
+    assert _cv_app.get(None) is None and _cv_request.get(None) is None, 'a previous test leaked a Flask context'
+    yield
+    assert _cv_app.get(None) is None and _cv_request.get(None) is None, 'this test leaked a Flask context'

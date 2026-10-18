@@ -984,3 +984,6 @@ html.ms-landing-root { background: var(--ink); }
   .msl-crm-card, .msl-plot-tag { opacity: 1; transform: none; transition: none; }
   .msl-plot-overlay polygon { stroke-dashoffset: 0; transition: none; }
 }
+
+.msl-footer-bottom a { color: rgba(255, 255, 255, 0.82); text-decoration: none; }
+.msl-footer-bottom a:hover { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }

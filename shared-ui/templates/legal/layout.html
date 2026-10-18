@@ -1,0 +1,75 @@
+{# Shared layout for /privacy and /terms. Child templates set page_title, page_path, page_description and fill `body`. #}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }} | MarketoState</title>
+  <meta name="description" content="{{ page_description }}" />
+  <link rel="canonical" href="{{ site }}{{ page_path }}" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0b1d26" />
+  <link rel="icon" href="/static/Marketostate/Marketostate%20Favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Manrope:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="/static/css/legal.css?v={{ ui_asset_v }}" />
+</head>
+<body class="lg">
+  <header class="lg-header">
+    <div class="lg-wrap lg-header__inner">
+      <a class="lg-logo" href="/" aria-label="MarketoState home">
+        <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <circle cx="20" cy="20" r="17" stroke="#FBD784" stroke-width="2.4"/>
+          <path d="M13 27V17.5l3.5 2v7.5M18.5 27V14l4 2.3V27M24.5 27v-8.5l3 1.7V27" stroke="#FFA300" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        MARKETOSTATE
+      </a>
+      <nav class="lg-nav" aria-label="Legal">
+        <a href="/privacy"{% if page_path == '/privacy' %} aria-current="page"{% endif %}>Privacy</a>
+        <a href="/terms"{% if page_path == '/terms' %} aria-current="page"{% endif %}>Terms</a>
+        <a href="/" class="lg-nav__home">← Home</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="lg-wrap lg-main">
+    <div class="lg-hero">
+      <p class="lg-eyebrow">Legal</p>
+      <h1>{{ page_title }}</h1>
+      <p class="lg-meta">Effective {{ legal.effective_date }} · {{ legal.entity }}</p>
+    </div>
+    <div class="lg-layout">
+      <nav class="lg-toc" aria-label="On this page">
+        <p class="lg-toc__title">On this page</p>
+        <ol id="lg-toc-list"></ol>
+      </nav>
+      <article class="lg-article" id="lg-article">
+        {% block body %}{% endblock %}
+      </article>
+    </div>
+  </main>
+
+  <footer class="lg-footer">
+    <div class="lg-wrap lg-footer__inner">
+      <span>© 2026 {{ legal.entity }}</span>
+      <span><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/">Home</a></span>
+    </div>
+  </footer>
+
+  <script>
+    // Table of contents from the article's section headings.
+    (function () {
+      var list = document.getElementById('lg-toc-list');
+      document.querySelectorAll('#lg-article h2[id]').forEach(function (h) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.href = '#' + h.id;
+        a.textContent = h.textContent.replace(/^\d+\.\s*/, '');
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+    })();
+  </script>
+</body>
+</html>
