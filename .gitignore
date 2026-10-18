@@ -43,3 +43,11 @@ Thumbs.db
 # Node (Preline / Tailwind build)
 node_modules/
 
+
+# Test reports (generated)
+app-backend/tests/reports/
+app-backend/tests/e2e/reports/
+app-backend/tests/perf/reports/
+
+# Local Claude Code settings
+.claude/

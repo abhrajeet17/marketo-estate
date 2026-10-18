@@ -60,7 +60,7 @@ Behind the buyer experience sits a full sales back-office: a CRM for leads, cont
 | **Backend** | Python 3.11, Flask, Flask-Compress, Gunicorn |
 | **Database & Auth** | Supabase (PostgreSQL, Auth, JWT) |
 | **Storage** | Supabase Storage / S3-compatible via `boto3` |
-| **Frontend** | Jinja2 templates, Charm UI design system (`static/ui`), vanilla JS |
+| **Frontend** | Jinja2 templates, Charm UI design system (`shared-ui/static/ui`), vanilla JS / ES modules |
 | **Media** | Pillow for image processing, large video uploads for day/night scenes |
 | **Hosting** | Vercel, Hostinger, Render or any WSGI host |
 
@@ -100,12 +100,12 @@ cp .env.example .env
 
 ### 3. Set up the database
 
-Run [`db/schema.sql`](db/schema.sql) in the Supabase SQL editor, then apply the `db/migration_*.sql` files.
+Run [`app-backend/db/schema.sql`](app-backend/db/schema.sql) in the Supabase SQL editor, then apply the `app-backend/db/migration_*.sql` files.
 
 ### 4. Run
 
 ```bash
-python app.py
+python app-backend/app.py
 ```
 
 The app starts on **http://localhost:5000**.
@@ -113,18 +113,31 @@ The app starts on **http://localhost:5000**.
 ## 📁 Project Structure
 
 ```text
-├── app/
-│   ├── controllers/      # Route registration and feature controllers (CRM, UAM, gallery, maps…)
-│   ├── services/         # Business logic and Supabase / storage access
-│   ├── core/             # Auth, database client, serializers
-│   └── config.py
-├── templates/            # Jinja2 pages and shared components
-├── static/               # CSS, JS, images, vendor libraries (static/ui = Charm UI design system)
-├── db/                   # Schema and incremental SQL migrations
-├── deploy/               # Hosting-specific deployment configs
-├── scripts/              # Build and maintenance utilities
-├── app.py                # Entry point
-└── gunicorn.conf.py      # Production server config
+├── admin-dashboard-ui/   # Builder back-office: dashboard, editors, Sales Tools, Building Plans, Full View builder, users
+│   ├── templates/
+│   └── static/           # js/dashboard = builder dashboard ES modules (core, views, features, builder)
+├── client-ui/            # What client admins, sales agents, brokers and customers see: portal, CRM, Projects, viewers
+│   ├── templates/
+│   └── static/
+├── shared-ui/            # Base layout, login, portal shell, Charm UI, theme, vendor libraries
+│   ├── templates/
+│   └── static/
+├── app-backend/
+│   ├── app/
+│   │   ├── controllers/  # Route registration and feature controllers (CRM, UAM, gallery, maps…)
+│   │   ├── services/     # Business logic and Supabase / storage access
+│   │   ├── core/         # Auth, database client, concurrency helpers
+│   │   ├── paths.py      # Repository layout: where templates, static files and uploads live
+│   │   └── config.py
+│   ├── db/               # Schema and incremental SQL migrations
+│   ├── scripts/          # Build and maintenance utilities
+│   ├── app.py            # Entry point
+│   └── gunicorn.conf.py  # Production server config
+└── deploy/               # Hosting-specific deployment configs
+
+Templates and static files from the three UI folders are merged at runtime, so page names and
+`/static/...` URLs do not depend on which folder a file lives in. Code used by both audiences
+belongs in `shared-ui`.
 ```
 
 ## ☁️ Deployment
@@ -132,7 +145,7 @@ The app starts on **http://localhost:5000**.
 Production runs with Gunicorn:
 
 ```bash
-gunicorn app:app -c gunicorn.conf.py
+gunicorn --pythonpath app-backend -c app-backend/gunicorn.conf.py app:app
 ```
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step guides for each hosting provider, and [SCALING_CODING_PRACTICES.md](SCALING_CODING_PRACTICES.md) for performance conventions.
@@ -141,7 +154,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step guides for each hosting prov
 
 1. Create a feature branch from `master`.
 2. Follow the conventions in [`docs/frontend_coding_practices_ui_guidelines.md`](docs/frontend_coding_practices_ui_guidelines.md).
-3. Add a new `db/migration_*.sql` file for any schema change.
+3. Add a new `app-backend/db/migration_*.sql` file for any schema change.
 4. Open a pull request with a clear description and screenshots for UI changes.
 
 ---

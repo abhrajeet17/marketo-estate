@@ -1,0 +1,264 @@
+/**
+ * Shared styles for admin back-office pages that use the sidebar shell
+ * (Sales Tools, Building Plans, Day/Night, Full View, editors).
+ */
+.form-group {
+    flex: 1;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.4rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px rgba(22, 35, 56, 0.06);
+}
+
+/* Buttons use components/buttons.css */
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-danger);
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.progress-bar {
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-text);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+/* Loading Spinner */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Delete Confirmation Modal */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.modal-backdrop.visible {
+    display: flex;
+}
+
+.modal {
+    background: var(--color-bg-card);
+    border-radius: var(--radius);
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    border: 1px solid var(--color-border);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.modal-text {
+    color: var(--color-muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.msg.error {
+    font-size: 0.85rem;
+    color: var(--color-danger);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.toast {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.9rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideIn 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+.toast.success {
+    border-color: var(--color-success);
+}
+
+.toast.error {
+    border-color: var(--color-danger);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Dashboard modals (Create/Edit Project, Rename, Delete)
+   The shared button styles make .btn, .btn-primary and .btn-secondary
+   all render as the same beige chip, so the confirming action was
+   indistinguishable from Cancel and the cards read as flat beige.
+   These overrides are scoped to dashboard modals only.
+   ───────────────────────────────────────────────────────────── */
+.modal-backdrop .modal {
+    background: #ffffff;
+    border: 1px solid rgba(22, 35, 56, 0.14);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.modal-backdrop .modal-title {
+    color: #162338;
+    letter-spacing: -0.01em;
+}
+
+.modal-backdrop .modal-text {
+    color: #4a5568;
+}
+
+.modal-backdrop .form-label {
+    color: #334155;
+}
+
+.modal-backdrop .form-input {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #162338;
+}
+
+.modal-backdrop .form-input::placeholder {
+    color: #94a3b8;
+}
+
+.modal-backdrop .form-input:focus {
+    border-color: #162338;
+    box-shadow: 0 0 0 3px rgba(22, 35, 56, 0.10);
+}
+
+.modal-backdrop .modal-actions {
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.modal-backdrop .modal-actions .btn {
+    min-width: 96px;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    padding: 0.55rem 1rem;
+}
+
+.modal-backdrop .btn-primary {
+    background: #162338;
+    color: #ffffff;
+    border: 1px solid #162338;
+}
+
+.modal-backdrop .btn-primary:hover {
+    background: #0f172a;
+    border-color: #0f172a;
+}
+
+.modal-backdrop .btn-secondary {
+    background: #ffffff;
+    color: #162338;
+    border: 1px solid rgba(22, 35, 56, 0.32);
+}
+
+.modal-backdrop .btn-secondary:hover {
+    background: #f1f5f9;
+    border-color: #162338;
+}
+
+.modal-backdrop .btn-danger {
+    background: #b42318;
+    color: #ffffff;
+    border: 1px solid #b42318;
+}
+
+.modal-backdrop .btn-danger:hover {
+    background: #91180f;
+    border-color: #91180f;
+}
+
+.modal-backdrop .btn:focus-visible {
+    outline: 2px solid #162338;
+    outline-offset: 2px;
+}

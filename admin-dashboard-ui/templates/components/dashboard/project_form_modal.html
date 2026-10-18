@@ -1,0 +1,48 @@
+{# Create / edit project. Field names match the /api/workspaces payload. #}
+{% from 'components/dashboard/modal.html' import modal %}
+{% call(section) modal('dash-project-modal', 'New project', 'Group panoramas into a project. Details appear on the customer portal.', 'md') %}
+{% if section == 'body' %}
+<label class="dash-field">
+    <span class="dash-field__label">Project name <span class="dash-req" aria-hidden="true">*</span></span>
+    <input class="dash-input" name="name" maxlength="120" required autocomplete="off" placeholder="e.g. Sunset Valley Estate" data-autofocus>
+</label>
+<details class="dash-details" data-details>
+    <summary class="dash-details__summary">Customer portal details <span class="dash-details__hint">optional</span></summary>
+    <fieldset class="dash-details__body" data-details-fields>
+        <div class="dash-form-grid">
+            <label class="dash-field"><span class="dash-field__label">Builder name</span><input class="dash-input" name="builder_name" maxlength="200"></label>
+            <label class="dash-field"><span class="dash-field__label">Project type</span>
+                <select class="dash-input" name="project_type">
+                    <option value="residential">Residential</option>
+                    <option value="commercial">Commercial</option>
+                    <option value="plotted">Plotted</option>
+                    <option value="villa">Villa</option>
+                    <option value="mixed">Mixed use</option>
+                    <option value="farmland">Farm land</option>
+                </select>
+            </label>
+            <label class="dash-field dash-field--wide"><span class="dash-field__label">Address</span><input class="dash-input" name="location_address" maxlength="500"></label>
+            <label class="dash-field"><span class="dash-field__label">City</span><input class="dash-input" name="location_city" maxlength="120"></label>
+            <label class="dash-field"><span class="dash-field__label">State</span><input class="dash-input" name="location_state" maxlength="120"></label>
+            <label class="dash-field dash-field--wide"><span class="dash-field__label">Google Maps link</span>
+                <input class="dash-input" name="google_maps_link" type="url" placeholder="Paste a Google Maps link">
+                <span class="dash-field__hint" data-maps-status></span>
+            </label>
+            <label class="dash-field"><span class="dash-field__label">RERA registration</span><input class="dash-input" name="rera_registration" maxlength="100"></label>
+            <label class="dash-field"><span class="dash-field__label">Total area</span><input class="dash-input" name="total_area" maxlength="100"></label>
+            <label class="dash-field"><span class="dash-field__label">Launch date</span><input class="dash-input" name="launch_date" type="date"></label>
+            <label class="dash-field"><span class="dash-field__label">Possession</span><input class="dash-input" name="possession_date" maxlength="80" placeholder="e.g. 2027 Q4"></label>
+            <label class="dash-field"><span class="dash-field__label">Contact phone</span><input class="dash-input" name="contact_phone" type="tel" maxlength="50"></label>
+            <label class="dash-field"><span class="dash-field__label">Contact email</span><input class="dash-input" name="contact_email" type="email" maxlength="200"></label>
+            <label class="dash-field dash-field--wide"><span class="dash-field__label">Amenities</span><input class="dash-input" name="amenities" maxlength="500" placeholder="Pool, Gym, Clubhouse"><span class="dash-field__hint">Separate with commas</span></label>
+            <label class="dash-field dash-field--wide"><span class="dash-field__label">Description</span><textarea class="dash-input" name="description" rows="3" maxlength="5000"></textarea></label>
+        </div>
+        <label class="dash-check"><input type="checkbox" name="is_published"><span>Publish on the customer portal</span></label>
+    </fieldset>
+    <div class="dash-loading-overlay" data-details-loading hidden><span class="dash-spinner"></span>Loading details…</div>
+</details>
+{% else %}
+<button type="button" class="dash-btn" data-modal-dismiss>Cancel</button>
+<button type="submit" class="dash-btn dash-btn--primary" data-submit>Create project</button>
+{% endif %}
+{% endcall %}

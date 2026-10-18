@@ -1,0 +1,18 @@
+{# Project access by organization (client group), driven by builder/access.js. Changes save as they are made. #}
+{% from 'components/dashboard/modal.html' import modal %}
+{% from 'components/dashboard/icons.html' import icon %}
+
+{% call(section) modal('dash-access-modal', 'Manage access', 'Choose which organizations can open this project. People who join an organization later get its access automatically.', size='md') %}
+{% if section == 'body' %}
+<label class="dash-search dash-access__search" data-access-search hidden>
+    <span class="dash-search__icon">{{ icon('search') }}</span>
+    <span class="dash-sr-only">Search organizations</span>
+    <input type="search" class="dash-search__input" placeholder="Search organizations" autocomplete="off" spellcheck="false" data-access-filter>
+</label>
+<div class="dash-access__summary" data-access-summary></div>
+<ul class="dash-access__list" data-access-list aria-label="Organizations"></ul>
+{% else %}
+<a class="dash-btn dash-access__manage" href="/user-management" target="_blank" rel="noopener">Manage organizations ↗</a>
+<button type="submit" class="dash-btn dash-btn--primary" data-submit>Done</button>
+{% endif %}
+{% endcall %}

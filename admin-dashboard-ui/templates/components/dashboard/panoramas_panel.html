@@ -1,0 +1,21 @@
+{# Right column: panoramas of the selected project or search results. Rendered by views/panoramas.js. #}
+<section class="dash-panel dash-panel--panoramas" aria-labelledby="dash-panoramas-title">
+    <header class="dash-panel__head">
+        <div class="dash-panel__heading">
+            <h2 class="dash-panel__title" id="dash-panoramas-title">360° panoramas</h2>
+            <span class="dash-panel__count" id="dash-panoramas-count"></span>
+        </div>
+        <div class="dash-panel__actions" id="dash-panoramas-actions"></div>
+    </header>
+    <div class="dash-panel__scroll" id="dash-panoramas-scroll">
+        <div class="dash-grid" id="dash-panoramas">
+            {% for _ in range(6) %}
+            <div class="dash-pano dash-pano--skeleton" aria-hidden="true">
+                <span class="dash-skel dash-skel--thumb"></span>
+                <span class="dash-skel dash-skel--line"></span>
+                <span class="dash-skel dash-skel--line dash-skel--short"></span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>

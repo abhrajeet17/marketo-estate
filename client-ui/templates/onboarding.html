@@ -1,0 +1,127 @@
+{% set page_title = 'Get started · MarketoState' %}
+{% set active_nav = 'onboarding' %}
+{% set portal_header_title = 'Get started' %}
+{% set portal_header_eyebrow = 'Welcome' %}
+{% set portal_extra_css = '/static/ui/pages/onboarding.css' %}
+{% set portal_body_class = 'ui-app--focus' %}
+{% include 'components/portal_shell_start.html' %}
+{% from 'components/ui.html' import icon, card_error %}
+
+<div class="ui-page ob" id="onboarding-page">
+  <div id="ob-region" data-state="loading">
+
+    <div data-for="loading" class="ob-center" aria-hidden="true">
+      <div class="ui-card ob-panel"><span class="ui-skel ui-skel--title" style="width:60%"></span>
+        <span class="ui-skel ui-skel--line" style="width:85%;margin-top:12px"></span>
+        <div class="ob-choices" style="margin-top:20px"><span class="ui-skel" style="height:150px"></span><span class="ui-skel" style="height:150px"></span></div></div>
+    </div>
+
+    <!-- 1. Choose: join or create -->
+    <section data-for="choose" hidden class="ob-center">
+      <div class="ui-card ob-panel">
+        <h2 class="ob-title">Set up your workspace</h2>
+        <p class="ob-text">Join your company's client group to see its projects and CRM, or create a new group if your company isn't on MarketoState yet.</p>
+        <div class="ui-alert ui-alert--warning ob-decision" id="ob-decision" hidden></div>
+        <div class="ob-choices">
+          <button type="button" class="ob-choice" data-go="join">
+            <span class="ob-choice__icon">{{ icon('users', 22) }}</span>
+            <span class="ob-choice__title">Join a client group <span class="ui-badge ui-badge--brand">Most common</span></span>
+            <span class="ob-choice__text">Find your company and send a join request. A Client Admin approves it.</span>
+          </button>
+          <button type="button" class="ob-choice" data-go="create">
+            <span class="ob-choice__icon">{{ icon('plus', 22) }}</span>
+            <span class="ob-choice__title">Create a client group</span>
+            <span class="ob-choice__text">Start a new group for your company. You become its Client Admin.</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2a. Join: pick a group, pick a role -->
+    <section data-for="join" hidden class="ob-center">
+      <div class="ui-card ob-panel ob-panel--wide">
+        <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm ob-back" data-go="choose">← Back</button>
+        <h2 class="ob-title">Join a client group</h2>
+        <p class="ob-text">Choose your company's group and how you'll work with it.</p>
+        <label class="ui-search ob-search">
+          {{ icon('search', 15) }}
+          <input type="search" class="ui-input" id="ob-group-search" placeholder="Search client groups or builders" aria-label="Search client groups" autocomplete="off">
+        </label>
+        <div class="ob-groups" id="ob-groups" role="radiogroup" aria-label="Client groups"></div>
+
+        <form class="ob-join-form" id="ob-join-form" novalidate>
+          <div class="ui-field">
+            <span class="ui-label">Join as</span>
+            <div class="ob-roles" role="radiogroup" aria-label="Join as">
+              <label class="ob-role"><input type="radio" name="member_role" value="client_user" checked>
+                <span><strong>Sales Agent</strong><small>Sells the group's projects and works its CRM leads.</small></span></label>
+              <label class="ob-role"><input type="radio" name="member_role" value="broker">
+                <span><strong>Broker</strong><small>External partner who shares projects and logs interests.</small></span></label>
+            </div>
+          </div>
+          <div class="ui-field">
+            <label class="ui-label" for="ob-message">Message to the Client Admin <span class="ui-muted">(optional)</span></label>
+            <textarea class="ui-textarea" id="ob-message" name="message" rows="2" maxlength="500" placeholder="e.g. I'm Priya from the Pune sales team"></textarea>
+          </div>
+          <div class="ob-actions">
+            <span class="ui-muted ob-selected" id="ob-selected">Select a client group above</span>
+            <button type="submit" class="ui-btn ui-btn--primary" id="ob-send" disabled>Send join request</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2b. Create a group -->
+    <section data-for="create" hidden class="ob-center">
+      <div class="ui-card ob-panel">
+        <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm ob-back" data-go="choose">← Back</button>
+        <h2 class="ob-title">Create a client group</h2>
+        <p class="ob-text">You'll be the group's Client Admin: you approve join requests and manage your team.</p>
+        <form id="ob-create-form" class="ob-form" novalidate>
+          <div class="ui-field">
+            <label class="ui-label" for="ob-name">Group name <span class="ui-req">*</span></label>
+            <input class="ui-input" id="ob-name" name="name" maxlength="120" required placeholder="e.g. Skyline Realty" autocomplete="organization">
+          </div>
+          <div class="ui-field" id="ob-builder-field">
+            <label class="ui-label" for="ob-builder">Builder you work with <span class="ui-req">*</span></label>
+            <select class="ui-select" id="ob-builder" name="org_id" required></select>
+          </div>
+          <div class="ui-field">
+            <label class="ui-label" for="ob-description">Description <span class="ui-muted">(optional)</span></label>
+            <textarea class="ui-textarea" id="ob-description" name="description" rows="2" maxlength="300"></textarea>
+          </div>
+          <div class="ui-alert ui-alert--danger" id="ob-create-error" role="alert" hidden></div>
+          <div class="ob-actions">
+            <span></span>
+            <button type="submit" class="ui-btn ui-btn--primary" id="ob-create">Create client group</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 3. Pending: the only screen until the request is decided -->
+    <section data-for="pending" hidden class="ob-center">
+      <div class="ui-card ob-panel ob-pending">
+        <span class="ob-pending__icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/></svg></span>
+        <h2 class="ob-title">Request pending approval</h2>
+        <p class="ob-text">You asked to join <strong id="ob-pending-group"></strong> as <strong id="ob-pending-role"></strong>. A Client Admin of the group will review it. This page updates on its own once you're approved.</p>
+        <dl class="ob-pending__meta">
+          <div><dt>Sent</dt><dd id="ob-pending-sent"></dd></div>
+          <div><dt>Status</dt><dd><span class="ui-badge ui-badge--warning ui-badge--dot">Waiting for approval</span></dd></div>
+        </dl>
+        <p class="ob-pending__message" id="ob-pending-message" hidden></p>
+        <div class="ob-actions ob-actions--center">
+          <button type="button" class="ui-btn" id="ob-refresh">Check again</button>
+          <button type="button" class="ui-btn ui-btn--danger-soft" id="ob-withdraw">Withdraw request</button>
+        </div>
+      </div>
+    </section>
+
+    <div data-for="error" hidden class="ob-center"><section class="ui-card ob-panel">{{ card_error("We couldn't load your account setup.") }}</section></div>
+  </div>
+</div>
+
+{% include 'components/portal_shell_end.html' %}
+<script src="/static/ui/pages/onboarding.js?v={{ ui_asset_v }}"></script>
+</body>
+</html>

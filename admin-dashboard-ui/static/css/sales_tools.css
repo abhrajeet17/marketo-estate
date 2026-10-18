@@ -1,0 +1,137 @@
+/**
+ * Sales Tools: compact design layer shared by every tab (floorplans.html) and the embedded
+ * Day/Night list (daynight.html?embedded=1). Loaded after the per-tool stylesheets.
+ */
+#floorplans-page,
+.daynight-page {
+    --st-ink: #162338;
+    --st-muted: #667085;
+    --st-line: rgba(22, 35, 56, 0.10);
+    --st-radius: 10px;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+#floorplans-page .floorplans-main { padding: 10px 20px 20px; }
+#floorplans-page .fp-global-toolbar { margin-bottom: 8px; }
+#floorplans-page .fp-global-filter { gap: 3px; }
+#floorplans-page .fp-global-filter label { font-size: 0.62rem; letter-spacing: 0.05em; }
+#floorplans-page .fp-global-filter .srm-select { min-height: 30px; padding: 4px 8px; font-size: 0.76rem; }
+
+#floorplans-page .fp-subtabs { margin-bottom: 12px; gap: 2px; }
+#floorplans-page .fp-subtab { padding: 7px 11px; font-size: 0.76rem; }
+
+#floorplans-page .fp-daynight-embed-frame { height: calc(100vh - 150px); min-height: 520px; }
+
+/* One header style for every tab: title, optional one-line description, compact action. */
+#floorplans-page .floorplans-header,
+#floorplans-page .srm-header,
+.daynight-page .daynight-header {
+    margin-bottom: 12px;
+    gap: 12px;
+    align-items: center;
+}
+#floorplans-page .floorplans-title,
+#floorplans-page .srm-title,
+.daynight-page .daynight-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+#floorplans-page .srm-eyebrow { display: none; }
+#floorplans-page .floorplans-header .btn,
+#floorplans-page .srm-header .btn,
+.daynight-page .daynight-header .btn {
+    padding: 6px 12px;
+    font-size: 0.74rem;
+    white-space: nowrap;
+}
+
+/* ── Grids ─────────────────────────────────────────────────────────────── */
+#floorplans-page .fp-grid,
+#floorplans-page .srm-grid,
+.daynight-page .daynight-grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+}
+
+/* Shared card chrome */
+#floorplans-page .fp-card,
+#floorplans-page .srm-card,
+.daynight-page .dn-card {
+    border-radius: var(--st-radius);
+    box-shadow: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+#floorplans-page .fp-card:hover,
+#floorplans-page .srm-card:hover,
+.daynight-page .dn-card:hover {
+    border-color: rgba(22, 35, 56, 0.22);
+    box-shadow: 0 4px 14px rgba(22, 35, 56, 0.07);
+}
+
+/* Compact buttons inside every card */
+#floorplans-page .fp-card .btn,
+#floorplans-page .srm-card .btn,
+.daynight-page .dn-card .btn {
+    padding: 4px 9px;
+    font-size: 0.7rem;
+    min-height: 26px;
+    border-radius: 6px;
+}
+
+/* ── Catalogue / plan / gallery cards (.fp-card) ───────────────────────── */
+#floorplans-page .fp-card-header { padding: 10px 12px 6px; gap: 10px; }
+#floorplans-page .fp-card-icon { width: 30px; height: 30px; font-size: 0.8rem; border-radius: 7px; }
+#floorplans-page .fp-card-name { font-size: 0.82rem; }
+#floorplans-page .fp-card-meta { font-size: 0.66rem; }
+#floorplans-page .fp-card-details { padding: 0 12px 6px; }
+#floorplans-page .fp-card-detail-label { font-size: 0.6rem; margin-bottom: 3px; }
+#floorplans-page .fp-card-chips { gap: 3px; }
+#floorplans-page .fp-card-chip { padding: 2px 6px; font-size: 0.62rem; }
+#floorplans-page .fp-card-stats { padding: 0 12px; }
+#floorplans-page .fp-card-stat { padding: 4px 2px; }
+#floorplans-page .fp-card-stat-value { font-size: 0.92rem; }
+#floorplans-page .fp-card-stat-label { font-size: 0.56rem; }
+#floorplans-page .fp-card-divider { margin: 6px 0; }
+#floorplans-page .fp-card-body { padding: 8px 12px 10px; }
+#floorplans-page .fp-share-row { gap: 4px; margin-bottom: 6px; }
+#floorplans-page .fp-share-row input { padding: 4px 7px; font-size: 0.66rem; min-height: 26px; }
+#floorplans-page .fp-card-actions { gap: 4px; }
+
+/* ── Route map / 360 strip cards (.srm-card) ───────────────────────────── */
+#floorplans-page .srm-thumb,
+#floorplans-page .srm-thumb-empty { height: 120px; }
+#floorplans-page .srm-card-body { padding: 9px 11px 10px; }
+#floorplans-page .srm-name { font-size: 0.82rem; }
+#floorplans-page .srm-meta { font-size: 0.66rem; }
+#floorplans-page .srm-badge { padding: 2px 7px; font-size: 0.6rem; }
+#floorplans-page .srm-actions { gap: 4px; margin-top: 6px; }
+
+/* ── Day/Night cards (embedded list) ───────────────────────────────────── */
+.daynight-page.daynight-page--embedded .daynight-main--embedded { padding: 12px 14px; }
+.daynight-page .dn-card-preview { height: 120px; }
+.daynight-page .dn-card-body { padding: 9px 11px 10px; }
+.daynight-page .dn-card-name { font-size: 0.82rem; margin-bottom: 4px; }
+.daynight-page .dn-card-meta { gap: 6px; margin-bottom: 6px; }
+.daynight-page .dn-badge { font-size: 0.58rem; padding: 2px 6px; }
+.daynight-page .dn-card-date { font-size: 0.66rem; }
+.daynight-page .dn-project-row { font-size: 0.64rem; margin-bottom: 4px; }
+.daynight-page .dn-project-chip { font-size: 0.62rem; padding: 1px 6px; }
+.daynight-page .dn-share-row { gap: 4px; margin-top: 4px; }
+.daynight-page .dn-share-row input { padding: 4px 7px; font-size: 0.66rem; }
+.daynight-page .dn-card-actions { gap: 4px; margin-top: 6px; }
+/* Actions share one row instead of stacking full-width buttons. */
+.daynight-page .dn-card-actions .btn { flex: 1 1 auto; }
+
+/* Equal-height cards in a row: details flex, the share/actions footer sits on the bottom edge. */
+#floorplans-page .fp-card,
+#floorplans-page .srm-card { display: flex; flex-direction: column; }
+#floorplans-page .fp-card-body { margin-top: auto; }
+#floorplans-page .srm-card-body { flex: 1; display: flex; flex-direction: column; }
+#floorplans-page .srm-actions { margin-top: auto; padding-top: 6px; }
+
+/* Long names truncate; status badges never wrap. */
+#floorplans-page .srm-card-top { gap: 6px; min-width: 0; }
+#floorplans-page .srm-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#floorplans-page .srm-badge { flex-shrink: 0; white-space: nowrap; }

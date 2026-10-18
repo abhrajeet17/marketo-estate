@@ -1,0 +1,30 @@
+# MarketoState
+
+> MarketoState is real estate sales software for land developers, plotted developments, townships and builders. It turns drone panoramas into interactive 360° virtual site visits with live plot inventory drawn on the imagery, shares the whole project in one branded link, and sends every buyer enquiry into a built-in real estate CRM.
+
+MarketoState is built for teams that sell plots, villas and apartments before or during construction, especially in India (prices in ₹, broker/channel-partner workflows, quotations). Buyers need no app or login: they open a link in any browser on a phone or desktop.
+
+## What it does
+
+- **360° virtual site visits:** upload drone or ground panoramas; buyers drag to look around, follow navigator hotspots from scene to scene, and open photos, videos and voice-over notes pinned to exact spots.
+- **Plot inventory on the drone view (interactive master plan):** draw each plot as a real polygon on the 360° image with plot number, area, price and status (Available, On hold, Sold). Status changes appear instantly on every shared link.
+- **Plot Lock:** hold a plot against a named buyer so two agents can never sell the same plot twice.
+- **Full View project microsite:** one branded link that bundles tours, day/night views, floor plans, galleries, brochures, route maps and location, with a visual theme editor.
+- **Day and night views:** buyers scrub exterior renders from daylight to night.
+- **Earth View:** a 3D globe with land parcels drawn on satellite terrain.
+- **Sales route maps:** routes and distances from schools, highways and airports to the site.
+- **Building maps and floor plans:** clickable floors on building elevations linked to floor plan catalogues.
+- **Real estate CRM:** buyers shortlist plots into a cart and send a buy interest that lands as a lead; pipeline from New to Won; quotations emailed in one step.
+- **Broker / channel partner referrals:** brokers add their buyers; contact details stay masked until the referring broker reveals them.
+- **Public property portal:** published projects can be browsed, filtered and viewed on a map at {{ site }}/explore.
+- **Teams and access control:** organizations, client teams, brokers and per-project permissions.
+
+## Who it is for
+
+Plotted development and township developers, land developers, real estate builders and promoters, channel partners and brokers, and real estate marketing agencies.
+
+## Key pages
+
+- [Home]({{ site }}/): product overview
+- [Explore properties]({{ site }}/explore): public property portal with live projects
+- [Start for free]({{ site }}/login?mode=signup): create an account

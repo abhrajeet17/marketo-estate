@@ -1,0 +1,239 @@
+/*
+ * Portal shell — rail navigation + top bar. Built on charm.css tokens.
+ */
+.ui-app {
+  display: block;
+  min-height: 100vh;
+  background: var(--ui-canvas);
+}
+
+/* ── Rail ───────────────────────────────────────────────────────────────── */
+.ui-rail {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  width: var(--ui-rail-w);
+  padding: 14px 12px 12px;
+  background: var(--ui-panel);
+  border-right: 1px solid var(--ui-line);
+  transition: width var(--ui-slow) var(--ui-ease), transform var(--ui-slow) var(--ui-ease);
+}
+.ui-rail__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 6px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.ui-rail__brand img { height: 30px; width: auto; }
+.ui-rail__logo-full { display: none; max-width: 150px; height: 26px !important; object-fit: contain; }
+.ui-rail__nav { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
+.ui-rail__section {
+  padding: 14px 12px 6px;
+  font-family: var(--ui-font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ui-faint);
+  white-space: nowrap;
+  opacity: 0;
+  height: 0;
+  padding-top: 6px;
+  overflow: hidden;
+  transition: opacity var(--ui-base);
+}
+.ui-rail__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  color: var(--ui-muted);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  transition: background-color var(--ui-fast) var(--ui-ease), color var(--ui-fast) var(--ui-ease);
+}
+.ui-root .ui-rail__link { color: var(--ui-muted); }
+.ui-rail__link svg { width: 20px; height: 20px; }
+.ui-root .ui-rail__link:hover { background: var(--ui-hover); color: var(--ui-heading); }
+.ui-root .ui-rail__link.is-active { background: var(--ui-brand-soft); color: var(--ui-brand-deep); }
+.ui-rail__link.is-active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--ui-brand);
+}
+.ui-rail__label { opacity: 0; transition: opacity var(--ui-base) var(--ui-ease); }
+.ui-rail__tip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translate(-4px, -50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ui-ink);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ui-fast), transform var(--ui-fast) var(--ui-ease);
+}
+.ui-rail__link:hover .ui-rail__tip, .ui-rail__link:focus-visible .ui-rail__tip { opacity: 1; transform: translate(0, -50%); }
+.ui-rail__foot { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid var(--ui-line); }
+.ui-rail__collapse svg { transition: transform var(--ui-slow) var(--ui-ease); }
+
+/* Expanded rail */
+.ui-rail-open .ui-rail { width: var(--ui-rail-w-open); }
+.ui-rail-open .ui-rail__label { opacity: 1; }
+.ui-rail-open .ui-rail__section { opacity: 1; height: auto; padding-top: 14px; }
+.ui-rail-open .ui-rail__tip { display: none; }
+.ui-rail-open .ui-rail__logo-full { display: block; }
+.ui-rail-open .ui-rail__logo-mark { display: none; }
+.ui-rail-open .ui-rail__collapse svg { transform: rotate(180deg); }
+
+/* ── Main column ────────────────────────────────────────────────────────── */
+.ui-main {
+  min-height: 100vh;
+  margin-left: var(--ui-rail-w);
+  display: flex;
+  flex-direction: column;
+  transition: margin-left var(--ui-slow) var(--ui-ease);
+}
+.ui-rail-open .ui-main { margin-left: var(--ui-rail-w-open); }
+
+.ui-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-4);
+  height: var(--ui-header-h);
+  padding: 0 var(--ui-6);
+  background: rgba(247, 245, 240, 0.86);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid var(--ui-line);
+}
+.ui-topbar__start { display: flex; align-items: center; gap: var(--ui-3); min-width: 0; flex: 1 1 auto; }
+.ui-topbar__title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ui-topbar__title h1 { font-size: var(--ui-text-lg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-topbar__crumb { font-family: var(--ui-font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ui-faint); }
+.ui-topbar__center { flex: 0 1 420px; min-width: 0; }
+.ui-topbar__end { display: flex; align-items: center; gap: var(--ui-2); flex-shrink: 0; }
+.ui-topbar__menu-btn { display: none; }
+.ui-content { flex: 1 1 auto; min-width: 0; }
+
+/* User avatar button */
+.ui-user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 3px 12px 3px 3px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-pill);
+  background: var(--ui-panel-raised);
+  box-shadow: var(--ui-lift);
+  cursor: pointer;
+  transition: border-color var(--ui-fast), box-shadow var(--ui-base);
+}
+.ui-user-btn:hover { border-color: var(--ui-line-strong); box-shadow: var(--ui-raise); }
+.ui-user-btn .ui-avatar { width: 32px; height: 32px; background: var(--ui-brand-gradient); color: var(--ui-brand-ink); }
+.ui-user-btn__name { font-size: var(--ui-text-sm); font-weight: 600; color: var(--ui-heading); max-width: 140px; }
+.ui-user-btn__chev { width: 14px; height: 14px; color: var(--ui-muted); }
+
+/* Search with results dropdown (dashboard plot search) */
+.ui-search-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  padding: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--ui-panel-raised);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-menu-radius);
+  box-shadow: var(--ui-float);
+  animation: ui-scale-in var(--ui-base) var(--ui-ease) both;
+  transform-origin: top center;
+}
+.ui-search-pop__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.ui-search-pop__item:hover, .ui-search-pop__item:focus-visible, .ui-search-pop__item.is-active { background: var(--ui-hover); box-shadow: none; }
+.ui-search-pop__all { display: block; margin-top: 4px; padding: 9px 10px; border-top: 1px solid var(--ui-line); font-size: var(--ui-text-xs); font-weight: 600; color: var(--ui-brand-text); }
+.ui-search-pop__title { font-weight: 600; color: var(--ui-heading); font-size: var(--ui-text-sm); }
+.ui-search-pop__sub { font-size: var(--ui-text-xs); color: var(--ui-muted); }
+.ui-search-pop__empty { padding: 14px 10px; font-size: var(--ui-text-sm); color: var(--ui-muted); text-align: center; }
+
+/* Scrim for the mobile rail */
+.ui-rail-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 880;
+  background: rgba(31, 27, 22, 0.32);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--ui-base), visibility 0s linear var(--ui-base);
+}
+
+@media (max-width: 1023px) {
+  .ui-rail { width: var(--ui-rail-w-open); transform: translateX(-104%); box-shadow: var(--ui-float); }
+  .ui-rail .ui-rail__label { opacity: 1; }
+  .ui-rail .ui-rail__section { opacity: 1; height: auto; padding-top: 14px; }
+  .ui-rail .ui-rail__tip, .ui-rail .ui-rail__collapse { display: none; }
+  .ui-rail .ui-rail__logo-full { display: block; }
+  .ui-rail .ui-rail__logo-mark { display: none; }
+  .ui-rail-mobile-open .ui-rail { transform: none; }
+  .ui-rail-mobile-open .ui-rail-scrim { opacity: 1; visibility: visible; transition-delay: 0s; }
+  .ui-main, .ui-rail-open .ui-main { margin-left: 0; }
+  .ui-topbar { padding: 0 var(--ui-4); gap: var(--ui-2); }
+  .ui-topbar__menu-btn { display: inline-grid; }
+  .ui-user-btn__name, .ui-user-btn__chev { display: none; }
+  .ui-user-btn { padding: 3px; }
+}
+@media (max-width: 720px) {
+  .ui-topbar__center { display: none; }
+}
+
+/* Pending-count badge on a rail link (Requests). A dot on the collapsed rail, a pill when open. */
+.ui-rail__badge {
+  position: absolute; top: 6px; left: 30px;
+  min-width: 8px; height: 8px; border-radius: 999px;
+  background: var(--ui-danger); color: #fff; font-size: 0; line-height: 1;
+}
+.ui-rail__badge[hidden] { display: none; }
+.ui-rail-open .ui-rail__badge {
+  position: static; margin-left: auto; min-width: 20px; height: 18px; padding: 0 6px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 0.66rem; font-weight: 700;
+}

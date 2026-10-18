@@ -27,7 +27,7 @@ This guide covers multiple deployment options for the Real Estate Plot Marker ap
      - **Name:** `real-estate-plot-marker`
      - **Environment:** `Python 3`
      - **Build Command:** `pip install -r requirements.txt`
-     - **Start Command:** `gunicorn app:app`
+     - **Start Command:** `gunicorn --pythonpath app-backend -c app-backend/gunicorn.conf.py app:app`
    - Click "Create Web Service"
 
 3. **Environment Variables (Optional):**
@@ -180,7 +180,7 @@ primary_region = "iad"
 - [ ] Test database migrations (if any)
 - [ ] Verify file upload directory permissions
 - [ ] Set up environment variables
-- [ ] Test locally with `gunicorn app:app`
+- [ ] Test locally with `gunicorn --pythonpath app-backend -c app-backend/gunicorn.conf.py app:app`
 
 ## 🔧 Production Considerations
 
@@ -205,7 +205,7 @@ primary_region = "iad"
 ### Performance
 - Use `gunicorn` with multiple workers:
   ```bash
-  gunicorn -w 4 -b 0.0.0.0:$PORT app:app
+  gunicorn --pythonpath app-backend -w 4 -b 0.0.0.0:$PORT app:app
   ```
 - Add caching headers for static files
 - Consider CDN for static assets

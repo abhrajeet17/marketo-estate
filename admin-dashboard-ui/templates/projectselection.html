@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% from 'components/dashboard/icons.html' import icon %}
+{% block title %}Projects – MarketoState{% endblock %}
+{% block head_css %}
+{% if supabase_url %}<link rel="preconnect" href="{{ supabase_url }}">{% endif %}
+<link rel="modulepreload" href="/static/js/dashboard/projectselection.js?v={{ ui_asset_v }}">
+{% for url in dashboard_modules %}<link rel="modulepreload" href="{{ url }}">
+{% endfor %}
+<script>
+  // Same early data request as dashboard.html; core/sync.js adopts it.
+  (function () {
+    try {
+      var s = JSON.parse(localStorage.getItem('marketostate_auth_session_v1') || 'null');
+      if (!s || !s.access_token || (s.expires_at && s.expires_at * 1000 < Date.now() + 30000)) return;
+      window.__dashboardPrefetch = fetch('/api/dashboard', { headers: { Authorization: 'Bearer ' + s.access_token } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    } catch (e) { /* storage unavailable: sync.js fetches normally */ }
+  })();
+</script>
+<link rel="stylesheet" href="/static/css/components/sidebar.css?v={{ ui_asset_v }}">
+<link rel="stylesheet" href="/static/css/dashboard.css?v={{ ui_asset_v }}">
+<link rel="stylesheet" href="/static/css/project_selection.css?v={{ ui_asset_v }}">
+<link rel="stylesheet" href="/static/css/share-workspace-modal.css">
+{% endblock %}
+{% block content %}
+<div class="dash" id="projectselection">
+    {% set active_page = 'projectselection' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="dash-main">
+        <header class="dash-topbar">
+            <div class="dash-topbar__title">
+                <h1 class="dash-topbar__org" id="org-name">MarketoState</h1>
+                <p class="dash-topbar__sub">Select a project</p>
+            </div>
+        </header>
+        <div class="dash-content">
+            <div class="dash-toolbar">
+                <label class="dash-search">
+                    <span class="dash-search__icon">{{ icon('search') }}</span>
+                    <span class="dash-sr-only">Search projects</span>
+                    <input type="search" id="dash-search" class="dash-search__input" placeholder="Search projects" autocomplete="off" spellcheck="false">
+                    <kbd class="dash-search__kbd" aria-hidden="true">/</kbd>
+                    <button type="button" class="dash-icon-btn dash-search__clear" data-action="clear-search" aria-label="Clear search" hidden>{{ icon('x', 16) }}</button>
+                </label>
+                <span class="ps-count" id="ps-projects-count"></span>
+                <div class="dash-toolbar__actions" data-builder-only hidden>
+                    <button type="button" class="dash-btn" data-action="new-project">{{ icon('plus', 16) }}<span>New project</span></button>
+                    <button type="button" class="dash-btn dash-btn--primary" data-action="upload">{{ icon('upload', 16) }}<span>Upload</span></button>
+                </div>
+            </div>
+            <div class="ps-scroll">
+                <div class="ps-grid" id="ps-projects" aria-label="Projects">
+                    {% for _ in range(8) %}
+                    <div class="ps-card ps-card--skeleton" aria-hidden="true">
+                        <span class="dash-skel dash-skel--thumb"></span>
+                        <span class="dash-skel dash-skel--line"></span>
+                        <span class="dash-skel dash-skel--line dash-skel--short"></span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'components/dashboard/upload_modal.html' %}
+    {% include 'components/dashboard/project_form_modal.html' %}
+    {% include 'components/dashboard/project_access_modal.html' %}
+    {% include 'components/dashboard/prompt_modals.html' %}
+    {% include 'components/dashboard/change_password_modal.html' %}
+    {% include 'components/share_workspace_modal.html' %}
+    {% include 'components/create_share_link_modal.html' %}
+
+    <div class="dash-toasts" id="dash-toasts" role="status" aria-live="polite"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/sidebar.js?v={{ ui_asset_v }}"></script>
+<script src="/static/js/share-workspace-modal.js"></script>
+<script src="/static/js/create-share-link-modal.js?v={{ ui_asset_v }}"></script>
+<script type="module" src="/static/js/dashboard/projectselection.js?v={{ ui_asset_v }}"></script>
+{% endblock %}

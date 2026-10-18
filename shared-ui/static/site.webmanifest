@@ -1,0 +1,13 @@
+{
+  "name": "MarketoState",
+  "short_name": "MarketoState",
+  "description": "360° virtual site visit and plot sales software for real estate developers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1d26",
+  "theme_color": "#0b1d26",
+  "icons": [
+    { "src": "/static/Marketostate/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/Marketostate/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
