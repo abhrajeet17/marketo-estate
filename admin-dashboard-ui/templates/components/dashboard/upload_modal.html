@@ -1,0 +1,26 @@
+{% from 'components/dashboard/modal.html' import modal %}
+{% from 'components/dashboard/icons.html' import icon %}
+{% call(section) modal('dash-upload-modal', 'Upload panoramas', 'JPG, PNG or WebP up to 50 MB each. Wide 2:1 images are marked 360° automatically.', 'lg') %}
+{% if section == 'body' %}
+<label class="dash-dropzone" data-dropzone>
+    <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-file-input class="dash-sr-only">
+    <span class="dash-dropzone__icon">{{ icon('upload', 26) }}</span>
+    <span class="dash-dropzone__text"><strong>Drop images here</strong> or click to browse</span>
+</label>
+<div class="dash-upload__options" data-upload-options hidden>
+    <label class="dash-field dash-field--inline">
+        <span class="dash-field__label">Add to project</span>
+        <select class="dash-input" name="workspace_id" data-project-select></select>
+    </label>
+    <label class="dash-check">
+        <input type="checkbox" data-all-360>
+        <span>Mark all as 360°</span>
+    </label>
+</div>
+<ul class="dash-upload__list" data-file-list></ul>
+{% else %}
+<span class="dash-modal__foot-note" data-upload-summary></span>
+<button type="button" class="dash-btn" data-modal-dismiss>Cancel</button>
+<button type="submit" class="dash-btn dash-btn--primary" data-submit disabled>Upload</button>
+{% endif %}
+{% endcall %}

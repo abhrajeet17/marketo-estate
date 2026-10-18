@@ -27,7 +27,7 @@ This guide covers multiple deployment options for the Real Estate Plot Marker ap
      - **Name:** `real-estate-plot-marker`
      - **Environment:** `Python 3`
      - **Build Command:** `pip install -r requirements.txt`
-     - **Start Command:** `gunicorn app:app`
+     - **Start Command:** `gunicorn --pythonpath app-backend -c app-backend/gunicorn.conf.py app:app`
    - Click "Create Web Service"
 
 3. **Environment Variables (Optional):**
@@ -171,6 +171,24 @@ primary_region = "iad"
 
 ---
 
+## 🔑 Google sign-in (Supabase Auth)
+
+The login page shows **Continue with Google** / **Sign up with Google** automatically once the Google
+provider is enabled in Supabase; until then only email sign-in is shown. No app config or redeploy is needed.
+
+1. **Google Cloud Console** → APIs & Services → Credentials → *Create credentials* → *OAuth client ID*
+   (configure the OAuth consent screen first if prompted: app name, support email, logo, authorized domain).
+   - Application type: **Web application**
+   - Authorized JavaScript origins: `http://localhost:5000` and your production URL (e.g. `https://app.example.com`)
+   - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+2. **Supabase Dashboard** → Authentication → Providers → **Google**: enable it and paste the Client ID and Client secret.
+3. **Supabase Dashboard** → Authentication → URL Configuration → *Redirect URLs*: add
+   `http://localhost:5000/auth/callback` and `https://<your-domain>/auth/callback`.
+
+After Google returns to `/auth/callback`, the app saves the Google name to the profile, accepts any pending
+client-team invite, and routes the user: builders to `/projectselection`, client team members to the portal,
+and new users without a client group to `/onboarding`.
+
 ## 📋 Pre-Deployment Checklist
 
 - [ ] Update `requirements.txt` with all dependencies
@@ -180,7 +198,7 @@ primary_region = "iad"
 - [ ] Test database migrations (if any)
 - [ ] Verify file upload directory permissions
 - [ ] Set up environment variables
-- [ ] Test locally with `gunicorn app:app`
+- [ ] Test locally with `gunicorn --pythonpath app-backend -c app-backend/gunicorn.conf.py app:app`
 
 ## 🔧 Production Considerations
 
@@ -205,7 +223,7 @@ primary_region = "iad"
 ### Performance
 - Use `gunicorn` with multiple workers:
   ```bash
-  gunicorn -w 4 -b 0.0.0.0:$PORT app:app
+  gunicorn --pythonpath app-backend -w 4 -b 0.0.0.0:$PORT app:app
   ```
 - Add caching headers for static files
 - Consider CDN for static assets

@@ -1,0 +1,19 @@
+{# Search, panorama type filter and builder actions (shown once the builder module loads). #}
+{% from 'components/dashboard/icons.html' import icon %}
+<div class="dash-toolbar">
+    <label class="dash-search">
+        <span class="dash-search__icon">{{ icon('search') }}</span>
+        <span class="dash-sr-only">Search panoramas</span>
+        <input type="search" id="dash-search" class="dash-search__input" placeholder="Search panoramas" autocomplete="off" spellcheck="false">
+        <kbd class="dash-search__kbd" aria-hidden="true">/</kbd>
+        <button type="button" class="dash-icon-btn dash-search__clear" data-action="clear-search" aria-label="Clear search" hidden>{{ icon('x', 16) }}</button>
+    </label>
+    <div class="dash-seg" role="group" aria-label="Panorama type">
+        <button type="button" class="dash-seg__btn" data-action="filter-type" data-type="all" aria-pressed="true">All</button>
+        <button type="button" class="dash-seg__btn" data-action="filter-type" data-type="360" aria-pressed="false">360°</button>
+        <button type="button" class="dash-seg__btn" data-action="filter-type" data-type="flat" aria-pressed="false">Flat</button>
+    </div>
+    <div class="dash-toolbar__actions" data-builder-only hidden>
+        <button type="button" class="dash-btn dash-btn--primary" data-action="upload">{{ icon('upload', 16) }}<span>Upload</span></button>
+    </div>
+</div>

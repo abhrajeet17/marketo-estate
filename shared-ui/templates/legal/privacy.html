@@ -1,0 +1,119 @@
+{% extends 'legal/layout.html' %}
+{% from 'legal/macros.html' import email %}
+{% set page_title = 'Privacy Policy' %}
+{% set page_path = '/privacy' %}
+{% set page_description = 'How MarketoState collects, uses, shares and protects personal data for builders, sales teams, brokers and property buyers.' %}
+{% block body %}
+<p class="lg-lead">This policy explains what personal data MarketoState collects when you use our website, our builder dashboard, our client portal and CRM, and the property links that builders share with buyers, and how we use and protect it.</p>
+
+<div class="lg-summary">
+  <p class="lg-summary__title">In short</p>
+  <ul>
+    <li>We collect what you give us (account details, project content, enquiries) and basic technical data needed to run the service.</li>
+    <li>We do not sell personal data, and we do not use advertising or analytics trackers.</li>
+    <li>Builders and their teams control the project and CRM data they put into MarketoState; we process it on their behalf.</li>
+    <li>You can ask us to access, correct or delete your data at any time: {{ email(legal) }}.</li>
+  </ul>
+</div>
+
+<h2 id="who-we-are">1. Who we are</h2>
+<p>MarketoState is operated by {{ legal.entity }} ("MarketoState", "we", "us"). MarketoState is software for real estate developers and their sales teams: it turns drone and 360° panoramas into virtual site visits, shows plot availability, and includes a CRM for buyer enquiries.</p>
+<p>We act in two roles:</p>
+<ul>
+  <li><strong>For account holders</strong> (builders, client admins, sales agents and brokers), we decide how your account data is used, and this policy applies directly.</li>
+  <li><strong>For buyers and leads</strong> whose details a builder stores in the CRM or who send an enquiry through a builder's shared link, we process that data on behalf of the builder. The builder is responsible for it, and their own privacy notice also applies. You can contact us and we will pass your request to the right builder.</li>
+</ul>
+
+<h2 id="data-we-collect">2. Data we collect</h2>
+<h3>Account data</h3>
+<ul>
+  <li>Name, email address and password (passwords are stored only in hashed form by our authentication provider).</li>
+  <li>If you sign in with Google: the name, email address and profile picture Google shares with us. We never see your Google password.</li>
+  <li>Your role, the builder organization and client group you belong to, and invitations and join requests you send or receive.</li>
+</ul>
+<h3>Content you upload or create</h3>
+<ul>
+  <li>Panoramas, drone images, photos, videos, voice notes, floor and building plans, maps and project details such as location, RERA registration and pricing.</li>
+  <li>Plot layouts, plot status and holds, share links and their settings.</li>
+</ul>
+<h3>CRM and enquiry data</h3>
+<ul>
+  <li>When a buyer sends an enquiry or "buy interest" through a shared property link: the plots they selected and the contact details they enter, which can include name, phone number, email address and date of birth.</li>
+  <li>Data sales teams add about leads and contacts: name, phone, email, address, date of birth, notes, deal stage, site visits and quotations.</li>
+</ul>
+<h3>Technical data</h3>
+<ul>
+  <li>Server logs with IP address, browser type, pages requested and timestamps, used for security and troubleshooting.</li>
+  <li>Data stored in your browser to keep you signed in and remember preferences (see <a href="#cookies">Cookies and local storage</a>).</li>
+</ul>
+
+<h2 id="how-we-use">3. How we use data</h2>
+<ul>
+  <li><strong>To provide the service:</strong> create and secure your account, show projects to the people they are shared with, route enquiries to the right team and send emails such as invitations, password resets and quotations.</li>
+  <li><strong>To keep it safe:</strong> prevent abuse, investigate security incidents and enforce our <a href="/terms">Terms of Service</a>.</li>
+  <li><strong>To support and improve it:</strong> answer requests and fix problems.</li>
+  <li><strong>To meet legal obligations</strong> such as tax, accounting and lawful requests from authorities.</li>
+</ul>
+<p>We process data because it is necessary to provide the service you asked for, because you consented (for example when a buyer submits an enquiry), for our legitimate interests in running a secure service, or to comply with law. Where we rely on consent, you can withdraw it at any time.</p>
+
+<h2 id="sharing">4. Who we share data with</h2>
+<p>We do not sell personal data or share it for advertising. We share it only as follows:</p>
+<ul>
+  <li><strong>Within your workspace:</strong> project content and CRM data are visible to the builder and to the team members, client groups and brokers the builder gives access to. Buyer enquiries go to the builder's team, and to a broker when the buyer names that broker as their reference.</li>
+  <li><strong>Through share links:</strong> anyone with a public property link can view what the builder chose to publish in it.</li>
+  <li><strong>Service providers</strong> who run parts of the service for us under contract:
+    <ul>
+      <li>Supabase: database, authentication and file storage (hosted in the Mumbai, India region).</li>
+      <li>Our application hosting provider.</li>
+      <li>Google: only if you choose "Continue with Google".</li>
+      <li>Our email delivery provider, for transactional emails.</li>
+      <li>Map tile providers (such as Esri / ArcGIS and OpenStreetMap), which receive your IP address when map views load.</li>
+    </ul>
+  </li>
+  <li><strong>Legal reasons:</strong> when required by law, or to protect the rights, safety or property of our users, the public or MarketoState.</li>
+  <li><strong>Business transfers:</strong> if MarketoState is involved in a merger or acquisition, data may transfer to the new owner under the same protections.</li>
+</ul>
+
+<h2 id="international">5. Where data is stored</h2>
+<p>Our main database and file storage are in India. Some service providers (for example our hosting or email provider, or Google) may process data in other countries. Where that happens we rely on the provider's contractual safeguards to protect it.</p>
+
+<h2 id="retention">6. How long we keep data</h2>
+<ul>
+  <li>Account data: while your account is active, and deleted or anonymised within 90 days after you close it, unless the law requires us to keep it longer.</li>
+  <li>Project and CRM data: for as long as the builder keeps it in their workspace. Builders can delete it at any time; when a builder's subscription ends we delete it within 90 days unless they ask us to keep or export it.</li>
+  <li>Server logs: up to 90 days.</li>
+</ul>
+
+<h2 id="security">7. Security</h2>
+<p>Data travels over encrypted HTTPS connections. Access is controlled by role, so people only see the projects and records shared with them. Files are served through short-lived signed links, and passwords are never stored in plain text. No system is perfectly secure; if we become aware of a breach that affects you, we will notify you and the relevant authorities as the law requires.</p>
+
+<h2 id="your-rights">8. Your rights</h2>
+<p>Depending on where you live, including under India's Digital Personal Data Protection Act, 2023, you may have the right to:</p>
+<ul>
+  <li>access the personal data we hold about you and get a copy of it;</li>
+  <li>correct inaccurate or incomplete data;</li>
+  <li>have your data deleted;</li>
+  <li>withdraw consent, or object to or restrict certain processing;</li>
+  <li>nominate someone to exercise your rights if you die or become incapacitated;</li>
+  <li>complain to your data protection authority.</li>
+</ul>
+<p>To use these rights, email {{ email(legal) }} from the address on your account. We will reply within 30 days. If your data is in a builder's CRM, we may refer your request to that builder and help them respond.</p>
+
+<h2 id="cookies">9. Cookies and local storage</h2>
+<p>We use only what is needed to run the service. We do not use advertising or third-party analytics cookies.</p>
+<ul>
+  <li><strong>Sign-in session:</strong> your browser's local storage keeps your session token so you stay signed in.</li>
+  <li><strong>Preferences:</strong> small items in local or session storage remember choices such as a collapsed sidebar, your active project and your organization's accent colour (<code>org_accent</code> cookie).</li>
+  <li><strong>Speed:</strong> a short-lived copy of dashboard data in session storage makes pages load faster. It is cleared when you close the tab.</li>
+</ul>
+<p>Clearing your browser storage signs you out and resets these preferences.</p>
+
+<h2 id="children">10. Children</h2>
+<p>MarketoState is a business tool and is not intended for anyone under 18. We do not knowingly collect children's personal data. If you believe a child has given us personal data, contact us and we will delete it.</p>
+
+<h2 id="changes">11. Changes to this policy</h2>
+<p>We may update this policy as the product or the law changes. We will change the effective date above and, for significant changes, tell account holders by email or in the app before the changes take effect.</p>
+
+<h2 id="contact">12. Contact and grievances</h2>
+<p>For privacy questions, requests or complaints, contact our grievance officer at {{ email(legal) }}. We aim to resolve complaints within 30 days.</p>
+{% endblock %}

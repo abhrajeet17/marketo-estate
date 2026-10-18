@@ -1,0 +1,26 @@
+/* Projects (client portal): panoramas the team can edit or present. */
+.proj-toolbar { display: flex; gap: var(--ui-3); flex-wrap: wrap; align-items: center; }
+.proj-toolbar__search { flex: 1 1 320px; }
+.proj-toolbar__select { flex: 0 1 260px; }
+
+.proj-section { display: flex; flex-direction: column; gap: var(--ui-3); }
+.proj-section + .proj-section { margin-top: var(--ui-6); }
+.proj-section__head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-3); flex-wrap: wrap; }
+.proj-section__title { font-family: var(--ui-font-display); font-size: var(--ui-text-lg); font-weight: 700; letter-spacing: -0.02em; color: var(--ui-heading); }
+.proj-section__meta { color: var(--ui-muted); font-size: var(--ui-text-sm); margin-left: 8px; font-weight: 500; }
+
+.proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--ui-4); }
+.proj-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.proj-card__thumb { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--ui-panel-sunken); border-radius: 0; }
+img.proj-card__thumb { opacity: 0; transition: opacity 0.25s; }
+img.proj-card__thumb.is-loaded { opacity: 1; }
+.proj-card__body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.proj-card__name { font-weight: 700; color: var(--ui-heading); }
+.proj-card__meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.proj-card__actions { margin-top: auto; padding-top: 6px; display: flex; }
+.proj-card__actions .ui-btn { flex: 1; }
+
+@media (max-width: 640px) {
+  .proj-toolbar__select { flex: 1 1 100%; }
+  .proj-grid { grid-template-columns: 1fr; }
+}

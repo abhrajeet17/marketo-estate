@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Plotted Development – MarketoState{% endblock %}
+{% block head_css %}
+{# Thumbnails load straight from storage: open that connection while the page boots. #}
+{% if supabase_url %}<link rel="preconnect" href="{{ supabase_url }}">{% endif %}
+{# Fetch the whole module graph in parallel instead of discovering it import by import. #}
+<link rel="modulepreload" href="/static/js/dashboard/main.js?v={{ ui_asset_v }}">
+{% for url in dashboard_modules %}<link rel="modulepreload" href="{{ url }}">
+{% endfor %}
+<script>
+  // Start loading dashboard data during HTML parsing with the cached session token;
+  // core/sync.js adopts this request instead of waiting for the modules to boot.
+  (function () {
+    try {
+      var s = JSON.parse(localStorage.getItem('marketostate_auth_session_v1') || 'null');
+      if (!s || !s.access_token || (s.expires_at && s.expires_at * 1000 < Date.now() + 30000)) return;
+      window.__dashboardPrefetch = fetch('/api/dashboard', { headers: { Authorization: 'Bearer ' + s.access_token } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    } catch (e) { /* storage unavailable: sync.js fetches normally */ }
+  })();
+</script>
+<link rel="stylesheet" href="/static/css/components/sidebar.css?v={{ ui_asset_v }}">
+<link rel="stylesheet" href="/static/css/dashboard.css?v={{ ui_asset_v }}">
+<link rel="stylesheet" href="/static/css/share-workspace-modal.css">
+{% endblock %}
+{% block content %}
+<div class="dash" id="dashboard">
+    {% set active_page = 'dashboard' %}
+    {% include 'components/sidebar.html' %}
+
+    <div class="dash-main">
+        {% include 'components/dashboard/topbar.html' %}
+        <div class="dash-content">
+            {% include 'components/dashboard/toolbar.html' %}
+            <div class="dash-columns dash-columns--single">
+                {% include 'components/dashboard/panoramas_panel.html' %}
+            </div>
+        </div>
+    </div>
+
+    {% include 'components/dashboard/upload_modal.html' %}
+    {% include 'components/dashboard/project_form_modal.html' %}
+    {% include 'components/dashboard/prompt_modals.html' %}
+    {% include 'components/dashboard/change_password_modal.html' %}
+    {% include 'components/share_workspace_modal.html' %}
+
+    <div class="dash-toasts" id="dash-toasts" role="status" aria-live="polite"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/sidebar.js?v={{ ui_asset_v }}"></script>
+<script src="/static/js/share-workspace-modal.js"></script>
+<script type="module" src="/static/js/dashboard/main.js?v={{ ui_asset_v }}"></script>
+{% endblock %}

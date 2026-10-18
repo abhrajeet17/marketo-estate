@@ -1,0 +1,23 @@
+/* Join requests (Client Admin) */
+.rq-toolbar { display: flex; align-items: center; gap: var(--ui-4); flex-wrap: wrap; margin-bottom: var(--ui-4); }
+.rq-hint { margin: 0; font-size: var(--ui-text-sm); flex: 1 1 320px; }
+.rq-list { display: flex; flex-direction: column; gap: var(--ui-3); }
+.rq-card {
+  display: grid; grid-template-columns: minmax(200px, 1fr) minmax(220px, 1.4fr) auto; align-items: center; gap: var(--ui-4);
+  padding: var(--ui-4) var(--ui-5); animation: ui-fade-up var(--ui-slow) var(--ui-ease) both;
+  transition: opacity var(--ui-base), transform var(--ui-base);
+}
+.rq-card.is-leaving { opacity: 0; transform: scale(0.98); }
+.rq-card__who { min-width: 0; }
+.rq-card__what { font-size: var(--ui-text-sm); color: var(--ui-text); line-height: 1.5; min-width: 0; }
+.rq-card__what strong { color: var(--ui-heading); }
+.rq-card__msg { margin: 4px 0 0; color: var(--ui-muted); font-style: italic; overflow-wrap: anywhere; }
+.rq-card__time { margin-top: 2px; font-size: var(--ui-text-xs); color: var(--ui-faint); }
+.rq-card__actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.rq-card__actions .ui-select { width: auto; min-width: 130px; }
+
+@media (max-width: 860px) {
+  .rq-card { grid-template-columns: 1fr; gap: var(--ui-3); }
+  .rq-card__actions { justify-content: flex-start; flex-wrap: wrap; }
+}
+.rq-toolbar .ui-count:empty { display: none; }

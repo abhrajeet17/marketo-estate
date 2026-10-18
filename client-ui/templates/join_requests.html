@@ -1,0 +1,35 @@
+{% set page_title = 'Requests · MarketoState' %}
+{% set active_nav = 'requests' %}
+{% set portal_header_title = 'Join requests' %}
+{% set portal_header_eyebrow = 'Team' %}
+{% set portal_extra_css = '/static/ui/pages/requests.css' %}
+{% include 'components/portal_shell_start.html' %}
+{% from 'components/ui.html' import empty_state, card_error %}
+
+<div class="ui-page" id="requests-page">
+  <div class="rq-toolbar">
+    <div class="ui-seg" role="tablist" aria-label="Request status">
+      <button type="button" class="ui-seg__btn is-active" data-status="pending" role="tab" aria-selected="true">Pending <span class="ui-count" id="rq-pending-count"></span></button>
+      <button type="button" class="ui-seg__btn" data-status="all" role="tab" aria-selected="false">History</button>
+    </div>
+    <p class="ui-muted rq-hint">People who signed up and asked to join your client group. Approving adds them to your team with access to the group's projects.</p>
+  </div>
+
+  <div id="rq-region" data-state="loading">
+    <div data-for="loading" class="rq-list" aria-hidden="true">
+      {% for i in range(3) %}
+      <div class="ui-card rq-card"><div class="ui-row"><span class="ui-skel ui-skel--avatar"></span>
+        <div class="ui-skel-group" style="flex:1"><span class="ui-skel ui-skel--title" style="width:40%"></span><span class="ui-skel ui-skel--line" style="width:65%"></span></div>
+        <span class="ui-skel" style="width:180px;height:34px"></span></div></div>
+      {% endfor %}
+    </div>
+    <div data-for="ready" hidden class="rq-list" id="rq-list"></div>
+    <div data-for="empty" hidden><section class="ui-card">{{ empty_state('No pending requests', 'When someone asks to join your client group, it shows up here for you to approve.', 'inbox') }}</section></div>
+    <div data-for="error" hidden><section class="ui-card">{{ card_error("We couldn't load join requests.") }}</section></div>
+  </div>
+</div>
+
+{% include 'components/portal_shell_end.html' %}
+<script src="/static/ui/pages/requests.js?v={{ ui_asset_v }}"></script>
+</body>
+</html>

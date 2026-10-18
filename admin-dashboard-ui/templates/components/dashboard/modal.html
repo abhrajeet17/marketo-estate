@@ -1,0 +1,31 @@
+{#
+  Dialog shell shared by every dashboard modal. The caller renders two sections:
+
+    {% call(section) modal('rename-modal', 'Rename') %}
+      {% if section == 'body' %} ...fields... {% else %} ...footer buttons... {% endif %}
+    {% endcall %}
+
+  The panel is a <form>, so Enter submits and the submit button carries the busy state.
+#}
+{% from 'components/dashboard/icons.html' import icon %}
+{% macro modal(id, title, description='', size='sm') -%}
+<div class="dash-modal" id="{{ id }}" role="dialog" aria-modal="true" aria-labelledby="{{ id }}-title" hidden>
+    <div class="dash-modal__backdrop" data-modal-dismiss></div>
+    <form class="dash-modal__panel dash-modal__panel--{{ size }}" novalidate>
+        <header class="dash-modal__head">
+            <div class="dash-modal__heading">
+                <h2 class="dash-modal__title" id="{{ id }}-title" data-modal-title>{{ title }}</h2>
+                <p class="dash-modal__desc" data-modal-desc{% if not description %} hidden{% endif %}>{{ description }}</p>
+            </div>
+            <button type="button" class="dash-icon-btn" data-modal-dismiss aria-label="Close">{{ icon('x') }}</button>
+        </header>
+        <div class="dash-modal__body">
+            {{ caller('body') }}
+            <p class="dash-form-error" data-modal-error role="alert" hidden></p>
+        </div>
+        <footer class="dash-modal__foot">
+            {{ caller('foot') }}
+        </footer>
+    </form>
+</div>
+{%- endmacro %}

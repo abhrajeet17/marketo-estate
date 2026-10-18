@@ -1,0 +1,43 @@
+{% set page_title = 'Projects · MarketoState' %}
+{% set active_nav = 'projects' %}
+{% set portal_header_title = 'Projects' %}
+{% set portal_header_eyebrow = 'Workspace' %}
+{% set portal_extra_css = '/static/ui/pages/projects.css' %}
+{% include 'components/portal_shell_start.html' %}
+{% from 'components/ui.html' import empty_state, card_error, icon %}
+
+<div class="ui-page" id="projects-page">
+  <div class="proj-toolbar" role="search">
+    <label class="ui-search proj-toolbar__search">
+      {{ icon('search', 15) }}
+      <input type="search" class="ui-input" id="proj-search" placeholder="Search panoramas or projects" aria-label="Search panoramas or projects" autocomplete="off">
+    </label>
+    <select class="ui-select proj-toolbar__select" id="proj-filter" aria-label="Filter by project">
+      <option value="">All projects</option>
+    </select>
+  </div>
+
+  <div id="proj-region" data-state="loading">
+    <div data-for="loading" aria-hidden="true">
+      {% for s in range(2) %}
+      <section class="proj-section">
+        <div class="proj-section__head"><span class="ui-skel ui-skel--title" style="width:220px"></span></div>
+        <div class="proj-grid">
+          {% for c in range(3) %}
+          <div class="ui-card proj-card"><span class="ui-skel proj-card__thumb"></span>
+            <div class="proj-card__body"><span class="ui-skel ui-skel--line" style="width:70%"></span><span class="ui-skel ui-skel--line" style="width:45%"></span></div></div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+    <div data-for="ready" id="proj-list" hidden></div>
+    <div data-for="empty" hidden>{{ empty_state('No projects yet', 'Projects your team is given access to will appear here.', 'map') }}</div>
+    <div data-for="error" hidden>{{ card_error("We couldn't load your projects.") }}</div>
+  </div>
+</div>
+
+{% include 'components/portal_shell_end.html' %}
+<script src="/static/ui/pages/projects.js?v={{ ui_asset_v }}"></script>
+</body>
+</html>

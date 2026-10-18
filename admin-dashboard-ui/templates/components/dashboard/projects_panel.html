@@ -1,0 +1,12 @@
+{# Left column: project list. Rendered by static/js/dashboard/views/projects.js. #}
+<aside class="dash-panel dash-panel--projects" aria-labelledby="dash-projects-title">
+    <header class="dash-panel__head">
+        <h2 class="dash-panel__title" id="dash-projects-title">Projects</h2>
+        <span class="dash-panel__count" id="dash-projects-count"></span>
+    </header>
+    <div class="dash-panel__scroll">
+        <ul class="dash-projects" id="dash-projects" role="listbox" aria-label="Projects">
+            {% for _ in range(4) %}<li class="dash-skel dash-skel--row"></li>{% endfor %}
+        </ul>
+    </div>
+</aside>

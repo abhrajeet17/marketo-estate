@@ -1,0 +1,93 @@
+{# Admin sidebar. Requires /static/css/components/sidebar.css and /static/js/sidebar.js.
+   Set active_page before including, e.g. {% set active_page = 'dashboard' %}.
+   sidebar.js shows role-gated links; a group hides itself when none of its links are visible.
+   Workspace pages also get the project rail: they show only the project picked on /projectselection. #}
+{% set project_scoped = active_page in ['dashboard', 'floorplans', 'building-plans', 'fullview', 'daynight'] %}
+{% set selecting_project = active_page == 'projectselection' %}
+{% macro nav_link(href, page, label, tooltip='', id='', hidden=true, new_tab=false) -%}
+<a href="{{ href }}" class="sidebar-link{% if active_page == page %} active{% endif %}" data-page="{{ page }}" data-tooltip="{{ tooltip or label }}"
+   {%- if id %} id="{{ id }}"{% endif %}{% if hidden %} style="display:none;"{% endif %}{% if new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}
+   {%- if active_page == page %} aria-current="page"{% endif %}>
+    <span class="sidebar-icon" aria-hidden="true">{{ caller() }}</span>
+    <span class="sidebar-text">{{ label }}</span>
+    {% if new_tab %}<span class="sidebar-external sidebar-text" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></span>{% endif %}
+</a>
+{%- endmacro %}
+
+{% if project_scoped %}
+<nav class="project-rail" id="project-rail" aria-label="Projects"{% if active_page == 'dashboard' %} data-self-load{% endif %}>
+    <a href="/projectselection" class="project-rail__home" data-tooltip="All projects" aria-label="All projects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </a>
+    <div class="project-rail__list" id="project-rail-list"></div>
+</nav>
+{% endif %}
+<aside class="dashboard-sidebar" id="dashboard-sidebar" aria-label="Navigation">
+    <div class="sidebar-brand">
+        <a href="/projectselection" class="sidebar-brand__link" aria-label="MarketoState home">
+            <img class="sidebar-brand__mark" src="/static/Marketostate/Marketostate%20Favicon.svg" alt="" width="28" height="28">
+            <span class="sidebar-brand__name sidebar-text">MarketoState</span>
+        </a>
+    </div>
+
+    <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse sidebar" title="Collapse sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+    </button>
+
+    {% if not selecting_project %}
+    <div class="sidebar-upload-wrap" id="sidebar-upload-wrap" style="display:none;">
+        <a href="/dashboard?upload=1" class="sidebar-cta" id="sidebar-upload-link" data-tooltip="Upload panoramas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+            <span class="sidebar-text">Upload panoramas</span>
+        </a>
+    </div>
+    {% endif %}
+
+    <nav class="sidebar-nav" aria-label="Main">
+        {% if not selecting_project %}
+        <div class="sidebar-group">
+            <div class="sidebar-group__label"><span class="sidebar-text">Workspace</span></div>
+            {% call nav_link('/dashboard', 'dashboard', 'Plotted Development', hidden=false) %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>{% endcall %}
+            {% call nav_link('/salestools', 'floorplans', 'Sales Tools', id='nav-floorplans') %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>{% endcall %}
+            {% call nav_link('/building-plans', 'building-plans', 'Building Plotted Development', id='nav-building-plans') %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="9" height="20" rx="1"/><path d="M13 8h6a1 1 0 0 1 1 1v13h-7"/><path d="M7 6h3M7 10h3M7 14h3M7 18h3M16 12h1M16 16h1"/></svg>{% endcall %}
+            {% call nav_link('/full-view', 'fullview', 'Full View', tooltip='Full View Creator', id='nav-fullview') %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M13 9h5M13 13h5"/></svg>{% endcall %}
+        </div>
+        {% endif %}
+
+        <div class="sidebar-group">
+            <div class="sidebar-group__label"><span class="sidebar-text">Sales</span></div>
+            {% call nav_link('/crm', 'crm', 'CRM', tooltip='CRM (opens in a new tab)', id='nav-crm', new_tab=true) %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>{% endcall %}
+            {% call nav_link('/explore', 'explore', 'Customer Portal', tooltip='Customer Portal (opens in a new tab)', id='nav-explore', new_tab=true) %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>{% endcall %}
+        </div>
+
+        <div class="sidebar-group">
+            <div class="sidebar-group__label"><span class="sidebar-text">Admin</span></div>
+            {% call nav_link('/user-management', 'user-management', 'User Management', id='nav-user-mgmt') %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>{% endcall %}
+            {% call nav_link('/organizations', 'organizations', 'Organizations', id='nav-orgs') %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/></svg>{% endcall %}
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user-menu-wrap" id="sidebar-user-menu-wrap">
+            <button type="button" class="sidebar-user-btn" id="sidebar-user-btn" aria-label="Account menu" aria-haspopup="menu" data-tooltip="Account">
+                <span class="sidebar-avatar" id="sidebar-avatar">--</span>
+                <span class="sidebar-user-meta sidebar-text">
+                    <span class="sidebar-user-name" id="sidebar-user-name"></span>
+                    <span class="sidebar-user-role" id="sidebar-user-role"></span>
+                </span>
+                <svg class="sidebar-user-chevron sidebar-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5-5 5 5"/></svg>
+            </button>
+            <div class="sidebar-user-dropdown" id="sidebar-user-dropdown" role="menu">
+                <a href="#" class="sidebar-dropdown-item" id="nav-change-password" role="menuitem">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Change password
+                </a>
+                <div class="sidebar-dropdown-divider"></div>
+                <a href="/login" class="sidebar-dropdown-item sidebar-dropdown-item--danger" id="nav-logout" role="menuitem">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>
+                    Sign out
+                </a>
+            </div>
+        </div>
+    </div>
+</aside>

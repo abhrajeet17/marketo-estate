@@ -1,1 +1,1 @@
-web: gunicorn app:app -c gunicorn.conf.py
+web: gunicorn --pythonpath app-backend -c app-backend/gunicorn.conf.py app:app

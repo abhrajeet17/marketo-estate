@@ -1,0 +1,42 @@
+{# Small reusable dialogs driven by builder/dialogs.js: text prompt, confirmation, choice list, select. #}
+{% from 'components/dashboard/modal.html' import modal %}
+
+{% call(section) modal('dash-prompt-modal', 'Rename') %}
+{% if section == 'body' %}
+<label class="dash-field">
+    <span class="dash-field__label" data-prompt-label>Name</span>
+    <input class="dash-input" name="value" maxlength="120" required autocomplete="off" data-autofocus>
+</label>
+{% else %}
+<button type="button" class="dash-btn" data-modal-dismiss>Cancel</button>
+<button type="submit" class="dash-btn dash-btn--primary" data-submit>Save</button>
+{% endif %}
+{% endcall %}
+
+{% call(section) modal('dash-confirm-modal', 'Are you sure?') %}
+{% if section == 'body' %}{% else %}
+<button type="button" class="dash-btn" data-modal-dismiss>Cancel</button>
+<button type="submit" class="dash-btn dash-btn--danger" data-submit>Delete</button>
+{% endif %}
+{% endcall %}
+
+{% call(section) modal('dash-choice-modal', 'Choose') %}
+{% if section == 'body' %}
+<div class="dash-choices" data-choices role="radiogroup"></div>
+{% else %}
+<button type="button" class="dash-btn" data-modal-dismiss>Cancel</button>
+<button type="submit" class="dash-btn dash-btn--danger" data-submit>Continue</button>
+{% endif %}
+{% endcall %}
+
+{% call(section) modal('dash-select-modal', 'Move') %}
+{% if section == 'body' %}
+<label class="dash-field">
+    <span class="dash-field__label" data-select-label>Project</span>
+    <select class="dash-input" name="value" data-autofocus></select>
+</label>
+{% else %}
+<button type="button" class="dash-btn" data-modal-dismiss>Cancel</button>
+<button type="submit" class="dash-btn dash-btn--primary" data-submit>Move</button>
+{% endif %}
+{% endcall %}
